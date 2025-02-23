@@ -1,5 +1,8 @@
 
 
+
+
+
 #ifndef CLUSTER_HPP
 # define CLUSTER_HPP
 
@@ -83,6 +86,7 @@ class Cluster
 
 		void	sendData(const struct epoll_event &);
 		void	recvData(const struct epoll_event &);
+		ssize_t	safeRecv(const int, std::string &);
 };
 
 std::ostream	& operator<<(std::ostream &, const Cluster &);

@@ -15,7 +15,7 @@
 Server::Server(ServerConfig & config, const std::string &service)
 {
 	_config = config;
-	_service = _service;
+	_service = service;
 	UtilParsing::convertVectorToSet(_nameList, _config._serverName);
 	if (_nameList.empty() == true)
 		_nameList.insert("localhost");
@@ -77,11 +77,6 @@ std::ostream & operator<<(std::ostream & o, const Server &ref)
 	for (std::set<std::string>::const_iterator it = ref.getLocationPath().begin();
 		it != ref.getLocationPath().end(); it++)
 			o	<< "[" << *it << "] ";
-
-	// o	<< "\n_clientList: ";
-	// for (std::set<Client>::const_iterator it = ref.getClientList().begin();
-	// 	it != ref.getClientList().end(); it++)
-	// 		o	<< *it ;
 	return o << RESET << std::endl;
 }
 /*----------------------------------------------------------------------------*/
@@ -90,7 +85,7 @@ std::ostream & operator<<(std::ostream & o, const Server &ref)
 						/*### PUBLIC METHODS ###*/
 /*============================================================================*/
 
-const size_t Server::getBodySize() const {
+size_t Server::getBodySize() const {
 	return _maxBodySize;
 }
 /*----------------------------------------------------------------------------*/
