@@ -19,7 +19,25 @@ HttpConfig ConfigParser::parse(const std::string& filepath)
         if (line.find("http") != std::string::npos) 
             parseHttpBlock(file, httpConfig);
     }
-
+    httpConfig.controlDefaultHttpConf();
+    if (httpConfig._serversConfig.empty() == false)
+    {
+        std::vector<ServerConfig>::iterator itServerConf = httpConfig._serversConfig.begin();
+        while (itServerConf != httpConfig._serversConfig.end())
+        {
+            itServerConf->controlDefaultServerConf();
+            if (itServerConf->_locationConfig.empty() == false)
+            {
+                std::vector<LocationConfig>::iterator itLoconfig = itServerConf->_locationConfig.begin();
+                while (itLoconfig != itServerConf->_locationConfig.end())
+                {
+                    itLoconfig->controlDefaultLocationConf();
+                    itLoconfig++;
+                }
+            }
+            itServerConf++;
+        }
+    }
     return httpConfig;
 }
 
@@ -50,27 +68,31 @@ void ConfigParser::parseServerBlock(std::ifstream& file, ServerConfig& serverCon
     std::string line;
     while (std::getline(file, line)) 
     {
-        if (line.find("server_name") != std::string::npos) 
-            serverConfig._serverName = (UtilParsing::splitSpecialDeleteKey(line, std::string(" ")));
-        else if (line.find("listen") != std::string::npos) 
+        if (line.find("listen") != std::string::npos) 
             serverConfig._listenPort = (UtilParsing::splitSpecialDeleteKey(UtilParsing::trim(line), std::string(" ")));
+        else if (line.find("root") != std::string::npos)
+            serverConfig.rootPath = UtilParsing::recoverValue(line, "root");
         else if (line.find("client_max_body_size") != std::string::npos) 
             serverConfig._clientMaxBodySize = UtilParsing::recoverValue(line, "client_max_body_size");
         else if (line.find("upload_path") != std::string::npos) 
-            serverConfig._uploadPath = UtilParsing::recoverValue(line, "upload_path");
+        serverConfig._uploadPath = UtilParsing::recoverValue(line, "upload_path");
+        else if (line.find("methods_accept") != std::string::npos)
+            serverConfig.methodAccept = UtilParsing::splitSpecialDeleteKey(line, std::string(" "));
         else if (line.find("error_path") != std::string::npos) 
-            serverConfig._errorPath = UtilParsing::recoverValue(line, "error_path");
+            serverConfig.pageErrorPath = UtilParsing::recoverValue(line, "error_path");
+        else if (line.find("server_name") != std::string::npos)
+            serverConfig._serverName = (UtilParsing::splitSpecialDeleteKey(line, std::string(" ")));
         else if (line.find("location") != std::string::npos) 
         {
             LocationConfig locationConfig;
             locationConfig._path = UtilParsing::recoverValue(line, "location");
             parseLocationBlock(file, locationConfig);
             serverConfig._locationConfig.push_back(locationConfig);
-        } 
+        }
         else if (line.find("}") != std::string::npos)
         {
-            if (serverConfig._errorPath.empty())
-                serverConfig._errorPath = std::string("none");
+            if (serverConfig.pageErrorPath.empty())
+                serverConfig.pageErrorPath = std::string("none");
             break;
         }
     }
@@ -81,21 +103,23 @@ void ConfigParser::parseLocationBlock(std::ifstream& file, LocationConfig& locat
     std::string line;
     while (std::getline(file, line)) 
     {
-        if (line.find("root") != std::string::npos) 
+        if (line.find("autoindex") != std::string::npos)
+            locationConfig.autoindex = UtilParsing::recoverValue(line, "autoindex");
+        else if (line.find("root") != std::string::npos) 
             locationConfig._root = UtilParsing::recoverValue(line, "root");
         else if (line.find("index") != std::string::npos) 
             locationConfig._index = UtilParsing::recoverValue(line, "index");
-        else if (line.find("methods_accept") != std::string::npos)
-            locationConfig._methods = UtilParsing::splitSpecialDeleteKey(line, std::string(" "));
         else if (line.find("cgi_path") != std::string::npos)
             locationConfig._cgipath = UtilParsing::recoverValue(line, "cgi_path");
+        else if (line.find("methods_accept") != std::string::npos)
+            locationConfig._methods = UtilParsing::splitSpecialDeleteKey(line, std::string(" "));
         else if (line.find("}") != std::string::npos)
         {
+
             if (locationConfig._cgipath.empty())
                 locationConfig._cgipath = std::string("none");
             break;
-        } 
-            
+        }  
     }
 }
 

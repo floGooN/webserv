@@ -2,13 +2,60 @@
 #include "ServerConfig.hpp"
 #include "UtilParsing.hpp"
 
-ServerConfig::ServerConfig(const ServerConfig & ref)
-  :	_serverName(ref._serverName), _listenPort(ref._listenPort), \
-	_locationConfig(ref._locationConfig), _clientMaxBodySize(ref._clientMaxBodySize), \
-	_uploadPath(ref._uploadPath)
+ServerConfig::ServerConfig(const ServerConfig & ref) {
+	*this = ref;
+}
+
+ServerConfig & ServerConfig::operator=(const ServerConfig &ref)
 {
-	static int i = 0;
-	_serverIndex = i++;
+	if (this != &ref) {
+		_listenPort = ref._listenPort;
+		rootPath = ref.rootPath;
+		_clientMaxBodySize = ref._clientMaxBodySize;
+		_uploadPath = ref._uploadPath;
+		pageErrorPath = ref.pageErrorPath;
+		_serverName = ref._serverName;
+		methodAccept = ref.methodAccept;
+		_locationConfig = ref._locationConfig;
+	}
+	return *this;
+}
+
+std::ostream & operator<<(std::ostream & o, const ServerConfig &ref)
+{
+	o   << ITAL YELLOW "ServerConfig:" << std::endl
+	
+		<< "_listenPort: ";
+	for (std::vector<std::string>::const_iterator it = ref._listenPort.begin();
+		it != ref._listenPort.end(); it++)
+		o   << *it << " ";	
+	
+	o	<< std::endl
+		<< "rootPath: " << ref.rootPath << std::endl
+		<< "_clientMaxBodySize: " << ref._clientMaxBodySize << std::endl
+		<< "_uploadPath: " << ref._uploadPath << std::endl
+		<< "methodsAccept: ";
+	for (std::vector<std::string>::const_iterator it = ref.methodAccept.begin();
+		it != ref.methodAccept.end(); it++)
+		o	<< *it << " ";
+
+	o	<< "pageErrorPath: " << (ref.pageErrorPath.empty() ? "empty" : ref.pageErrorPath) << std::endl
+		<< "_serverName: ";
+	if (ref._serverName.empty() == false){
+		for (std::vector<std::string>::const_iterator it = ref._serverName.begin();
+			it != ref._serverName.end(); it++)
+			o   << *it << " ";
+	}
+
+	o	<< "_locationConfig:" << std::endl;
+	if (ref._locationConfig.empty() == false) {
+		for (std::vector<LocationConfig>::const_iterator it = ref._locationConfig.begin();
+			it != ref._locationConfig.end(); it++)
+			o << *it << std::endl;
+	}
+	else
+		o	<< "No location specified" << std::endl;
+	return o << RESET;
 }
 
 void	ServerConfig::displayValueServer()
@@ -32,17 +79,20 @@ void	ServerConfig::displayAllLocations()
 
 void	ServerConfig::controlDefaultServerConf()
 {
-	if (_serverName.empty())
-		throw std::invalid_argument("'server_name' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");
 	if (_listenPort.empty())
 		throw std::invalid_argument("'listen' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");
+	if (rootPath.empty())
+		throw std::invalid_argument("'root' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");
 	if (_clientMaxBodySize.empty())
 		throw std::invalid_argument("'client_max_body_size' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");
 	if (_uploadPath.empty())
 		throw std::invalid_argument("'upload_path' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");
-	if (_locationConfig.empty())
-		throw std::invalid_argument("'location' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");
-
+	if (pageErrorPath.empty())
+		pageErrorPath = PATH_ERRPAGE;
+	if (methodAccept.empty())
+		methodAccept = UtilParsing::split(DFLT_METHOD, " ");
+	if (_serverName.empty())
+		_serverName.push_back(DFLT_HOSTNAME);
 }
 
 void	ServerConfig::checkSemiColonServer()
@@ -63,36 +113,5 @@ void	ServerConfig::checkSemiColonServer()
     }
 }
 
-std::ostream & operator<<(std::ostream & o, const ServerConfig &ref)
-{
-	o   << "ServerConfig:" << std::endl
-		<< "_serverName: ";
-	for (std::vector<std::string>::const_iterator it = ref._serverName.begin();
-		it != ref._serverName.end(); it++)
-		o   << *it << " ";
-	o   << std::endl << "_listenPort: ";
-	for (std::vector<std::string>::const_iterator it = ref._listenPort.begin();
-		it != ref._listenPort.end(); it++)
-		o   << *it << " ";
-	o   << std::endl
-		<< "_uploadPath: " << ref._uploadPath << std::endl
-		<< "_clientMaxBodySize: " << ref._clientMaxBodySize << std::endl
-		<< "_locationConfig:" << std::endl;
-	for (std::vector<LocationConfig>::const_iterator it = ref._locationConfig.begin();
-		it != ref._locationConfig.end(); it++)
-		o << *it << std::endl;
-	return o;
-}
 
-ServerConfig & ServerConfig::operator=(const ServerConfig &ref)
-{
-	if (this != &ref)
-	{
-		_clientMaxBodySize = ref._clientMaxBodySize;
-		_uploadPath = ref._uploadPath;
-		UtilParsing::deepCopieVector(_listenPort, ref._listenPort);
-		UtilParsing::deepCopieVector(_locationConfig, ref._locationConfig);
-		UtilParsing::deepCopieVector(_serverName, ref._serverName);
-	}
-	return *this;
-}
+

@@ -42,16 +42,6 @@ Client &Client::operator=(const Client &ref)
 }
 /*----------------------------------------------------------------------------*/
 
-std::ostream & operator<<(std::ostream &o, Client &ref)
-{
-	o	<< "CLIENT:\n"
-		<< ref.clientServer
-		<< ref.request
-		<< ref.response;
-	return o;
-}
-/*----------------------------------------------------------------------------*/
-
 /*============================================================================*/
 						/*### PUBLIC METHODS ###*/
 /*============================================================================*/
@@ -59,17 +49,28 @@ std::ostream & operator<<(std::ostream &o, Client &ref)
 
 /*----------------------------------------------------------------------------*/
 
-void	Client::formatResponse()
-{
+void	Client::responseFormating(int fdClient)
+{   
+    // comment se formatte la reponse client ?
+    // concatener le chemins correctement
+    // verifier que toutes les conditions sont bonnes
+        // dossier et fichiers existants ?
+        // droits des requetes (POST ETC)
+        // est ce qu'il y a des cgi
+
+
+    // gestion requet favico
+    // toujours matter a la racine du site courrant si il en a un 
+    // sinon renvoyer le favico par defaut
 	initMimeMap();
-	std::cout	<< "In formatResponse():" << std::endl
-				<< *this << std::endl
-				<< "mimes:\n";
-	std::map<std::string, std::string>::iterator it = _mimeMap.begin();
-	while (it != _mimeMap.end()) {
-		std::cout << it->first << " : " << it->second << std::endl;
-		it++;
-	}
+	std::cout	 << "IN formatResponse():" << std::endl
+                << "clientFd: [" << fdClient << "]" << std::endl
+                << "clientRequest: " << std::endl
+				<< this->request << std::endl
+                << "clientserver" << std::endl
+                << *this->clientServer << std::endl;
+    if (request.geturi().find("favicon") != std::string::npos)
+        response = "";
 }
 /*----------------------------------------------------------------------------*/
 

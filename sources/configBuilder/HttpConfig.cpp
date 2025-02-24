@@ -4,13 +4,48 @@
 #include "HttpConfig.hpp"
 #include "UtilParsing.hpp"
 
+HttpConfig::HttpConfig(const HttpConfig & ref) {
+	*this = ref;
+}
 
+HttpConfig & HttpConfig::operator=(const HttpConfig & ref)
+{
+	if (this != &ref)
+	{
+		_default_type = ref._default_type;
+		_keepalive_timeout = ref._keepalive_timeout;
+		_worker_connexion = ref._worker_connexion;
+		_include = ref._include;
+		_serversConfig = ref._serversConfig;
+	}
+	return *this;
+}
 
-HttpConfig::HttpConfig(const HttpConfig & ref)
-  : _default_type(ref._default_type), _keepalive_timeout(ref._keepalive_timeout), \
-	_worker_connexion(ref._worker_connexion), _include(ref._include), \
-	_serversConfig(ref._serversConfig)
-{   }
+std::ostream & operator<<(std::ostream & o, const HttpConfig &ref)
+{
+	o   << ITAL CYAN "HttpConfig :" << std::endl
+		<< "_default_type: " << ref._default_type << std::endl
+		<< "_keepalive_timeout: " << ref._keepalive_timeout << std::endl
+		<< "_worker_connexion: " << ref._worker_connexion << std::endl
+		<< "_includes: ";
+	if (ref._include.empty() == false) {
+		for (std::vector<std::string>::const_iterator it = ref._include.begin();
+			it != ref._include.end(); it++)
+			o   << *it << " ";
+	}
+	else
+		o	<< "no include file";
+	o   << std::endl 
+		<< "_serversConfig:" << std::endl;
+	if (ref._serversConfig.empty() == false) {
+		for (std::vector<ServerConfig>::const_iterator it = ref._serversConfig.begin();
+			it != ref._serversConfig.end(); it++)
+			o << *it << std::endl;
+	}
+	else
+		o	<< "no server config" << std::endl;
+	return o << RESET;
+}
 
 std::vector<std::string> HttpConfig::getIncludes() {
 	return (_include);
@@ -44,15 +79,12 @@ void HttpConfig::displayServers() {
 
 void HttpConfig::controlDefaultHttpConf()
 {
-	if (_include.empty())
-		throw std::invalid_argument("'Include' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");
 	if (_default_type.empty())
-		throw std::invalid_argument("'default_type' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");
+		_default_type = DFLT_TYPE;
 	if (_keepalive_timeout.empty())
-		throw std::invalid_argument("'keepalive_timeout' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");
+		_keepalive_timeout = "65";
 	if (_worker_connexion.empty())
-		throw std::invalid_argument("'worker_connexion' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");
-
+		_worker_connexion = "1024";
 	for (size_t i = 0; i <= _serversConfig.size() - 1; i++)
 	{
 		_serversConfig[i].controlDefaultServerConf();
@@ -80,21 +112,4 @@ void HttpConfig::checkSemiColonAllValues()
 		for (std::vector<LocationConfig>::iterator y = _serversConfig[i]._locationConfig.begin(); y != _serversConfig[i]._locationConfig.end(); y++)
 			y->checkSemiColonLocation();
 	}
-}
-
-std::ostream & operator<<(std::ostream & o, const HttpConfig &ref)
-{
-	o   << "_default_type: " << ref._default_type << std::endl
-		<< "_keepalive_timeout: " << ref._keepalive_timeout << std::endl
-		<< "_worker_connexion: " << ref._worker_connexion << std::endl
-		<< "_includes: ";
-	for (std::vector<std::string>::const_iterator it = ref._include.begin();
-		it != ref._include.end(); it++)
-		o   << *it << " ";
-
-	o   << std::endl << "_serversConfig:\n" ;
-	for (std::vector<ServerConfig>::const_iterator it = ref._serversConfig.begin();
-		it != ref._serversConfig.end(); it++)
-		o << *it << std::endl;
-	return o;
 }

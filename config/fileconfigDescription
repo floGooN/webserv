@@ -1,0 +1,41 @@
+# le bloc http definit les parametres globaux de tous les serveurs
+# chaque service est represente par un serveur virtuel
+# chaque serveur virtuel peut avoir un ou plusieurs bloc location
+# les directives precedes par un point d'exclamation doivent etre explicites dans le fichier
+# 
+# les directives avec deux points d'exclamation sont set par defaut dans le code si elles ne sont pas specifiees
+#
+# directives bloc http
+    # !! DEFAULT_TYPE          mime par default (default octet-stream)
+    # !! KEEP-ALIVE-TIMEOUT    temps de connexion par default (default 65 sec)
+    # !! WORKER_CONNEXION      nb d'utilisateur max sur l'ensemble du cluster (default 1024)
+    # INCLUDES                 fichiers inclus
+#
+#
+# directives du bloc server :
+    # ! LISTEN                definit le/les ports d'ecoute
+    # ! ROOT                  definit le dossier root du service
+    # ! CLIENT_MAX_BODY_SIZE  limite taille body pour root path
+    # ! UPLOAD_PATH           chemin pour televerser fichier par default dans le service
+    # !! ERROR_PAGES          chemin vers le dossier error-pages par default (default "./error_pages")
+    # !! METHODS_ACCEPT       methods acceptes par defaut sur le service (default GET POST DELETE)
+    # !! SERVER_NAME          definit les hostname/adresses ip (default localhost)
+    # KEEP-ALIVE-TIMEOUT      redefinit le temps de connexion max pour un service
+    # CGI-PATH                chemmin vers un cgi du service
+#
+#
+# les blocs location permettent de definir des regles specifiques pour un directory
+    # directives uniques au bloc location
+        # ! PATH                path absolue du repository pointe (pour nous absolue signifie depuis la racine du serveur)
+        # !! AUTOINDEX          permet d'activer l'autoindex (par default off)
+        # INDEX                 pointe sur un fichier par default a renvoyer au client pour une URI qui correspond a la directive PATH
+        # REDIRECT              indique le path absolu vers lequel doit etre redirige une requete qui pointe sur la directive PATH
+
+    # redefinition de certaines directives serveur autorisees (sinon ce sera les directives serveur qui seront prise en compte):
+        # ROOT                  redefini un rootPath pour la directive PATH du bloc
+        # CLIENT_MAX_BODY_SIZE  personnaliser la limite body pour une location precise
+        # UPLOAD_PATH           chemin de redirection vers un dossier d'upload pour les requetes qui permettent de televerser
+        # ERROR_PAGES           chemin vers les pages d'erreur personnalisees
+        # METHODS_ACCEPT        pour ne donner que certains acces
+        # KEEP-ALIVE-TIMEOUT    redefinit le temps de connexion max pour une location
+        # CGI-PATH              chemmin vers un cgi player specifique

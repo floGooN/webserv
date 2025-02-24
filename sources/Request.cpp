@@ -44,6 +44,7 @@ Request::Request(const std::string &response)
 : _keepAlive(response.find("keep-alive") == response.npos ? false : true)
 {
 	size_t	idxBodySeparator = response.find(BODY_SEPARATOR);
+	// std::cout << "RESPONSE IN REQ CONSTRUCT: " << response << std::endl;
 	
 	std::vector<std::string>					tokenHeader;
 	std::vector<std::string>::const_iterator	itToken;
@@ -146,8 +147,8 @@ void	Request::clearRequest()
 {
 	this->_body.clear();
 	this->_contentLength = 0;
-	// this->_hostName.clear();
-	// this->_hostPort.clear();
+	this->_hostName.clear();
+	this->_hostPort.clear();
 	this->_keepAlive = false;
 	this->_requestType.clear();
 	this->_uri.clear();

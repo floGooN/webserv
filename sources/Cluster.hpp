@@ -51,6 +51,18 @@ class Cluster
 			const char *	_msg;
 	};
 
+	class	ErrorPageException
+	{
+		public:
+			ErrorPageException(const int errorCode, Server &current)
+			  : _errorCode(errorCode), _server(current)
+			{	}
+
+		private:
+			int		_errorCode;
+			Server	_server;
+	};
+
 	public:
 		Cluster(const std::string &);
 		Cluster(const Cluster &);

@@ -57,8 +57,8 @@ Cluster::Cluster(const std::string &filepath)
 		throw;
 	}
 #ifdef TEST
-	std::cout	<< std::endl << *this
-				<< BOLD BRIGHT_YELLOW "\nINIT TERMINATED\n" RESET
+	std::cout	<< *this
+				<< BOLD BRIGHT_YELLOW "INIT TERMINATED\n" RESET
 				<< std::endl;
 #endif
 }
@@ -82,12 +82,12 @@ Cluster & Cluster::operator=(const Cluster & ) {
 std::ostream	& operator<<(std::ostream & o, const Cluster &ref)
 {
 	o	<< BOLD "CLUSTER:" RESET << std::endl
-		<< "_serversByService:"
-		<< std::endl;
+		<< "includes: ";
+	UtilParsing::displayVector(ref.getConfig()._include);
+	o	<< "_serversByService:\n";
 	for (std::map<std::string, Server >::const_iterator it = ref.getServersByPort().begin();
 		it != ref.getServersByPort().end(); it++)
-			o	<< "port [" + it->first + "] associate with server:" << std::endl
-				<< it->second << std::endl;
+			o	<< it->second << std::endl;
 	return o << RESET;
 }
 /*----------------------------------------------------------------------------*/
@@ -217,10 +217,14 @@ ssize_t	Cluster::safeRecv(const int clientFd, std::string &message)
 	char	buffer[BUFFERSIZE] = {'\0'};
 	ssize_t	bytesReceived = recv(clientFd, buffer, BUFFERSIZE, 0);
 	
-	if (bytesReceived == -1)
-		return -1; // throw error 500 (internal error)
-	if (bytesReceived == 0)
-		return -1; // throw error 499 (client closed connexion)
+	if (bytesReceived == -1) {
+		std::cout << "bytesReceived == -1" << std::endl;
+		throw std::exception(); // throw error 500 (internal error)
+	}
+	if (bytesReceived == 0) {
+		std::cout << "bytesReceived == 0" << std::endl;
+		throw std::exception(); // throw error 499 (client closed connexion)
+	}
 	message.empty() ? message.assign(buffer) : message.append(buffer, bytesReceived);
 	return bytesReceived;
 }
@@ -233,7 +237,7 @@ ssize_t	Cluster::safeRecv(const int clientFd, std::string &message)
 void	Cluster::recvData(const struct epoll_event &event)
 {
 #ifdef TEST
-	std::cout	<< BOLD BRIGHT_PURPLE "\nFunction -> readData() {\n"
+	std::cout	<< BOLD BRIGHT_PURPLE "\nFunction -> recvData() {\n"
 				<< "ClientSocket [" RESET PURPLE << event.data.fd << BOLD BRIGHT_PURPLE "]" RESET
 				<< std::endl;
 #endif
@@ -246,7 +250,7 @@ void	Cluster::recvData(const struct epoll_event &event)
 	{
 		while (bytesReceived == BUFFERSIZE)
 		{
-			bytesReceived = safeRecv(event.data.fd, message);	
+			bytesReceived = safeRecv(event.data.fd, message);
 			if (!currentClient)
 			{
 				currentClient = addClient(Request(message), event.data.fd);
@@ -267,6 +271,7 @@ void	Cluster::recvData(const struct epoll_event &event)
 		}
 	}
 	catch(const std::exception& e) {
+		std::cout << "event : " << event.events << std::endl;
 		std::cerr << e.what() << '\n';
 		return ; // throw 500 (internal server error) / 499 (client closed connexion) / 413 (Request Entity Too Large)
 	}
@@ -274,7 +279,7 @@ void	Cluster::recvData(const struct epoll_event &event)
 	if (currentClient->request.getcontentlength() == currentClient->request.getbody().size())
 	{
 		try {
-			currentClient->formatResponse();
+			currentClient->responseFormating(event.data.fd);
 			changeEventMod(false, event.data.fd);
 		}
 		catch(const RunException& e) {
@@ -285,7 +290,7 @@ void	Cluster::recvData(const struct epoll_event &event)
 	}
 
 #ifdef TEST
-	std::cout << currentClient->request << std::endl;
+	// std::cout << currentClient->request << std::endl;
 #endif
 }
 /*----------------------------------------------------------------------------*/
@@ -304,7 +309,7 @@ void	Cluster::sendData(const struct epoll_event &event)
 
 	char buff[BUFFERSIZE] = {'\0'};
 	memset(buff, '\0', sizeof(buff));
-	int fd = open("./website/form.html", O_RDONLY);
+	int fd = open("./website/devis.com/form.html", O_RDONLY);
 
 	if (fd == -1)
 		perror("OPENTEST");
@@ -324,7 +329,7 @@ void	Cluster::sendData(const struct epoll_event &event)
 	convert << response.length();
 	response.insert(0, "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " + convert.str() + "\r\n\r\n");
 
-	std::cout << "RESPONSE :\n" << response << std::endl;
+	// std::cout << "RESPONSE :\n" << response << std::endl;
 	Client	*client = findClient(event.data.fd);
 	if (!client)
 		std::cerr << RED "NO CLIENT" RESET << std::endl;
@@ -332,7 +337,7 @@ void	Cluster::sendData(const struct epoll_event &event)
 	size_t		bytes_sended = 0;
 	while (bytes_sended != response.size())
 	{
-		std::cout << "IN SENDATA:\n" << *client << std::endl;
+		// std::cout << "IN SENDATA:\n" << *client << std::endl;
 		ssize_t ret = send(event.data.fd, response.c_str(), response.length(), 0);
 		if (ret <= 0) {
 			break;

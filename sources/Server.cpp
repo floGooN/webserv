@@ -17,8 +17,6 @@ Server::Server(ServerConfig & config, const std::string &service)
 	_config = config;
 	_service = service;
 	UtilParsing::convertVectorToSet(_nameList, _config._serverName);
-	if (_nameList.empty() == true)
-		_nameList.insert("localhost");
 	setLocationPath();
 	_clientList.clear();
 	try {
@@ -29,7 +27,8 @@ Server::Server(ServerConfig & config, const std::string &service)
 					<< "Max body size is set by default (1 MB)"
 					<< std::endl;
 		_maxBodySize = 1000000;
-	}	
+	}
+	setErrorPath();
 }
 /*----------------------------------------------------------------------------*/
 
@@ -70,14 +69,10 @@ std::ostream & operator<<(std::ostream & o, const Server &ref)
 	for (std::set<std::string>::const_iterator it = ref.getNameList().begin();
 		it != ref.getNameList().end(); it++)
 			o	<< "[" << *it << "] ";
-	
+
 	o	<< "\n_service: " << ref.getService() ;
-	
-	o	<< "\n_locationPath: ";
-	for (std::set<std::string>::const_iterator it = ref.getLocationPath().begin();
-		it != ref.getLocationPath().end(); it++)
-			o	<< "[" << *it << "] ";
-	return o << RESET << std::endl;
+
+	return o << RESET;
 }
 /*----------------------------------------------------------------------------*/
 
@@ -124,6 +119,17 @@ void	Server::setLocationPath()
 		it != _config._locationConfig.end(); it++) {
 			_locationPath.insert(it->_path);
 		}
+}
+/*----------------------------------------------------------------------------*/
+
+void	Server::setErrorPath()
+{
+	try {
+		_errorPathList.insert(std::make_pair(0, "_config._errorPath"));
+	}
+	catch(const std::exception& e) {
+		std::cerr << e.what() << "\n" __FILE__ " at : " << __LINE__;
+	}
 }
 /*----------------------------------------------------------------------------*/
 

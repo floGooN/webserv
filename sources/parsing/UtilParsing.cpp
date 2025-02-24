@@ -179,7 +179,6 @@ void	UtilParsing::displayVector(std::vector<std::string> vec)
 {
     for (std::vector<std::string>::iterator it = vec.begin(); it != vec.end(); it++)
         std::cout   << "[" << *it << "]" << "\n";
-    std::cout << RESET << std::endl;
 }
 
 std::string	UtilParsing::trim(const std::string& str) 
