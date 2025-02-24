@@ -27,8 +27,9 @@ public:
 	std::string					rootPath;
 	std::string					_clientMaxBodySize;
 	std::string					_uploadPath;
-	std::vector<std::string>	methodAccept;
+	std::string					indexFile;
 	
+	std::vector<std::string>	methodAccept;
 	std::string					pageErrorPath;
 	std::vector<std::string>	_serverName;
 

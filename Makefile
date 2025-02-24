@@ -18,7 +18,7 @@ MKD			= mkdir -p
 VALGRIND	= valgrind --leak-check=full 
 
 #-----------------------# ==== SOURCE CODE DIRECTORIES ==== #------------------#
-INCLUDES	=	./includes ./sources ./sources/configBuilder ./sources/parsing
+INCLUDES	=	./sources/includes ./sources ./sources/configBuilder ./sources/parsing
 SRC_PATH	= sources
 
 #---------------------# ==== TEMPORARY FILES DIRECTORIES ==== #----------------#

@@ -13,6 +13,7 @@ ServerConfig & ServerConfig::operator=(const ServerConfig &ref)
 		rootPath = ref.rootPath;
 		_clientMaxBodySize = ref._clientMaxBodySize;
 		_uploadPath = ref._uploadPath;
+		indexFile = ref.indexFile;
 		pageErrorPath = ref.pageErrorPath;
 		_serverName = ref._serverName;
 		methodAccept = ref.methodAccept;
@@ -34,6 +35,7 @@ std::ostream & operator<<(std::ostream & o, const ServerConfig &ref)
 		<< "rootPath: " << ref.rootPath << std::endl
 		<< "_clientMaxBodySize: " << ref._clientMaxBodySize << std::endl
 		<< "_uploadPath: " << ref._uploadPath << std::endl
+		<< "indexFile: " << ref.indexFile << std::endl
 		<< "methodsAccept: ";
 	for (std::vector<std::string>::const_iterator it = ref.methodAccept.begin();
 		it != ref.methodAccept.end(); it++)
@@ -87,6 +89,8 @@ void	ServerConfig::controlDefaultServerConf()
 		throw std::invalid_argument("'client_max_body_size' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");
 	if (_uploadPath.empty())
 		throw std::invalid_argument("'upload_path' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");
+	if (indexFile.empty())
+		throw std::invalid_argument("'index' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");
 	if (pageErrorPath.empty())
 		pageErrorPath = PATH_ERRPAGE;
 	if (methodAccept.empty())

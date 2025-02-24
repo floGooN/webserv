@@ -75,7 +75,9 @@ void ConfigParser::parseServerBlock(std::ifstream& file, ServerConfig& serverCon
         else if (line.find("client_max_body_size") != std::string::npos) 
             serverConfig._clientMaxBodySize = UtilParsing::recoverValue(line, "client_max_body_size");
         else if (line.find("upload_path") != std::string::npos) 
-        serverConfig._uploadPath = UtilParsing::recoverValue(line, "upload_path");
+            serverConfig._uploadPath = UtilParsing::recoverValue(line, "upload_path");
+        else if (line.find("index") != std::string::npos)
+            serverConfig.indexFile = UtilParsing::recoverValue(line, "index");
         else if (line.find("methods_accept") != std::string::npos)
             serverConfig.methodAccept = UtilParsing::splitSpecialDeleteKey(line, std::string(" "));
         else if (line.find("error_path") != std::string::npos) 

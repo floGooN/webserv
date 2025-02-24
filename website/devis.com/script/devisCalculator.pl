@@ -20,7 +20,7 @@ $value_final += ($delai eq '1 mois') ? 400 : 200;
 $value_final += ($maintenance eq 'oui') ? 200 : 0;
 $value_final += ($SEO eq 'oui') ? 299 : 0;
 
-print "<h1>Le Calcul de votre Devis revient a : </h1>\n"
-print "<h2>$value_final</h2>\n"
+print "<h1>Le Calcul de votre Devis revient a : </h1>\n";
+print "<h2>$value_final</h2>\n";
 
 print "</BODY></HTML>\n";

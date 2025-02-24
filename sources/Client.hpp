@@ -3,7 +3,7 @@
 #ifndef CLIENT_HPP
 # define CLIENT_HPP
 
-# include <webserv.hpp>
+# include "webserv.hpp"
 
 # include "Server.hpp"
 # include "Request.hpp"
@@ -27,10 +27,13 @@ class Client
 	private:
 		Client &operator=(const Client &);
 		
+		void	initMimeMap();
+		void	initHeader();
+		
 		std::string	pathToRessource;
 		static std::map<std::string, std::string>	_mimeMap;
-		
-		void	initMimeMap();
+
+		std::string _header;
 };
 
 #endif
