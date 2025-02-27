@@ -21,8 +21,7 @@
 
 int g_runServer = 0;
 
-void hand(int, siginfo_t *, void *)
-{
+void hand(int, siginfo_t *, void *) {
     g_runServer = 0;
 }
 /*----------------------------------------------------------------------------*/
@@ -82,9 +81,7 @@ Cluster & Cluster::operator=(const Cluster & ) {
 std::ostream	& operator<<(std::ostream & o, const Cluster &ref)
 {
 	o	<< BOLD "CLUSTER:" RESET << std::endl
-		<< "includes: ";
-	UtilParsing::displayVector(ref.getConfig()._include);
-	o	<< "_serversByService:\n";
+		<< "_serversByService:\n";
 	for (std::map<std::string, Server >::const_iterator it = ref.getServersByPort().begin();
 		it != ref.getServersByPort().end(); it++)
 			o	<< it->second << std::endl;
@@ -141,7 +138,7 @@ void	Cluster::runCluster()
 					}
 				}
 				catch(const std::exception& e) {
-					std::cerr << e.what() << std::endl;
+					std::cerr << e.what() << std::endl; // exceptions
 				}
 			}
 		}
@@ -254,7 +251,7 @@ void	Cluster::recvData(const struct epoll_event &event)
 			if (!currentClient)
 			{
 				currentClient = addClient(Request(message), event.data.fd);
-				if (currentClient->request.getcontentlength() > currentClient->clientServer->getBodySize())
+				if (currentClient->request.getcontentlength() > currentClient->clientServer->getMaxBodySize())
 					throw std::exception(); // throw error 413 
 			}
 			else
@@ -266,14 +263,13 @@ void	Cluster::recvData(const struct epoll_event &event)
 			}
 			
 			totalBytesRec += static_cast<size_t>(bytesReceived);
-			if (totalBytesRec > currentClient->clientServer->getBodySize())
+			if (totalBytesRec > currentClient->clientServer->getMaxBodySize() ) // revoir cette condition (comparer avec la taille max autorisee sur le serveur)
 				throw std::exception(); // throw error 413
 		}
 	}
 	catch(const std::exception& e) {
-		std::cout << "event : " << event.events << std::endl;
 		std::cerr << e.what() << '\n';
-		return ; // throw 500 (internal server error) / 499 (client closed connexion) / 413 (Request Entity Too Large)
+		throw ; // throw 500 (internal server error) / 499 (client closed connexion) / 413 (Request Entity Too Large)
 	}
 	
 	if (currentClient->request.getcontentlength() == currentClient->request.getbody().size())
@@ -288,10 +284,6 @@ void	Cluster::recvData(const struct epoll_event &event)
 			throw;
 		}
 	}
-
-#ifdef TEST
-	// std::cout << currentClient->request << std::endl;
-#endif
 }
 /*----------------------------------------------------------------------------*/
 
@@ -309,7 +301,7 @@ void	Cluster::sendData(const struct epoll_event &event)
 
 	char buff[BUFFERSIZE] = {'\0'};
 	memset(buff, '\0', sizeof(buff));
-	int fd = open("./website/devis.com/form.html", O_RDONLY);
+	int fd = open("./website/devis.com/formulaires/form.html", O_RDONLY);
 
 	if (fd == -1)
 		perror("OPENTEST");
@@ -368,13 +360,13 @@ void	Cluster::sendData(const struct epoll_event &event)
 */
 void Cluster::setServersByPort()
 {
-	std::vector<ServerConfig>::iterator	itConfigServer = _config._serversConfig.begin();
+	std::vector<ServerConfig>::iterator	itConfigServer = _config.serversConfig.begin();
 	std::pair<std::map<std::string, Server>::iterator, bool>	result;
 
-	while (itConfigServer != _config._serversConfig.end())
+	while (itConfigServer != _config.serversConfig.end())
 	{
-		std::vector<std::string>::iterator	itServiceList = itConfigServer->_listenPort.begin();
-		while (itServiceList != itConfigServer->_listenPort.end())
+		std::vector<std::string>::iterator	itServiceList = itConfigServer->listenPort.begin();
+		while (itServiceList != itConfigServer->listenPort.end())
 		{
 			result = _serversByService.insert(std::make_pair(*itServiceList, Server(*itConfigServer, *itServiceList)));
 			if (!result.second)
@@ -455,7 +447,7 @@ void	Cluster::setEpollFd()
 
 #ifdef TEST
 	for (std::set<int>::iterator it = _serverSockets.begin(); \
-								it != _serverSockets.end(); it++)
+		it != _serverSockets.end(); it++)
 		std::cout << BLUE "fd [" << *it << "] added in epollFd" << std::endl;
 	std::cout	<< BOLD BLUE "}\n" RESET
 				<< std::endl;
@@ -586,7 +578,7 @@ void	Cluster::addFdInEpoll(const bool isServerSocket, const int fd) const
 		ev.events |= EPOLLET;
 	
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, fd, &ev) == -1)
-		throw RunException(__FILE__, __LINE__ - 1, "Error epoll_ctl() in addFdInEpoll() :");
+		throw RunException(__FILE__, __LINE__ - 1, "Error epoll_ctl() in addFdInEpoll() :"); // throw 500 internal error
 }
 /*----------------------------------------------------------------------------*/
 

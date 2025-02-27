@@ -14,7 +14,8 @@ size_t UtilParsing::safeMultiply(size_t value, size_t factor) {
     return value * factor;
 }
 
-size_t UtilParsing::convertBodySize(const std::string& strBodySize) {
+size_t UtilParsing::convertBodySize(const std::string& strBodySize)
+{
     size_t result;
     size_t idx = strBodySize.find_first_not_of("0123456789");
     
@@ -22,15 +23,12 @@ size_t UtilParsing::convertBodySize(const std::string& strBodySize) {
         throw;
     }
 
-    // Conversion de la partie numérique
     std::stringstream ss(strBodySize.substr(0, idx));
     if (!(ss >> result)) {
         throw std::runtime_error("Error stringstream conversion\n");
     }
 
     char unit = strBodySize[idx];
-
-    // Vérification et conversion en octets
     switch (unit) {
         case 'K': // Kilobytes -> multiplier par 1024
             result = safeMultiply(result, 1024);
@@ -45,7 +43,7 @@ size_t UtilParsing::convertBodySize(const std::string& strBodySize) {
             result = safeMultiply(result, 1024);
             break;
         default:
-            throw std::runtime_error("Unknow unit : " + std::string(1, unit));
+            break;
     }
     return result;
 }
@@ -223,6 +221,7 @@ std::string	UtilParsing::recoverValue(std::string line, std::string key)
     }
     return "";
 }
+
 bool UtilParsing::fileExits(const std::string &filename)
 {
 	std::ifstream file(filename.c_str());

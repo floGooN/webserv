@@ -3,6 +3,16 @@
 #include "LocationConfig.hpp"
 #include "UtilParsing.hpp"
 
+LocationConfig::LocationConfig()
+{
+    path.clear();
+    autoindex.clear();
+    root.clear();
+    index.clear();
+    cgipath.clear();
+    methods.clear();
+}
+
 LocationConfig::LocationConfig(const LocationConfig &ref) {
     *this = ref;
 }
@@ -10,62 +20,51 @@ LocationConfig::LocationConfig(const LocationConfig &ref) {
 std::ostream & operator<<(std::ostream &o, const LocationConfig & ref)
 {
     o   << ITAL GREEN "LocationConfig: " << std::endl
-        << "_path: " << ref._path << std::endl
+        << "path: " << ref.path << std::endl
         << "autoindex: " << ref.autoindex << std::endl
-        << "_root: " << ref._root << std::endl
-        << "_index: " << ref._index << std::endl
-        << "_cgipath: " << ref._cgipath << std::endl
-        << "_methods: ";
-    for (std::vector<std::string>::const_iterator it = ref._methods.begin();
-        it != ref._methods.end(); it++)
+        << "root: " << ref.root << std::endl
+        << "index: " << ref.index << std::endl
+        << "cgipath: " << ref.cgipath << std::endl
+        << "methods: ";
+    for (std::vector<std::string>::const_iterator it = ref.methods.begin();
+        it != ref.methods.end(); it++)
         o << *it << " ";
-    return o << RESET;
+    return o << RESET << std::endl;
 }
 
 LocationConfig & LocationConfig::operator=(const LocationConfig &ref)
 {
     if (this != &ref)
     {
-        _path = ref._path;
+        path = ref.path;
         autoindex = ref.autoindex;
-        _root = ref._root;
-        _index = ref._index;
-        _cgipath = ref._cgipath;
-        _methods = ref._methods;
+        root = ref.root;
+        index = ref.index;
+        cgipath = ref.cgipath;
+        methods = ref.methods;
     }
     return *this;
 }
 
-void	LocationConfig::displayLocation()
-{
-    std::cout   << BOLD BRIGHT_CYAN "LOCATION FIELD:\n"
-                << BRIGHT_CYAN "_path:		" RESET CYAN << _path << std::endl
-                << BRIGHT_CYAN "_root:		" RESET CYAN << _root << std::endl
-                << BRIGHT_CYAN "_index:		" RESET CYAN << _index << std::endl
-                << BRIGHT_CYAN "_methods:	" RESET;
-    UtilParsing::displayVector(_methods);
-}
-
 void	LocationConfig::controlDefaultLocationConf()
 {
-    if (_path.empty())
+    if (path.empty())
         throw std::invalid_argument("'location' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");
-    std::cout << "autoindex in control: [" << autoindex << "]" << std::endl;
     if (autoindex.empty())
         autoindex = "off";
-    if (_root.empty())
-        _root = "none";
+    if (root.empty())
+        root = "none";
 }
 
 void	LocationConfig::checkSemiColonLocation()
 {
-    if (_path.find(";") != std::string::npos)
-        _path = UtilParsing::trimSemicolon(_path);
-    if (_root.find(";") != std::string::npos)
-        _root = UtilParsing::trimSemicolon(_root);
-    if (_index.find(";") != std::string::npos)
-        _index = UtilParsing::trimSemicolon(_index);
-    for (std::vector<std::string>::iterator it = _methods.begin(); it != _methods.end(); it++)
+    if (path.find(";") != std::string::npos)
+        path = UtilParsing::trimSemicolon(path);
+    if (root.find(";") != std::string::npos)
+        root = UtilParsing::trimSemicolon(root);
+    if (index.find(";") != std::string::npos)
+        index = UtilParsing::trimSemicolon(index);
+    for (std::vector<std::string>::iterator it = methods.begin(); it != methods.end(); it++)
     {
         if (it->find(";") != std::string::npos)
             *it = UtilParsing::trimSemicolon(*it);

@@ -14,21 +14,6 @@
 
 class Request
 {
-	// class   RequestException : virtual public std::exception
-	// {
-	// 	public:
-	// 		RequestException(const std::string &msg, int errcode)
-	// 			: _msg(msg), _errcode(errcode)
-	// 		{	}
-	// 		virtual ~RequestException() throw() {}
-	// 		virtual const char *	what() const throw() {
-	// 			return _msg.c_str();
-	// 		};
-	// 	private:
-	// 		int			_errcode;
-	// 		std::string	_msg;
-	// };
-
 	public:
 		Request(const std::string &);
 		Request(const Request &);

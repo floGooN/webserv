@@ -16,15 +16,15 @@ Server::Server(ServerConfig & config, const std::string &service)
 {
 	_config = config;
 	_service = service;
-	UtilParsing::convertVectorToSet(_nameList, _config._serverName);
+	UtilParsing::convertVectorToSet(_nameList, _config.serverName);
 	setLocationPath();
 	_clientList.clear();
 	try {
-		_maxBodySize = UtilParsing::convertBodySize(config._clientMaxBodySize);
+		_maxBodySize = UtilParsing::convertBodySize(config.clientMaxBodySize);
 	}
 	catch(const std::exception& e) {
-		std::cout	<< "Invalid format on max body size: " << config._clientMaxBodySize << std::endl
-					<< "Max body size is set by default (1 MB)"
+		std::cout	<< "Invalid format on max body size: " << config.clientMaxBodySize << std::endl
+					<< "Max body size will be set by default (1 MB)"
 					<< std::endl;
 		_maxBodySize = 1000000;
 	}
@@ -80,7 +80,7 @@ std::ostream & operator<<(std::ostream & o, const Server &ref)
 						/*### PUBLIC METHODS ###*/
 /*============================================================================*/
 
-size_t Server::getBodySize() const {
+size_t Server::getMaxBodySize() const {
 	return _maxBodySize;
 }
 /*----------------------------------------------------------------------------*/
@@ -115,9 +115,9 @@ std::map<int, Client>	&Server::getClientList() const {
 /*============================================================================*/
 void	Server::setLocationPath()
 {
-	for (std::vector<LocationConfig>::const_iterator it = _config._locationConfig.begin();
-		it != _config._locationConfig.end(); it++) {
-			_locationPath.insert(it->_path);
+	for (std::vector<LocationConfig>::const_iterator it = _config.locationConfig.begin();
+		it != _config.locationConfig.end(); it++) {
+			_locationPath.insert(it->path);
 		}
 }
 /*----------------------------------------------------------------------------*/
@@ -132,8 +132,3 @@ void	Server::setErrorPath()
 	}
 }
 /*----------------------------------------------------------------------------*/
-
-
-/*============================================================================*/
-							/*### EXCEPTIONS ###*/
-/*============================================================================*/

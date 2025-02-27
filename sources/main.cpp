@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 
     try {
         Cluster cluster(argc > 1 ? argv[1] : "./config/default.conf");
-        std::cout << cluster.getConfig();
+        // std::cout << cluster.getConfig();
         cluster.runCluster();
     }
     catch(const std::exception& e) {

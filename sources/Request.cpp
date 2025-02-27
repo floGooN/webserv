@@ -213,12 +213,17 @@ void	Request::initHost(std::vector<std::string>::const_iterator &itToken, std::v
 void	Request::initContentLength(const std::string &response)
 {
 	size_t idx = response.find("Content-Length");
-	
+	// std::cout << response << std::endl;
 	if (idx == response.npos) {
 		_contentLength = 0;
 		return ;
 	}
 	idx = response.find_first_of(' ', idx) + 1;
+	if (!response[idx]) {
+		_contentLength = 0;
+		return ;
+	}
+
 	_contentLength = UtilParsing::convertBodySize(response.substr(idx, response.length() - \
 												response.find_first_of(' ', idx)));
 }

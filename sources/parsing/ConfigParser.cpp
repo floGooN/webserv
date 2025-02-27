@@ -3,6 +3,7 @@
 
 #include "ConfigParser.hpp"
 
+
 HttpConfig ConfigParser::parse(const std::string& filepath) 
 {
     HttpConfig httpConfig;
@@ -19,17 +20,23 @@ HttpConfig ConfigParser::parse(const std::string& filepath)
         if (line.find("http") != std::string::npos) 
             parseHttpBlock(file, httpConfig);
     }
+    checkAllBlocks(httpConfig);
+    return httpConfig;
+}
+
+void    ConfigParser::checkAllBlocks(HttpConfig &httpConfig)
+{
     httpConfig.controlDefaultHttpConf();
-    if (httpConfig._serversConfig.empty() == false)
+    if (httpConfig.serversConfig.empty() == false)
     {
-        std::vector<ServerConfig>::iterator itServerConf = httpConfig._serversConfig.begin();
-        while (itServerConf != httpConfig._serversConfig.end())
+        std::vector<ServerConfig>::iterator itServerConf = httpConfig.serversConfig.begin();
+        while (itServerConf != httpConfig.serversConfig.end())
         {
             itServerConf->controlDefaultServerConf();
-            if (itServerConf->_locationConfig.empty() == false)
+            if (itServerConf->locationConfig.empty() == false)
             {
-                std::vector<LocationConfig>::iterator itLoconfig = itServerConf->_locationConfig.begin();
-                while (itLoconfig != itServerConf->_locationConfig.end())
+                std::vector<LocationConfig>::iterator itLoconfig = itServerConf->locationConfig.begin();
+                while (itLoconfig != itServerConf->locationConfig.end())
                 {
                     itLoconfig->controlDefaultLocationConf();
                     itLoconfig++;
@@ -38,7 +45,6 @@ HttpConfig ConfigParser::parse(const std::string& filepath)
             itServerConf++;
         }
     }
-    return httpConfig;
 }
 
 void ConfigParser::parseHttpBlock(std::ifstream& file, HttpConfig& httpConfig) 
@@ -46,19 +52,17 @@ void ConfigParser::parseHttpBlock(std::ifstream& file, HttpConfig& httpConfig)
     std::string line;
     while (std::getline(file, line)) 
     {
-        if (line.find("include") != std::string::npos)
-            httpConfig._include = (UtilParsing::splitSpecialDeleteKey(line, std::string(" ")));
         if (line.find("default_type") != std::string::npos)
-            httpConfig._default_type = UtilParsing::recoverValue(line, "default_type");
+            httpConfig.default_type = UtilParsing::recoverValue(line, "default_type");
         if (line.find("keepalive_timeout") != std::string::npos)
-            httpConfig._keepalive_timeout = UtilParsing::recoverValue(line, "keepalive_timeout");
+            httpConfig.keepalive_timeout = UtilParsing::recoverValue(line, "keepalive_timeout");
         if (line.find("worker_connexion") != std::string::npos)
-            httpConfig._worker_connexion = UtilParsing::recoverValue(line, "worker_connexion");
+            httpConfig.worker_connexion = UtilParsing::recoverValue(line, "worker_connexion");
         if (line.find("server") != std::string::npos) 
         {
             ServerConfig serverConfig;
             parseServerBlock(file, serverConfig);
-            httpConfig._serversConfig.push_back(serverConfig);
+            httpConfig.serversConfig.push_back(serverConfig);
         }
     }
 }
@@ -69,13 +73,13 @@ void ConfigParser::parseServerBlock(std::ifstream& file, ServerConfig& serverCon
     while (std::getline(file, line)) 
     {
         if (line.find("listen") != std::string::npos) 
-            serverConfig._listenPort = (UtilParsing::splitSpecialDeleteKey(UtilParsing::trim(line), std::string(" ")));
+            serverConfig.listenPort = (UtilParsing::splitSpecialDeleteKey(UtilParsing::trim(line), std::string(" ")));
         else if (line.find("root") != std::string::npos)
             serverConfig.rootPath = UtilParsing::recoverValue(line, "root");
         else if (line.find("client_max_body_size") != std::string::npos) 
-            serverConfig._clientMaxBodySize = UtilParsing::recoverValue(line, "client_max_body_size");
+            serverConfig.clientMaxBodySize = UtilParsing::recoverValue(line, "client_max_body_size");
         else if (line.find("upload_path") != std::string::npos) 
-            serverConfig._uploadPath = UtilParsing::recoverValue(line, "upload_path");
+            serverConfig.uploadPath = UtilParsing::recoverValue(line, "upload_path");
         else if (line.find("index") != std::string::npos)
             serverConfig.indexFile = UtilParsing::recoverValue(line, "index");
         else if (line.find("methods_accept") != std::string::npos)
@@ -83,13 +87,13 @@ void ConfigParser::parseServerBlock(std::ifstream& file, ServerConfig& serverCon
         else if (line.find("error_path") != std::string::npos) 
             serverConfig.pageErrorPath = UtilParsing::recoverValue(line, "error_path");
         else if (line.find("server_name") != std::string::npos)
-            serverConfig._serverName = (UtilParsing::splitSpecialDeleteKey(line, std::string(" ")));
+            serverConfig.serverName = (UtilParsing::splitSpecialDeleteKey(line, std::string(" ")));
         else if (line.find("location") != std::string::npos) 
         {
             LocationConfig locationConfig;
-            locationConfig._path = UtilParsing::recoverValue(line, "location");
+            locationConfig.path = UtilParsing::recoverValue(line, "location");
             parseLocationBlock(file, locationConfig);
-            serverConfig._locationConfig.push_back(locationConfig);
+            serverConfig.locationConfig.push_back(locationConfig);
         }
         else if (line.find("}") != std::string::npos)
         {
@@ -108,18 +112,18 @@ void ConfigParser::parseLocationBlock(std::ifstream& file, LocationConfig& locat
         if (line.find("autoindex") != std::string::npos)
             locationConfig.autoindex = UtilParsing::recoverValue(line, "autoindex");
         else if (line.find("root") != std::string::npos) 
-            locationConfig._root = UtilParsing::recoverValue(line, "root");
+            locationConfig.root = UtilParsing::recoverValue(line, "root");
         else if (line.find("index") != std::string::npos) 
-            locationConfig._index = UtilParsing::recoverValue(line, "index");
+            locationConfig.index = UtilParsing::recoverValue(line, "index");
         else if (line.find("cgi_path") != std::string::npos)
-            locationConfig._cgipath = UtilParsing::recoverValue(line, "cgi_path");
+            locationConfig.cgipath = UtilParsing::recoverValue(line, "cgi_path");
         else if (line.find("methods_accept") != std::string::npos)
-            locationConfig._methods = UtilParsing::splitSpecialDeleteKey(line, std::string(" "));
+            locationConfig.methods = UtilParsing::splitSpecialDeleteKey(line, std::string(" "));
         else if (line.find("}") != std::string::npos)
         {
 
-            if (locationConfig._cgipath.empty())
-                locationConfig._cgipath = std::string("none");
+            if (locationConfig.cgipath.empty())
+                locationConfig.cgipath = std::string("none");
             break;
         }  
     }

@@ -20,6 +20,7 @@ private:
     void parseHttpBlock(std::ifstream& file, HttpConfig& httpConfig);
     void parseServerBlock(std::ifstream& file, ServerConfig& serverConfig);
     void parseLocationBlock(std::ifstream& file, LocationConfig& locationConfig);  
+    void checkAllBlocks(HttpConfig &httpConfig);
 };
 
 

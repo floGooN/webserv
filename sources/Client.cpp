@@ -15,7 +15,8 @@ std::map<std::string, std::string> Client::_mimeMap;
 				/*### CONSTRUCTORS - DESTRUCTOR - OVERLOAD OP ###*/
 /*============================================================================*/
 
-Client::Client(const Request &req) {
+Client::Client(const Request &req)
+{
 	request = req;
 	clientServer = NULL;
 	response.clear();
@@ -43,6 +44,15 @@ Client &Client::operator=(const Client &ref)
 }
 /*----------------------------------------------------------------------------*/
 
+std::ostream & operator<<(std::ostream &o, const Client &ref)
+{
+    o   << "CLIENT:" << std::endl
+        << *ref.clientServer << std::endl
+        << "response : " << ref.response;
+    return o;
+}
+/*----------------------------------------------------------------------------*/
+
 /*============================================================================*/
 						/*### PUBLIC METHODS ###*/
 /*============================================================================*/
@@ -54,26 +64,27 @@ Client &Client::operator=(const Client &ref)
 void	Client::responseFormating(int fdClient)
 {   
     // comment se formatte la reponse client ?
+
     // concatener le chemins correctement suivant l'url et le serveur qui recoit la requete
-    // verifier que toutes les conditions sont bonnes
+    // verifier que toutes les conditions soient bonnes
         // dossier et fichiers existants ?
         // droits des requetes (POST ETC)
         // est ce qu'il y a des cgi
 
-    
+    checkUriValidity();
+
     // formatter header http
     // dans un try catch pour formatter le header une fois le serveur trouve
 
     // gestion requet favico
     // toujours matter a la racine du site courrant si il en a un 
     // sinon renvoyer le favico par defaut
+
 	initMimeMap();
-	std::cout	 << "IN formatResponse():" << std::endl
-                << "clientFd: [" << fdClient << "]" << std::endl
-                << "clientRequest: " << std::endl
-				<< this->request << std::endl
-                << "clientserver" << std::endl
-                << *this->clientServer << std::endl;
+	std::cout	<< "IN formatResponse():" << std::endl
+                << *this << std::endl
+                << this->request;
+
     if (request.geturi().find("favicon") != std::string::npos)
         response = "";
 }
@@ -128,90 +139,20 @@ void Client::initMimeMap() {
 						/*### PRIVATE METHODS ###*/
 /*============================================================================*/
 
-void	Client::initHeader()
+void    Client::checkUriValidity()
 {
 
 }
 /*----------------------------------------------------------------------------*/
 
+void	Client::initHeader()
+{
+    std::string uri = request.geturi();
+    if (uri.length() > MAX_URI_SIZE)
+        throw std::runtime_error("uri too long"); // securite anti ddos
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// std::string Client::playCGI()
-// {
-// 	std::string output;
-// 	int pipfd[2];
-// 	if (pipe(pipfd) == -1)
-// 	{
-// 		std::cerr << "Error pipe CGI" << std::endl; // juste pour futur debug
-// 		return "";
-// 	}
-// 	pid_t pid = fork();
-// 	if (pid < 0)
-// 	{
-// 		std::cerr << "fork failled" << std::endl; // juste pour futur debug
-// 		return "";
-// 	}
-// 	else if (pid == 0) 
-// 	{
-// 		std::cerr << "HERE" << std::endl;
-// 		close(pipfd[0]);
-// 		dup2(pipfd[1], STDOUT_FILENO); 
-// 		close(pipfd[1]);
-// 		char* const args[] = {const_cast<char*>(/* _uri.c_str() */"./cgi-bin/script.pl"), NULL};
-// 		if (execv(args[0], args) == -1)  
-// 		{
-// 			std::cerr << "execv failed" << std::endl; // juste pour futur debug
-// 			return "";
-// 		}
-// 	} 
-// 	else 
-// 	{
-// 		std::cerr << "HERE" << std::endl;
-// 		close(pipfd[1]);
-// 		char buffer[128];
-// 		ssize_t bytesRead;
-// 		while ((bytesRead = read(pipfd[0], buffer, sizeof(buffer) - 1)) > 0)
-// 		{
-// 			buffer[bytesRead] = '\0';
-// 			output.append(buffer);
-// 		}
-// 		close(pipfd[0]);
-// 		int status;
-// 		waitpid(pid, &status, 0);
-// 		if (WIFEXITED(status))
-// 			return output;
-// 		else 
-// 		{
-// 			std::cout << "CGI script did not terminate normally" << std::endl;
-// 		}
-// 	}
-// 	return output;
-// }
-// /*----------------------------------------------------------------------------*/
-
-
+}
+/*----------------------------------------------------------------------------*/
 
 // /*============================================================================*/
 // 							/*### EXCEPTIONS ###*/

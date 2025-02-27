@@ -10,33 +10,20 @@
 class ServerConfig 
 {
 public:
-	ServerConfig() {
-		_listenPort.clear();
-		rootPath.clear();
-		_clientMaxBodySize.clear();
-		_uploadPath.clear();
-		methodAccept.clear();
-		pageErrorPath.clear();
-		_serverName.clear();
-		_locationConfig.clear();
-	}
+	ServerConfig();
 	ServerConfig(const ServerConfig &);
 	ServerConfig & operator=(const ServerConfig &ref);
 	
-	std::vector<std::string>	_listenPort;
 	std::string					rootPath;
-	std::string					_clientMaxBodySize;
-	std::string					_uploadPath;
+	std::string					clientMaxBodySize;
+	std::string					uploadPath;
 	std::string					indexFile;
-	
-	std::vector<std::string>	methodAccept;
 	std::string					pageErrorPath;
-	std::vector<std::string>	_serverName;
-
-	std::vector<LocationConfig>	_locationConfig;
-
-	void displayValueServer();
-	void displayAllLocations();
+	std::vector<std::string>	listenPort;
+	std::vector<std::string>	serverName;
+	std::vector<std::string>	methodAccept;
+	std::vector<LocationConfig>	locationConfig;
+	
 	void controlDefaultServerConf();
 	void checkSemiColonServer();
 };

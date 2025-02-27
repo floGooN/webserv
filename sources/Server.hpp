@@ -16,7 +16,7 @@ class Server
 		Server	&operator=(const Server &);
 		bool 	operator<(const Server &other) const;
 
-		size_t				getBodySize() const;
+		size_t				getMaxBodySize() const;
 		const ServerConfig	&getConfig() const;
 		const std::string	&getService() const;
 		std::map<int, Client>		&getClientList() const;

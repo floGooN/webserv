@@ -33,15 +33,13 @@
 /* ---		   DEFAULT VALUES  	   	  --- */
 /* -------------------------------------- */
 
-# define DFLT_TIMEOUT		65
-# define DFLT_WORKCONNEX	1024
+# define DFLT_TIMEOUT		"65"
+# define DFLT_WORKCONNEX	"1024"
 # define DFLT_BACKLOG		20
 # define DFLT_METHOD		"GET POST DELETE"
 # define DFLT_HOSTNAME		"localhost"
 # define DFLT_TYPE			"application/octet-stream"
 
-# ifndef DFLT_LISTENPORT
-	# define DFLT_LISTENPORT	"8000"
-#endif
+# define MAX_URI_SIZE		2048
 
 #endif
