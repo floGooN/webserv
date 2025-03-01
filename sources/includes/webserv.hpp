@@ -39,7 +39,15 @@
 # define DFLT_METHOD		"GET POST DELETE"
 # define DFLT_HOSTNAME		"localhost"
 # define DFLT_TYPE			"application/octet-stream"
-
 # define MAX_URI_SIZE		2048
+
+/* -------------------------------------- */
+/* ---		   OTHER VALUES  	   	  --- */
+/* -------------------------------------- */
+
+# define HTTP_ALLOW_CHARS	"_:.,\\/\"\'?!(){}[]@<>=-+*#$&`|^"\
+							"ABCDEFGHIJKLMNOPQRSTUVWXYZ" \
+							"abcdefghilklmnopqrstuvwxyz" \
+							"0123456789"
 
 #endif

@@ -20,6 +20,7 @@ Client::Client(const Request &req)
 	request = req;
 	clientServer = NULL;
 	response.clear();
+	initMimeMap();
 }
 /*----------------------------------------------------------------------------*/
 
@@ -46,10 +47,10 @@ Client &Client::operator=(const Client &ref)
 
 std::ostream & operator<<(std::ostream &o, const Client &ref)
 {
-    o   << "CLIENT:" << std::endl
-        << *ref.clientServer << std::endl
-        << "response : " << ref.response;
-    return o;
+	o   << "CLIENT:" << std::endl
+		<< *ref.clientServer << std::endl
+		<< "response : " << ref.response;
+	return o;
 }
 /*----------------------------------------------------------------------------*/
 
@@ -59,71 +60,71 @@ std::ostream & operator<<(std::ostream &o, const Client &ref)
 
 
 /*  * Formating header and body for client
-    * 
+	* throw error page
+	* manage herself system exception
 */
 void	Client::responseFormating(int fdClient)
 {   
-    // comment se formatte la reponse client ?
+	// comment se formatte la reponse client ?
 
-    // concatener le chemins correctement suivant l'url et le serveur qui recoit la requete
-    // verifier que toutes les conditions soient bonnes
-        // dossier et fichiers existants ?
-        // droits des requetes (POST ETC)
-        // est ce qu'il y a des cgi
+	// concatener le chemins correctement suivant l'url et le serveur qui recoit la requete
+	// verifier que toutes les conditions soient bonnes
+		// dossier et fichiers existants ?
+		// droits des requetes (POST ETC)
+		// est ce qu'il y a des cgi
+		
+	buildUri(this->request.geturi());
 
-    checkUriValidity();
+	// formatter header http
+	// dans un try catch pour formatter le header une fois le serveur trouve
 
-    // formatter header http
-    // dans un try catch pour formatter le header une fois le serveur trouve
+	// gestion requet favico
+	// toujours matter a la racine du site courrant si il en a un 
+	// sinon renvoyer le favico par defaut
 
-    // gestion requet favico
-    // toujours matter a la racine du site courrant si il en a un 
-    // sinon renvoyer le favico par defaut
-
-	initMimeMap();
 	std::cout	<< "IN formatResponse():" << std::endl
-                << *this << std::endl
-                << this->request;
+				<< *this << std::endl
+				<< this->request;
 
-    if (request.geturi().find("favicon") != std::string::npos)
-        response = "";
+	// if (request.geturi().find("favicon") != std::string::npos)
+	// 	response = "";
 }
 /*----------------------------------------------------------------------------*/
 
 /*	* doit mettre a jour suivant le fichier du serveur
 */
 void Client::initMimeMap() {
-    if (!_mimeMap.empty())
-        return;
+	if (_mimeMap.empty() == false)
+		return;
 
-    _mimeMap.insert(std::make_pair(".aac", "audio/acc"));
-    _mimeMap.insert(std::make_pair(".abw", "application/x-abiword"));
-    _mimeMap.insert(std::make_pair(".apng", "image/apng"));
-    _mimeMap.insert(std::make_pair(".arc", "application/x-freearc"));
-    _mimeMap.insert(std::make_pair(".avif", "image/avif"));
-    _mimeMap.insert(std::make_pair(".avi", "video/x-msvideo"));
-    _mimeMap.insert(std::make_pair(".csh", "application/x-csh"));
-    _mimeMap.insert(std::make_pair(".css", "text/css"));
-    _mimeMap.insert(std::make_pair(".csv", "text/csv"));
-    _mimeMap.insert(std::make_pair(".gif", "image/gif"));
-    _mimeMap.insert(std::make_pair(".html", "text/html"));
-    _mimeMap.insert(std::make_pair(".htm", "text/html"));
-    _mimeMap.insert(std::make_pair(".ico", "image/vnd.microsoft.icon"));
-    _mimeMap.insert(std::make_pair(".jpeg", "image/jpeg"));
-    _mimeMap.insert(std::make_pair(".jpg", "image/jpeg"));
-    _mimeMap.insert(std::make_pair(".js", "text/javascript"));
-    _mimeMap.insert(std::make_pair(".json", "application/json"));
-    _mimeMap.insert(std::make_pair(".jsonld", "application/ld+json"));
-    _mimeMap.insert(std::make_pair(".mjs", "text/javascript"));
-    _mimeMap.insert(std::make_pair(".mp3", "audio/mpeg"));
-    _mimeMap.insert(std::make_pair(".mp4", "video/mp4"));
-    _mimeMap.insert(std::make_pair(".png", "image/png"));
-    _mimeMap.insert(std::make_pair(".pdf", "application/pdf"));
-    _mimeMap.insert(std::make_pair(".php", "application/x-httpd-php"));
-    _mimeMap.insert(std::make_pair(".sh", "application/x-sh"));
-    _mimeMap.insert(std::make_pair(".svg", "image/svg+xml"));
-    _mimeMap.insert(std::make_pair(".tar", "application/x-tar"));
-    _mimeMap.insert(std::make_pair(".txt", "text/plain"));
+	_mimeMap.insert(std::make_pair(".aac", "audio/acc"));
+	_mimeMap.insert(std::make_pair(".abw", "application/x-abiword"));
+	_mimeMap.insert(std::make_pair(".apng", "image/apng"));
+	_mimeMap.insert(std::make_pair(".arc", "application/x-freearc"));
+	_mimeMap.insert(std::make_pair(".avif", "image/avif"));
+	_mimeMap.insert(std::make_pair(".avi", "video/x-msvideo"));
+	_mimeMap.insert(std::make_pair(".csh", "application/x-csh"));
+	_mimeMap.insert(std::make_pair(".css", "text/css"));
+	_mimeMap.insert(std::make_pair(".csv", "text/csv"));
+	_mimeMap.insert(std::make_pair(".gif", "image/gif"));
+	_mimeMap.insert(std::make_pair(".html", "text/html"));
+	_mimeMap.insert(std::make_pair(".htm", "text/html"));
+	_mimeMap.insert(std::make_pair(".ico", "image/vnd.microsoft.icon"));
+	_mimeMap.insert(std::make_pair(".jpeg", "image/jpeg"));
+	_mimeMap.insert(std::make_pair(".jpg", "image/jpeg"));
+	_mimeMap.insert(std::make_pair(".js", "text/javascript"));
+	_mimeMap.insert(std::make_pair(".json", "application/json"));
+	_mimeMap.insert(std::make_pair(".jsonld", "application/ld+json"));
+	_mimeMap.insert(std::make_pair(".mjs", "text/javascript"));
+	_mimeMap.insert(std::make_pair(".mp3", "audio/mpeg"));
+	_mimeMap.insert(std::make_pair(".mp4", "video/mp4"));
+	_mimeMap.insert(std::make_pair(".png", "image/png"));
+	_mimeMap.insert(std::make_pair(".pdf", "application/pdf"));
+	_mimeMap.insert(std::make_pair(".php", "application/x-httpd-php"));
+	_mimeMap.insert(std::make_pair(".sh", "application/x-sh"));
+	_mimeMap.insert(std::make_pair(".svg", "image/svg+xml"));
+	_mimeMap.insert(std::make_pair(".tar", "application/x-tar"));
+	_mimeMap.insert(std::make_pair(".txt", "text/plain"));
     _mimeMap.insert(std::make_pair(".webp", "image/webp"));
     _mimeMap.insert(std::make_pair(".xhtml", "application/xhtml+xml"));
     _mimeMap.insert(std::make_pair(".xml", "application/xml"));
@@ -139,17 +140,34 @@ void Client::initMimeMap() {
 						/*### PRIVATE METHODS ###*/
 /*============================================================================*/
 
-void    Client::checkUriValidity()
+/*  * build final path
+	* security check :
+		-> uri doesn't include ".." ()
+		-> only allow Chars (RFC 3986 section 2.2)
+		-> don't care about uri longest
+*/
+void	Client::buildUri(const std::string &uri)
 {
+#ifdef TEST
+	std::cout << "in builduir(): " << uri << std::endl;
+#endif
+	if (uri.find("..") != uri.npos)
+		throw std::runtime_error("400 bad request\n");
+	if (uri.find_first_not_of(HTTP_ALLOW_CHARS) != uri.npos)
+		throw std::runtime_error("400 bad request\n");
+	
+	std::set<LocationConfig>::iterator itLocation = clientServer->getLocation().begin();
 
-}
-/*----------------------------------------------------------------------------*/
-
-void	Client::initHeader()
-{
-    std::string uri = request.geturi();
-    if (uri.length() > MAX_URI_SIZE)
-        throw std::runtime_error("uri too long"); // securite anti ddos
+	while (itLocation != clientServer->getLocation().end())
+	{
+		if (itLocation->path.compare(uri) == 0)
+		{
+			std::cout	<< *itLocation
+						<< "it : [" << itLocation->path << "]" << std::endl;
+			break;
+		}
+		itLocation++;
+	}
 
 }
 /*----------------------------------------------------------------------------*/

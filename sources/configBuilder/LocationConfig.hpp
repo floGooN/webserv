@@ -9,7 +9,8 @@ class LocationConfig
     public:
         LocationConfig();
         LocationConfig(const LocationConfig &ref);
-        LocationConfig & operator=(const LocationConfig &);
+        LocationConfig  & operator=(const LocationConfig &);
+        bool            operator<(const LocationConfig &) const;
         
         std::string path;
         std::string root;

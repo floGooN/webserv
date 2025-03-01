@@ -16,22 +16,23 @@ class Client
 		Client(const Request &);
 		Client(const Client &);
 		~Client();
-		
-		std::map<std::string, std::string> &getMime();
-		Server		*clientServer;
-		Request		request;
-		std::string response;
-		
-		void	responseFormating(int);
-
-	private:
 		Client &operator=(const Client &);
 		
-		void	initMimeMap();
-		void	checkUriValidity();
-		void	initHeader();
+		Server		*clientServer;
+		Request		request;
 		
-		std::string	pathToRessource;
+		
+		std::string response;
+		
+		void	responseFormating(int); // call in recvData()
+
+	private:
+		void	initMimeMap();
+		
+		void	buildUri(const std::string &);
+		// void	initHeader();
+		
+		// std::string	pathToRessource;
 		static std::map<std::string, std::string>	_mimeMap;
 
 		std::string _header;

@@ -35,27 +35,47 @@
 /*============================================================================*/
 
 /*	* if an error is detected throw an exception with the correct error code
-	* http version
-	* method type
-	* path to ressource
-	* Host error
+	* set keep_alive
+	* get content length
+	* get uri and method
+	* get host
+	* get body (if detected)
 */
 Request::Request(const std::string &response)
-: _keepAlive(response.find("keep-alive") == response.npos ? false : true)
+  : _keepAlive(response.find("keep-alive") == response.npos ? false : true)
 {
 	size_t	idxBodySeparator = response.find(BODY_SEPARATOR);
-	// std::cout << "RESPONSE IN REQ CONSTRUCT: " << response << std::endl;
-	
-	std::vector<std::string>					tokenHeader;
-	std::vector<std::string>::const_iterator	itToken;
-
-	tokenHeader = UtilParsing::split(response.substr(0, idxBodySeparator + 1), "\r\n"); // extract header and split it
-	itToken = tokenHeader.begin();
+	if (!response.size() || idxBodySeparator == response.npos)
+		throw std::runtime_error("400 bad request\n");
 
 	initContentLength(response);
-	initRequestLine(*itToken);
-	initHost(++itToken, tokenHeader.end());
-	setBody(response.substr(idxBodySeparator + 4));
+
+	std::vector<std::string>					tokenHeader;
+	std::vector<std::string>::const_iterator	itToken;
+	try {
+		tokenHeader = UtilParsing::split(response.substr(0, idxBodySeparator), "\r\n"); // split header line by line
+	}
+	catch(const std::exception& e) {
+		std::cerr << e.what() << '\n';
+		throw std::runtime_error("error 500 in constructor request\n");
+	}
+	
+	itToken = tokenHeader.begin();
+	if (itToken != tokenHeader.end())
+	{
+		initRequestLine(*itToken);
+		initHost(++itToken, tokenHeader.end());
+		try {
+			setBody(response.substr(idxBodySeparator + 4));
+		}
+		catch(const std::exception& e)
+		{
+			std::cerr << e.what() << '\n';
+			throw std::runtime_error("error 500 in constructor request\n");
+		}
+	}
+	else
+		throw std::runtime_error("400 bad request\n");
 }
 /*----------------------------------------------------------------------------*/
 
@@ -155,77 +175,100 @@ void	Request::clearRequest()
 }
 /*----------------------------------------------------------------------------*/
 
-
 /*============================================================================*/
 						/*### PRIVATE METHODS ###*/
 /*============================================================================*/
 
 /*	* check validity of the request line (METHOD PATH_TO_RESSOURCE PROTOCOL_VERSION)
+	*
+	* extract the method (GET POST DELETE)
+	* check the HTTP protocole version HTTP/1.1
+	* extract the uri
+	*
 	* throw exception with the correct error code
 */
 void	Request::initRequestLine(const std::string &requestLine)
 {
-	_requestType = requestLine.substr(0, requestLine.find_first_of(" "));
-	//throw exception with error 415 -> Unsupported Media Type : Format de requête non supporté pour une méthode et une ressource données.
-	if (_requestType.empty() == true) {
-		std::cerr << RED "throw exception with error 415 in initRequestLine()" RESET << std::endl;
-		throw std::exception();
+	try {
+		_requestType = requestLine.substr(0, requestLine.find_first_of(" "));
+	}
+	catch(const std::exception& e) {
+		std::cerr << e.what() << '\n';
+		throw std::runtime_error("throw exception with error 500 internal error in initRequestLine()\n");
 	}
 
-	//throw exception with error 400 -> Bad request : protocol non supporte
-	if (requestLine.find(PROTOCOL_VERION) == std::string::npos) {
-		std::cerr << RED "throw exception with error 400 in initRequestLine() : " YELLOW << requestLine << RESET << std::endl;
-		throw std::exception();
-	}
+	if (_requestType.empty() == true || requestLine.find(PROTOCOL_VERION) == std::string::npos)
+		throw std::runtime_error("throw 400 bad req in initRequestLine() unsupported protocol version\n");
 
-	//error maybe impossible
 	size_t	idx = requestLine.find_first_of("/");
-	if (idx == std::string::npos) {
-		std::cerr << RED "\'/\' DOESN'T FIND IN requestLine in function initRequestLine()" RESET << std::endl;
-		throw std::exception();
+	if (idx == std::string::npos)
+		throw std::runtime_error("function initRequestLine() throw 400 bad req");
+	
+	try {
+		_uri = requestLine.substr(idx, requestLine.find_first_of(' ', idx) - idx);
 	}
-	_uri = requestLine.substr(idx, requestLine.find_first_of(' ', idx) - idx);
+	catch(const std::exception& e) {
+		std::cerr << e.what() << '\n';
+		throw std::runtime_error("throw 500 internal error in initRequestLine()");
+	}
 }
 
 /*	* extract the hostname and the host port required by the client
 */
 void	Request::initHost(std::vector<std::string>::const_iterator &itToken, std::vector<std::string>::const_iterator itEnd)
 {
-	while (itToken != itEnd) {
+	while (itToken != itEnd)
+	{
 		if (itToken->find("Host") != itToken->npos)
 			break;
 		itToken++;
 	}
-	if (itToken == itEnd) {
+	if (itToken == itEnd)
+	{
 		std::cerr << RED "NO HOST in initHost()" << std::endl; // manage error
-		return;
-	}
+		throw std::runtime_error("400 Bad request\n");
+	}	
 	
-	_hostName.clear();
-	_hostPort.clear();
-	size_t idxSpace = itToken->find_last_of(" ");
-	size_t idxSemicolon = itToken->find_last_of(":");
-	_hostName = itToken->substr(idxSpace + 1, idxSemicolon - idxSpace - 1);
-	_hostPort = itToken->substr(idxSemicolon + 1, itToken->length() - idxSemicolon);
+	try {
+		size_t idxSpace = itToken->find_last_of(" ");
+		size_t idxSemicolon = itToken->find_last_of(":");
+
+		_hostName = itToken->substr(idxSpace + 1, idxSemicolon - idxSpace - 1);
+		_hostPort = itToken->substr(idxSemicolon + 1, itToken->length() - idxSemicolon);
+	}
+	catch (std::exception &e)
+	{
+		std::cerr << e.what() << std::endl;
+		throw std::runtime_error("500 internal error\n");
+	}
 }
 /*----------------------------------------------------------------------------*/
 
 void	Request::initContentLength(const std::string &response)
 {
 	size_t idx = response.find("Content-Length");
-	// std::cout << response << std::endl;
 	if (idx == response.npos) {
 		_contentLength = 0;
 		return ;
 	}
-	idx = response.find_first_of(' ', idx) + 1;
-	if (!response[idx]) {
+	idx = response.find_first_of("0123456789", idx);
+	if (idx != response.npos && !response[idx]) {
 		_contentLength = 0;
 		return ;
 	}
-
-	_contentLength = UtilParsing::convertBodySize(response.substr(idx, response.length() - \
-												response.find_first_of(' ', idx)));
+	try {
+		_contentLength = UtilParsing::convertBodySize(response.substr(idx, response.length() - \
+													response.find_first_of("0123456789", idx)));
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+		throw std::runtime_error("error 500 initContentLength() request constructor\n");
+	}
+	
+#ifdef TEST
+	std::cout << "Request constructor initContentLength(): " << _contentLength << std::endl;
+#endif
 }
 /*----------------------------------------------------------------------------*/
 

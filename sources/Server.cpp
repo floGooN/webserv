@@ -17,7 +17,7 @@ Server::Server(ServerConfig & config, const std::string &service)
 	_config = config;
 	_service = service;
 	UtilParsing::convertVectorToSet(_nameList, _config.serverName);
-	setLocationPath();
+	setLocation();
 	_clientList.clear();
 	try {
 		_maxBodySize = UtilParsing::convertBodySize(config.clientMaxBodySize);
@@ -37,7 +37,7 @@ Server::Server(const Server &ref)
 	_config = ref._config;
 	_service = ref._service;
 	UtilParsing::deepCopieSet(_nameList, ref._nameList);
-	UtilParsing::deepCopieSet(_locationPath, ref._locationPath);
+	UtilParsing::deepCopieSet(_location, ref._location);
 	_clientList = ref._clientList;
 	_maxBodySize = ref._maxBodySize;
 }
@@ -51,7 +51,7 @@ Server  & Server::operator=(const Server &ref)
 {
 	_service = ref._service;
 	UtilParsing::deepCopieSet(_nameList, ref._nameList);
-	UtilParsing::deepCopieSet(_locationPath, ref._locationPath);
+	UtilParsing::deepCopieSet(_location, ref._location);
 
 	return *this;
 }
@@ -100,8 +100,8 @@ const std::string & Server::getService() const {
 }
 /*----------------------------------------------------------------------------*/
 
-const std::set<std::string>	& Server::getLocationPath() const {
-	return const_cast<std::set<std::string>&>(_locationPath);
+const std::set<LocationConfig>	& Server::getLocation() const {
+	return _location;
 }
 /*----------------------------------------------------------------------------*/
 
@@ -113,11 +113,18 @@ std::map<int, Client>	&Server::getClientList() const {
 /*============================================================================*/
 						/*### PRIVATE METHODS ###*/
 /*============================================================================*/
-void	Server::setLocationPath()
+void	Server::setLocation()
 {
 	for (std::vector<LocationConfig>::const_iterator it = _config.locationConfig.begin();
 		it != _config.locationConfig.end(); it++) {
-			_locationPath.insert(it->path);
+			try {
+				_location.insert(*it);
+			}
+			catch(const std::exception& e)
+			{
+				std::cerr << e.what() << '\n';
+			}
+			
 		}
 }
 /*----------------------------------------------------------------------------*/

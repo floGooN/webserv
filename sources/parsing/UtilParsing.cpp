@@ -29,15 +29,16 @@ size_t UtilParsing::convertBodySize(const std::string& strBodySize)
     }
 
     char unit = strBodySize[idx];
-    switch (unit) {
-        case 'K': // Kilobytes -> multiplier par 1024
+    switch (unit)
+    {
+        case 'K': // Kilobytes -> result * 1024
             result = safeMultiply(result, 1024);
             break;
-        case 'M': // Megabytes -> multiplier par 1024 * 1024
+        case 'M': // Megabytes -> result * 1024 * 1024
             result = safeMultiply(result, 1024);
             result = safeMultiply(result, 1024);
             break;
-        case 'G': // Gigabytes -> multiplier par 1024 * 1024 * 1024
+        case 'G': // Gigabytes -> result * 1024 * 1024 * 1024
             result = safeMultiply(result, 1024);
             result = safeMultiply(result, 1024);
             result = safeMultiply(result, 1024);

@@ -138,7 +138,7 @@ void	Cluster::runCluster()
 					}
 				}
 				catch(const std::exception& e) {
-					std::cerr << e.what() << std::endl; // exceptions
+					std::cerr << e.what() << std::endl; // error page builder exception
 				}
 			}
 		}
@@ -164,26 +164,28 @@ Client * Cluster::addClient(const Request &req, const int fdClient)
 		current = &getServersByPort().at(req.gethostport());
 	}
 	catch(const std::exception& e) {
-		std::cerr << e.what() << RED " Error\nno matching server\n" RESET;
-		return NULL;
+		throw std::runtime_error("addClient(): error 404\n"); // ressource not found
 	}
 
 	try {
 		std::pair<std::map<int, Client>::iterator, bool> it;
+		
 		it = current->getClientList().insert(std::pair<int, Client>(fdClient, Client(req)));
 		it.first->second.clientServer = current;
+		
 		return &it.first->second;
 	}
 	catch(const std::exception& e) {
-		std::cerr << e.what() << RED " Error\nadding client to list\n" RESET;
-		throw;
+		std::cerr << RED " Error\nadding client to list\n" RESET << e.what();
+		throw std::runtime_error("addClient(): error 500\n");
 	}
-	throw;
+	throw std::runtime_error("addClient(): error 500\n");
 }
 /*----------------------------------------------------------------------------*/
 
-/*	* Search for a client and return a pointer to it
-    * If no client is found, return a null pointer  
+/*	* Search for a client and return a pointer to it	
+    * If no client is found, return a null pointer
+	* Don't throw an exception
 */
 Client *	Cluster::findClient(int fdClient)
 {
@@ -214,15 +216,18 @@ ssize_t	Cluster::safeRecv(const int clientFd, std::string &message)
 	char	buffer[BUFFERSIZE] = {'\0'};
 	ssize_t	bytesReceived = recv(clientFd, buffer, BUFFERSIZE, 0);
 	
-	if (bytesReceived == -1) {
-		std::cout << "bytesReceived == -1" << std::endl;
-		throw std::exception(); // throw error 500 (internal error)
+	if (bytesReceived == -1)
+		throw std::runtime_error("safeRecv(): bytesReceived == -1 error 500\n"); // throw error 500 (internal error)
+	if (bytesReceived == 0)
+		throw std::runtime_error("safeRecv(): bytesReceived == 0  error 499\n"); // throw error 499 (client closed connexion)
+	
+	try {
+		message.empty() ? message.assign(buffer) : message.append(buffer, bytesReceived);
 	}
-	if (bytesReceived == 0) {
-		std::cout << "bytesReceived == 0" << std::endl;
-		throw std::exception(); // throw error 499 (client closed connexion)
+	catch(const std::exception& e) {
+		std::cerr << e.what() << '\n';
+		throw std::runtime_error("safeRecv(): error 500\n");
 	}
-	message.empty() ? message.assign(buffer) : message.append(buffer, bytesReceived);
 	return bytesReceived;
 }
 /*----------------------------------------------------------------------------*/
@@ -243,45 +248,45 @@ void	Cluster::recvData(const struct epoll_event &event)
 	size_t		totalBytesRec = 0;
 	std::string	message;
 
-	try
+	while (bytesReceived == BUFFERSIZE)
 	{
-		while (bytesReceived == BUFFERSIZE)
+		bytesReceived = safeRecv(event.data.fd, message);
+		if (!currentClient)
 		{
-			bytesReceived = safeRecv(event.data.fd, message);
-			if (!currentClient)
-			{
-				currentClient = addClient(Request(message), event.data.fd);
-				if (currentClient->request.getcontentlength() > currentClient->clientServer->getMaxBodySize())
-					throw std::exception(); // throw error 413 
+			currentClient = addClient(Request(message), event.data.fd);
+			if (currentClient->request.getcontentlength() > currentClient->clientServer->getMaxBodySize())
+				throw std::runtime_error("recvData(): error 413 Request Entity Too Large\n"); // Request Entity Too Large
+		}
+		else
+		{
+			if (currentClient->request.gettype().empty() == false) {
+				try {
+					currentClient->request.setBody(message);
+				}
+				catch(const std::exception& e) {
+					std::cerr << e.what() << '\n';
+					std::runtime_error("recvData(): error 500\n");
+				}
 			}
 			else
-			{
-				if (currentClient->request.gettype().empty() == false)
-					currentClient->request.setBody(message);
-				else
-					currentClient->request = Request(message);
-			}
-			
-			totalBytesRec += static_cast<size_t>(bytesReceived);
-			if (totalBytesRec > currentClient->clientServer->getMaxBodySize() ) // revoir cette condition (comparer avec la taille max autorisee sur le serveur)
-				throw std::exception(); // throw error 413
+				currentClient->request = Request(message);
 		}
-	}
-	catch(const std::exception& e) {
-		std::cerr << e.what() << '\n';
-		throw ; // throw 500 (internal server error) / 499 (client closed connexion) / 413 (Request Entity Too Large)
+		
+		totalBytesRec += static_cast<size_t>(bytesReceived);
+		if (totalBytesRec > currentClient->clientServer->getMaxBodySize())
+			throw std::runtime_error("recvData(): error 413 Request Entity Too Large\n"); // Request Entity Too Large
 	}
 	
 	if (currentClient->request.getcontentlength() == currentClient->request.getbody().size())
 	{
+		currentClient->responseFormating(event.data.fd);
 		try {
-			currentClient->responseFormating(event.data.fd);
 			changeEventMod(false, event.data.fd);
 		}
 		catch(const RunException& e) {
 			e.runExcept();
 			closeConnexion(event);
-			throw;
+			std::runtime_error("recvData(): error 500\n");
 		}
 	}
 }
@@ -518,29 +523,32 @@ void	Cluster::acceptConnexion(const struct epoll_event &event) const
 	socklen_t		addrSize = sizeof(addr);
 	const int		clientSocket = accept(event.data.fd, &addr, &addrSize);
 
-	if (clientSocket < 0)
-		throw RunException(__FILE__, __LINE__ - 3, "Error accept():");
-
 #ifdef TEST
 	std::cout	<< BOLD BRIGHT_PURPLE "\nFunction -> acceptConnexion()\n"
 				<< "ClientSocket [" RESET PURPLE << clientSocket
 				<< BOLD BRIGHT_PURPLE "]" RESET
 				<< std::endl;
 #endif
-
-   	if (fcntl(clientSocket, F_SETFL, O_NONBLOCK | FD_CLOEXEC) == -1)
-	{
-		if (close(clientSocket) == -1)
-			perror("close() in acceptConnexion()");
-		throw RunException(__FILE__, __LINE__ - 2, "Error fcntl():");
-	}
 	try {
-		addFdInEpoll(false, clientSocket);
+		if (clientSocket < 0)
+			throw RunException(__FILE__, __LINE__ , "Error accept():");
 	}
 	catch(const RunException& e) {
 		e.runExcept();
-		closeConnexion(event);
-		throw;
+		throw std::runtime_error("error 500 in acceptConnexion\n");
+	}
+
+	try {
+		if (fcntl(clientSocket, F_SETFL, O_NONBLOCK | FD_CLOEXEC) == -1)
+			throw RunException(__FILE__, __LINE__, "Error fcntl():");
+		addFdInEpoll(false, clientSocket);
+	}
+	catch(const RunException& e)
+	{
+		if (close(clientSocket) == -1)
+			perror("close() in acceptConnexion()");
+		std::cerr << e.what() << '\n';
+		throw std::runtime_error("error 500 in accept connexion\n");
 	}
 }
 /*----------------------------------------------------------------------------*/
@@ -559,7 +567,7 @@ void	Cluster::closeConnexion(const struct epoll_event &event) const
 	if (epoll_ctl(_epollFd, EPOLL_CTL_DEL, event.data.fd, NULL) == -1)
 		perror("epoll_ctl() in closeConnexion()");
 
-	if (close(event.data.fd) == -1)
+	if (event.data.fd > 0 && close(event.data.fd) == -1)
 		perror("close() in closeConnexion()");
 }
 /*----------------------------------------------------------------------------*/

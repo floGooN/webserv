@@ -19,20 +19,20 @@ class Server
 		size_t				getMaxBodySize() const;
 		const ServerConfig	&getConfig() const;
 		const std::string	&getService() const;
-		std::map<int, Client>		&getClientList() const;
-		const std::set<std::string>	&getNameList() const;
-		const std::set<std::string>	&getLocationPath() const;
+		std::map<int, Client>			&getClientList() const;
+		const std::set<std::string>		&getNameList() const;
+		const std::set<LocationConfig>	&getLocation() const;
 
 	private:
 		ServerConfig	_config;
-		size_t					_maxBodySize;
-		std::string				_service;		//service name(port)
-		std::set<std::string>	_nameList;		//localhost - serverExemple.com - www.serverExemple.fr
-		std::set<std::string>	_locationPath;	//websites handle by the server (/website/site1.com)
-		std::map<int, Client>	_clientList;
+		size_t						_maxBodySize;
+		std::string					_service;		//service name(port)
+		std::set<std::string>		_nameList;		//localhost - serverExemple.com - www.serverExemple.fr
+		std::set<LocationConfig>	_location;		//websites handle by the server (/website/site1.com)
+		std::map<int, Client>		_clientList;
 		
 		std::set<std::pair<int, std::string> >	_errorPathList;
-		void	setLocationPath();
+		void	setLocation();
 		void	setErrorPath();
 
 };
