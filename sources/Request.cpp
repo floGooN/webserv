@@ -37,18 +37,21 @@
 /*	* if an error is detected throw an exception with the correct error code
 	* set keep_alive
 	* get content length
+	* get content type
 	* get uri and method
 	* get host
 	* get body (if detected)
 */
 Request::Request(const std::string &response)
-  : _keepAlive(response.find("keep-alive") == response.npos ? false : true)
+  : totalBytesReceived(0), totalBytessended(0),
+	_keepAlive(response.find("keep-alive") == response.npos ? false : true)
 {
 	size_t	idxBodySeparator = response.find(BODY_SEPARATOR);
 	if (!response.size() || idxBodySeparator == response.npos)
-		throw std::runtime_error("400 bad request\n");
+		throw std::runtime_error("400 bad request empty request\n");
 
 	initContentLength(response);
+	initContentType(response);
 
 	std::vector<std::string>					tokenHeader;
 	std::vector<std::string>::const_iterator	itToken;
@@ -75,7 +78,7 @@ Request::Request(const std::string &response)
 		}
 	}
 	else
-		throw std::runtime_error("400 bad request\n");
+		throw std::runtime_error("surprising 400 bad request\n");
 }
 /*----------------------------------------------------------------------------*/
 
@@ -94,11 +97,14 @@ Request & Request::operator=(const Request &ref)
 	{
 		_keepAlive = ref._keepAlive;
 		_contentLength = ref._contentLength;
+		_contentType = ref._contentType;
 		_uri = ref._uri;
 		_hostName = ref._hostName;
 		_hostPort = ref._hostPort;
 		_requestType = ref._requestType;
 		_body = ref._body;
+		totalBytesReceived = ref.totalBytesReceived;
+		totalBytessended = ref.totalBytessended;
 	}
 	return *this;
 }
@@ -113,6 +119,7 @@ std::ostream & operator<<(std::ostream & o, Request &ref)
 		<< "_hostPort: [" << ref.gethostport() << "]" << std::endl
 		<< "_keepAlive: [" << (ref.getkeepalive() == true ? "true" : "false") << "]" << std::endl
 		<< "_contentLength: [" << ref.getcontentlength() << "]" << std::endl
+		<< "_contentType: [" << (ref.getcontenttype().empty() ? "" : ref.getcontenttype()) << "]" << std::endl
 		<< std::endl
 		<< "BODY :\n" << ref.getbody() << RESET;
 	return o;
@@ -155,6 +162,11 @@ std::string&	Request::getbody() {
 
 size_t	Request::getcontentlength()	const {
 	return _contentLength;
+}
+/*----------------------------------------------------------------------------*/
+
+const std::string	&Request::getcontenttype()	const {
+	return _contentType;
 }
 /*----------------------------------------------------------------------------*/
 
@@ -224,10 +236,7 @@ void	Request::initHost(std::vector<std::string>::const_iterator &itToken, std::v
 		itToken++;
 	}
 	if (itToken == itEnd)
-	{
-		std::cerr << RED "NO HOST in initHost()" << std::endl; // manage error
-		throw std::runtime_error("400 Bad request\n");
-	}	
+		throw std::runtime_error("400 Bad request no host specified\n");
 	
 	try {
 		size_t idxSpace = itToken->find_last_of(" ");
@@ -265,10 +274,43 @@ void	Request::initContentLength(const std::string &response)
 		std::cerr << e.what() << '\n';
 		throw std::runtime_error("error 500 initContentLength() request constructor\n");
 	}
+}
+/*----------------------------------------------------------------------------*/
+
+/*	* 3 types value possible (help for the parsing of arguments)
+	*
+	* application/x-www-form-urlencoded
+		-> Default setting. All characters are encoded before sent
+			.spaces are converted to "+" symbols
+			.special characters are converted to ASCII HEX values (ex: %20 == ASCII ' ' 32)
+	* multipart/form-data
+		-> necessary if the user will upload a file through the form
+			. body is detached from url
+	* text/plain Sends
+		-> data without any encoding at all. Not recommended
 	
-#ifdef TEST
-	std::cout << "Request constructor initContentLength(): " << _contentLength << std::endl;
-#endif
+	for each of them, data is in a specific format in the request
+*/
+void	Request::initContentType(const std::string &response)
+{
+	size_t	idx = response.find("Content-Type");
+	_contentType.clear();
+	if (idx == response.npos)
+		return;
+	if ((idx = response.find_first_of(' ', idx)) == response.npos) {
+		_contentType = DFLT_CONTENT_TYPE;
+		return;
+	}
+
+	try {
+		idx++;
+		_contentType = response.substr(idx, response.find_first_of("\r\n", idx) - idx);
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+		throw std::runtime_error("500 internal error in initContentType in " __FILE__);
+	}
 }
 /*----------------------------------------------------------------------------*/
 

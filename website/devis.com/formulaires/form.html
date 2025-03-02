@@ -61,11 +61,11 @@
     </style>
 </head>
 <body>
-    <form action="devisCalculator.pl" method="POST" enctype="multipart/form-data">
+    <form action="devisCalculator.pl" method="POST" enctype="application/x-www-form-urlencoded"> <!--text/plain--> <!--multipart/form-data-->
         <h1>Demande de devis pour site web</h1>
         <p>Nous vous proposons de calculer le prix de nos services pour la création d'un site web personnalisé.</p>
         
-        <p>Quel est l'objectif principal de votre site web ?</p>
+        <!-- <p>Quel est l'objectif principal de votre site web ?</p>
         <label for="objectif">Objectif :</label> 
         <input type="text" id="objectif" name="objectif" required>
 
@@ -83,7 +83,7 @@
         </label>
         <label>
             <input type="radio" name="rdv" value="non" required> Non
-        </label>
+        </label> -->
 
         <p>Quel est le délai souhaité pour le lancement du site ?</p>
         <label for="delai">Délai :</label>
@@ -93,7 +93,7 @@
             <option value="3 mois">3 mois</option>
             <option value="plus de 3 mois">Plus de 3 mois</option>
         </select>
-
+        <!--
         <p>Souhaitez-vous une maintenance continue après le lancement du site ?</p>
         <label>
             <input type="radio" name="maintenance" value="oui" required> Oui
@@ -109,7 +109,7 @@
         <label>
             <input type="radio" name="SEO" value="non" required> Non
         </label>
-
+        -->
         <input type="submit" value="Soumettre">
     </form>
 </body>

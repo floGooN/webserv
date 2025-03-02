@@ -22,7 +22,12 @@
     # !! METHODS_ACCEPT       methods acceptes par defaut sur le service (default GET POST DELETE)
     # !! SERVER_NAME          definit les hostname/adresses ip (default localhost)
     # KEEP-ALIVE-TIMEOUT      definit le temps de connexion innactive maximum autorisee sur le service
-    # CGI-PATH                chemmin vers un cgi du service
+
+    # * si le service inclus des scripts, ils doivent etre stockes dans un repertoire cgi-bin
+    # * le serveur cherche le repertoire cgi-bin a la racine du service si aucune route n'est redefinit sur le service
+    
+
+
 #
 #
 # les blocs location permettent de definir des regles specifiques pour un directory

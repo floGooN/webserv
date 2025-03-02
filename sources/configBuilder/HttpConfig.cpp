@@ -64,7 +64,7 @@ std::ostream & operator<<(std::ostream & o, const HttpConfig &ref)
 void HttpConfig::controlDefaultHttpConf()
 {
 	if (default_type.empty())
-		default_type = DFLT_TYPE;
+		default_type = DFLT_MIME_TYPE;
 	if (keepalive_timeout.empty())
 		keepalive_timeout = DFLT_TIMEOUT;
 	if (worker_connexion.empty())

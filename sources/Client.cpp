@@ -63,17 +63,31 @@ std::ostream & operator<<(std::ostream &o, const Client &ref)
 	* throw error page
 	* manage herself system exception
 */
-void	Client::responseFormating(int fdClient)
+void	Client::responseFormating(int )
 {   
 	// comment se formatte la reponse client ?
+
+	// extraire chemin + nom fichier
+	// differencier POST GET DELETE 
+	// if POST	-> extraire le content type
+	//				.application/x-www-form-urlencoded
+	//				.multipart/form-data	
+	//				.text/plain	
+	//			-> extraire arguments du body
+
+	// if GET	-> extraire les arguments de la query string
+	// 
 
 	// concatener le chemins correctement suivant l'url et le serveur qui recoit la requete
 	// verifier que toutes les conditions soient bonnes
 		// dossier et fichiers existants ?
 		// droits des requetes (POST ETC)
 		// est ce qu'il y a des cgi
-		
-	buildUri(this->request.geturi());
+	std::cout	<< "IN formatResponse():" << std::endl
+				// << *this << std::endl
+				<< this->request << std::endl;
+	
+	// buildUri(this->request.geturi());
 
 	// formatter header http
 	// dans un try catch pour formatter le header une fois le serveur trouve
@@ -82,9 +96,6 @@ void	Client::responseFormating(int fdClient)
 	// toujours matter a la racine du site courrant si il en a un 
 	// sinon renvoyer le favico par defaut
 
-	std::cout	<< "IN formatResponse():" << std::endl
-				<< *this << std::endl
-				<< this->request;
 
 	// if (request.geturi().find("favicon") != std::string::npos)
 	// 	response = "";
@@ -149,12 +160,14 @@ void Client::initMimeMap() {
 void	Client::buildUri(const std::string &uri)
 {
 #ifdef TEST
-	std::cout << "in builduir(): " << uri << std::endl;
+	std::cout << "in builduir() URI: [" << uri << "]" << std::endl;
 #endif
 	if (uri.find("..") != uri.npos)
-		throw std::runtime_error("400 bad request\n");
-	if (uri.find_first_not_of(HTTP_ALLOW_CHARS) != uri.npos)
-		throw std::runtime_error("400 bad request\n");
+		throw std::runtime_error("400 bad request \'.. detected\'\n");
+	if (uri.find_first_not_of(HTTP_ALLOW_CHARS) != uri.npos) {
+		std::cout << "idx: " << uri.find_first_not_of(HTTP_ALLOW_CHARS) << "cha: [" << uri[uri.find_first_not_of(HTTP_ALLOW_CHARS)] << "]" << std::endl;
+		throw std::runtime_error("400 bad request \'invalid char\'\n");
+	}
 	
 	std::set<LocationConfig>::iterator itLocation = clientServer->getLocation().begin();
 

@@ -222,7 +222,7 @@ ssize_t	Cluster::safeRecv(const int clientFd, std::string &message)
 		throw std::runtime_error("safeRecv(): bytesReceived == 0  error 499\n"); // throw error 499 (client closed connexion)
 	
 	try {
-		message.empty() ? message.assign(buffer) : message.append(buffer, bytesReceived);
+		message.empty() ? message.assign(buffer, bytesReceived) : message.append(buffer, bytesReceived);
 	}
 	catch(const std::exception& e) {
 		std::cerr << e.what() << '\n';
@@ -245,8 +245,7 @@ void	Cluster::recvData(const struct epoll_event &event)
 #endif
 	Client		*currentClient = findClient(event.data.fd);
 	ssize_t		bytesReceived = BUFFERSIZE;
-	size_t		totalBytesRec = 0;
-	std::string	message;
+	std::string	message("\0");
 
 	while (bytesReceived == BUFFERSIZE)
 	{
@@ -272,8 +271,8 @@ void	Cluster::recvData(const struct epoll_event &event)
 				currentClient->request = Request(message);
 		}
 		
-		totalBytesRec += static_cast<size_t>(bytesReceived);
-		if (totalBytesRec > currentClient->clientServer->getMaxBodySize())
+		currentClient->request.totalBytesReceived += static_cast<size_t>(bytesReceived);
+		if (currentClient->request.totalBytesReceived > currentClient->clientServer->getMaxBodySize())
 			throw std::runtime_error("recvData(): error 413 Request Entity Too Large\n"); // Request Entity Too Large
 	}
 	
@@ -306,7 +305,7 @@ void	Cluster::sendData(const struct epoll_event &event)
 
 	char buff[BUFFERSIZE] = {'\0'};
 	memset(buff, '\0', sizeof(buff));
-	int fd = open("./website/devis.com/formulaires/form.html", O_RDONLY);
+	int fd = open("./website/devis.com/formulaires/formUpload.html"/* "./googleIndex.html"*/, O_RDONLY);
 
 	if (fd == -1)
 		perror("OPENTEST");
@@ -331,21 +330,18 @@ void	Cluster::sendData(const struct epoll_event &event)
 	if (!client)
 		std::cerr << RED "NO CLIENT" RESET << std::endl;
 
-	size_t		bytes_sended = 0;
-	while (bytes_sended != response.size())
+	while (client->request.totalBytessended != response.size())
 	{
 		// std::cout << "IN SENDATA:\n" << *client << std::endl;
 		ssize_t ret = send(event.data.fd, response.c_str(), response.length(), 0);
-		if (ret <= 0) {
+		if (ret <= 0)
 			break;
-		}
-		bytes_sended += ret;
+		client->request.totalBytessended += ret;
 	}
 	
-	Request &req = client->request;
-
-	if (req.getkeepalive() == true) {
-		req.clearRequest();
+	if (client->request.getkeepalive() == true && \
+		client->request.totalBytesReceived == client->request.totalBytessended)
+	{
 		try {
 			changeEventMod(true, event.data.fd);
 		}
@@ -355,9 +351,8 @@ void	Cluster::sendData(const struct epoll_event &event)
 			throw;
 		}
 	}
-	else {
+	else if(client->request.totalBytesReceived == client->request.totalBytessended)
 		closeConnexion(event);
-	}
 }
 /*----------------------------------------------------------------------------*/
 
