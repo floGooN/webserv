@@ -8,7 +8,7 @@
 /*============================================================================*/
 
 #include "Client.hpp"
-
+#include <cstring>
 std::map<std::string, std::string> Client::_mimeMap;
 
 /*============================================================================*/
@@ -19,7 +19,7 @@ Client::Client(const Request &req)
 {
 	request = req;
 	clientServer = NULL;
-	response.clear();
+	memset(&response, 0, sizeof(response));
 	initMimeMap();
 }
 /*----------------------------------------------------------------------------*/
@@ -48,8 +48,8 @@ Client &Client::operator=(const Client &ref)
 std::ostream & operator<<(std::ostream &o, const Client &ref)
 {
 	o   << "CLIENT:" << std::endl
-		<< *ref.clientServer << std::endl
-		<< "response : " << ref.response;
+		<< *ref.clientServer << std::endl;
+		// << "response : " << ref.response;
 	return o;
 }
 /*----------------------------------------------------------------------------*/
@@ -58,13 +58,44 @@ std::ostream & operator<<(std::ostream &o, const Client &ref)
 						/*### PUBLIC METHODS ###*/
 /*============================================================================*/
 
+void	Client::handlePostRequest()
+{
+	std::cout	<< BRIGHT_YELLOW "IN POST QUERY\nrequest:" << std::endl
+				<< request << RESET << std::endl;
+
+	
+}
+/*----------------------------------------------------------------------------*/
 
 /*  * Formating header and body for client
 	* throw error page
 	* manage herself system exception
 */
-void	Client::responseFormating(int )
-{   
+void	Client::responseFormating()
+{
+	// std::cout	<< "IN formatResponse():" << std::endl
+	// << *this << std::endl
+	// << this->request << std::endl;
+
+	// soccuper des POST query
+		// TOUT LES PARAMS SONT DANS UN BODY
+	if (request.gettype().compare("POST") == 0)
+	{
+		handlePostRequest();
+	}
+	else if (request.gettype().compare("GET") == 0)
+	{
+		std::cout << BRIGHT_GREEN "GET QUERY" << RESET << std::endl;
+		return;
+	}
+	else if (request.gettype().compare("DELETE") == 0)
+	{
+		std::cout << BRIGHT_CYAN "DELETE QUERY" << RESET << std::endl;
+	}
+	else
+		throw std::runtime_error("error XXX Request not supported");
+
+
 	// comment se formatte la reponse client ?
 
 	// extraire chemin + nom fichier
@@ -83,9 +114,6 @@ void	Client::responseFormating(int )
 		// dossier et fichiers existants ?
 		// droits des requetes (POST ETC)
 		// est ce qu'il y a des cgi
-	std::cout	<< "IN formatResponse():" << std::endl
-				// << *this << std::endl
-				<< this->request << std::endl;
 	
 	// buildUri(this->request.geturi());
 
@@ -184,6 +212,7 @@ void	Client::buildUri(const std::string &uri)
 
 }
 /*----------------------------------------------------------------------------*/
+
 
 // /*============================================================================*/
 // 							/*### EXCEPTIONS ###*/

@@ -272,23 +272,28 @@ void	Cluster::recvData(const struct epoll_event &event)
 		}
 		
 		currentClient->request.totalBytesReceived += static_cast<size_t>(bytesReceived);
-		if (currentClient->request.totalBytesReceived > currentClient->clientServer->getMaxBodySize())
+		if (currentClient->request.getbody().size() > currentClient->clientServer->getMaxBodySize())
 		{
 			std::cout << "recvData() totalBytesReceived = " << currentClient->request.totalBytesReceived << std::endl; // test
+			std::cout << "recvData() body size = " << currentClient->request.getbody().size() << std::endl; // test
 			throw std::runtime_error("recvData(): error 413 Request Entity Too Large\n"); // Request Entity Too Large
 		}
 	}
-	// std::cout	<< "Request:\n" << currentClient->request << std::endl;
-	std::cout	<< "recvData() totalBytesReceived = " << currentClient->request.totalBytesReceived << std::endl
-				// << "recvData() maxBodySize = " << currentClient->clientServer->getMaxBodySize() << std::endl
-				<< "recvData() content length = " << currentClient->request.getcontentlength() << std::endl
-				<< "recvData() body size = " << currentClient->request.getbody().size() << std::endl;
-				// << "recvData() all message =\n" << message << std::endl;
 
-	std::cout	<< "body content:\n" << currentClient->request.getbody() << std::endl;
+	{ // test
+		// std::cout	<< "Request:\n" << currentClient->request << std::endl;
+		// std::cout	<< "recvData() totalBytesReceived = " << currentClient->request.totalBytesReceived << std::endl
+					// << "recvData() maxBodySize = " << currentClient->clientServer->getMaxBodySize() << std::endl
+					// << "recvData() content length = " << currentClient->request.getcontentlength() << std::endl
+					// << "recvData() body size = " << currentClient->request.getbody().size() << std::endl;
+					// << "recvData() all message =\n" << message << std::endl;
+
+		// std::cout	<< BRIGHT_GREEN "Request:\n" << currentClient->request << RESET << std::endl;
+	}	
+	
 	if (currentClient->request.getcontentlength() == currentClient->request.getbody().size())
 	{
-		// currentClient->responseFormating(event.data.fd);
+		currentClient->responseFormating();
 		try {
 			changeEventMod(false, event.data.fd);
 		}
@@ -315,7 +320,7 @@ void	Cluster::sendData(const struct epoll_event &event)
 
 	char buff[BUFFERSIZE] = {'\0'};
 	memset(buff, '\0', sizeof(buff));
-	int fd = open("./website/devis.com/formulaires/formUpload.html"/* "./googleIndex.html"*/, O_RDONLY);
+	int fd = open("./website/devis.com/formulaires/form.html"/* "./googleIndex.html"*/, O_RDONLY);
 
 	if (fd == -1)
 		perror("OPENTEST");

@@ -29,6 +29,7 @@ class Request
 		const std::string	&getbound()			const;
 		const std::string	&gethostport()		const;
 		const std::string	&gethostname()		const;
+		const std::string	&getMetaData()		const;
 		const std::string	&getcontenttype()	const;
 		
 		void	setBody(const std::string &);
@@ -44,9 +45,11 @@ class Request
 		std::string	_hostName;
 		std::string	_hostPort;
 		std::string	_requestType;
+		
 		std::string	_body;
 		std::string	_contentType;
 		std::string	_bound;
+		std::string	_metaData;
 
 
 		void	initRequestLine(const std::string &);
@@ -54,6 +57,7 @@ class Request
 		void	initContentLength(const std::string &);
 		void	initContentType(const std::string &);
 		void	extractBound(const std::string &);
+		size_t	skipMetaData(const std::string &);
 };
 std::ostream & operator<<(std::ostream &, Request &);
 

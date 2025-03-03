@@ -10,6 +10,13 @@
 
 class Server;
 
+struct s_response 
+{
+	/* data */
+};
+
+typedef	struct s_response t_response;
+
 class Client
 {
 	public:
@@ -22,17 +29,18 @@ class Client
 		Request		request;
 		
 		
-		std::string response;
+		// std::string response;
 		
-		void	responseFormating(int); // call in recvData()
+		void	responseFormating(); // call in recvData()
+		t_response	response;
 
 	private:
 		void	initMimeMap();
 		
+		void	handlePostRequest();
+
 		void	buildUri(const std::string &);
-		// void	initHeader();
-		
-		// std::string	pathToRessource;
+
 		static std::map<std::string, std::string>	_mimeMap;
 
 		std::string _header;

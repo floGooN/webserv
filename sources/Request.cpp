@@ -1,6 +1,4 @@
 
-
-
 /*	* les requetes
 	*
 	* ENTETES OBLIGATOIRES
@@ -52,7 +50,7 @@ Request::Request(const std::string &response)
 
 	initContentLength(response);
 	initContentType(response);
-
+	
 	std::vector<std::string>					tokenHeader;
 	std::vector<std::string>::const_iterator	itToken;
 	try {
@@ -68,17 +66,10 @@ Request::Request(const std::string &response)
 	{
 		initRequestLine(*itToken);
 		initHost(++itToken, tokenHeader.end());
-		try {
-			setBody(response.substr(idxBodySeparator + 4));
-		}
-		catch(const std::exception& e)
-		{
-			std::cerr << e.what() << '\n';
-			throw std::runtime_error("error 500 in constructor request\n");
-		}
 	}
 	else
-		throw std::runtime_error("surprising 400 bad request\n");
+	throw std::runtime_error("surprising 400 bad request\n");
+	setBody(response);
 }
 /*----------------------------------------------------------------------------*/
 
@@ -106,6 +97,7 @@ Request & Request::operator=(const Request &ref)
 		totalBytesReceived = ref.totalBytesReceived;
 		totalBytessended = ref.totalBytessended;
 		_bound = ref._bound;
+		_metaData = ref._metaData;
 	}
 	return *this;
 }
@@ -176,46 +168,9 @@ const std::string	&Request::getcontenttype()	const {
 	return _contentType;
 }
 /*----------------------------------------------------------------------------*/
-// ------WebKitFormBoundaryB7cCtwUs5HlQBHoJ
-// ----WebKitFormBoundaryB7cCtwUs5HlQBHoJ
-void	Request::setBody(const std::string &body)
-{
-	if (_body.empty() == true) {
-		std::cout	<< GREEN "BOUND:\n[" << _bound <<  "]" << std::endl
-					<<  "content_type: [" << _contentType << "]" RESET << std::endl;
-		_body = body;
-	}
-	else {
-		// extractBound(body);
-		std::cout << RED "BOUND:\n[" << _bound << "]" RESET << std::endl;
-		size_t idx = body.find(_bound);
-		if (idx == body.npos)
-			throw std::runtime_error("400 bad request in " __FILE__ " bound doesn't found");
-		idx = body.find_first_of("\r\n\r\n", idx);
-		if (idx == body.npos)
-			throw std::runtime_error("400 bad request in " __FILE__ " poorly formatted query");
-		idx += 4;
-		std::cout	<< YELLOW "body: " << body << std::endl
-					<< "bodySize: " << body.size() << std::endl
-					<< "start index: " << idx << RESET << std::endl;
 
-		_body.append(body, idx, body.size() - idx);
-		// std::cout	<< GREEN "APPEND" << std::endl
-		// 			<< "SIZE: " << _body.size() << std::endl 
-		// 			<< RESET << std::endl;
-	}
-
-	// else
-	// {
-	// 	size_t first_idx = body.find_first_of("\r\n");
-	// 	size_t last_idx = body.find_first_of("\r\n", first_idx);
-	// 	std::string result = body.substr(first_idx + 2, last_idx - first_idx);
-	// 	std::cout	<< "in setBody:\n"
-	// 				<< "brut body:\n" << body << std::endl
-	// 				<< "first_idx: " << first_idx << std::endl
-	// 				<< "last_idx: " << last_idx << std::endl
-	// 				<< result;
-	// }
+const std::string	&Request::getMetaData()	const {
+	return _metaData;
 }
 /*----------------------------------------------------------------------------*/
 
@@ -335,8 +290,8 @@ void	Request::initContentLength(const std::string &response)
 	* multipart/form-data
 		-> necessary if the user will upload a file through the form
 			. body is detached from url
-	* text/plain Sends
-		-> data without any encoding at all. Not recommended
+	* text/plain
+		-> Sending data without any encoding at all. Not recommended
 	
 	for each of them, data is in a specific format in the request
 */
@@ -344,6 +299,8 @@ void	Request::initContentType(const std::string &response)
 {
 	size_t	idx = response.find("Content-Type");
 	_contentType.clear();
+	_metaData.clear();
+	_bound.clear();
 	if (idx == response.npos)
 		return;
 	if ((idx = response.find_first_of(' ', idx)) == response.npos) {
@@ -360,42 +317,57 @@ void	Request::initContentType(const std::string &response)
 		std::cerr << e.what() << '\n';
 		throw std::runtime_error("500 internal error in initContentType in " __FILE__);
 	}
-	extractBound(_contentType);
-	// if (_contentType.find("multipart/form-data") != _contentType.npos)
-	// {
-	// 	size_t idx = _contentType.find("boundary=");
-	// 	if (idx == _contentType.npos)
-	// 		throw std::runtime_error("400 bad request in " __FILE__ " no body separator found");
-	// 	try {
-	// 		idx += 9;
-	// 		_bound = _contentType.substr(idx, _contentType.length() - idx);
-	// 	}
-	// 	catch(const std::exception& e)
-	// 	{
-	// 		std::cerr << e.what() << '\n';
-	// 		throw std::runtime_error("500 internal error in " __FILE__ " no boundary");
-	// 	}
-	// }
+}
+/*----------------------------------------------------------------------------*/
+
+size_t	Request::skipMetaData(const std::string &body)
+{
+	try
+	{
+		size_t	idx = _bound.empty() ? 0 : body.find(_bound);
+
+		idx == 0 ? idx = body.find("\r\n\r\n") : idx = body.find("\r\n\r\n", idx);
+		if (idx == body.npos)
+			throw std::runtime_error("Error 400 bad request format in skipMetaData() in " __FILE__);
+		return idx + 4;
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+		throw std::runtime_error("internal error 500 in " __FILE__);
+	}
+	return body.npos;
+}
+/*----------------------------------------------------------------------------*/
+
+void	Request::setBody(const std::string &body)
+{
+	if (this->_requestType.compare("GET") == 0)
+		return;
+
+	if (_contentType.find("multipart/form-data") != _contentType.npos)
+		extractBound(body);
+	size_t idx = skipMetaData(body);
+	if (idx == body.npos)
+		throw std::runtime_error("400 bad request in " __FILE__ " bound doesn't found");
+	
+	_body = body.substr(idx, body.size() - idx);
 }
 /*----------------------------------------------------------------------------*/
 
 void	Request::extractBound(const std::string &contentType)
 {
-	if (contentType.find("multipart/form-data") != contentType.npos)
+	size_t idx = contentType.find("boundary=", contentType.find("multipart/form-data"));
+	if (idx == contentType.npos)
+		throw std::runtime_error("400 bad request in " __FILE__ " no body separator found");
+	try {
+		idx += 9;
+		_bound = contentType.substr(idx, contentType.find("\r\n", idx) - idx);
+	}
+	catch(const std::exception& e)
 	{
-		size_t idx = contentType.find("boundary=", contentType.find("multipart/form-data"));
-		if (idx == contentType.npos)
-			throw std::runtime_error("400 bad request in " __FILE__ " no body separator found");
-		try {
-			idx += 9;
-			_bound = contentType.substr(idx, contentType.length() - idx);
-			_bound.insert(_bound.begin(), 2, '-');
-		}
-		catch(const std::exception& e)
-		{
-			std::cerr << e.what() << '\n';
-			throw std::runtime_error("500 internal error in " __FILE__ " no boundary");
-		}
+		std::cerr << e.what() << '\n';
+		throw std::runtime_error("500 internal error in " __FILE__);
 	}
 }
 /*----------------------------------------------------------------------------*/
