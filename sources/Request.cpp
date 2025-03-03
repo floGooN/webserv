@@ -105,6 +105,7 @@ Request & Request::operator=(const Request &ref)
 		_body = ref._body;
 		totalBytesReceived = ref.totalBytesReceived;
 		totalBytessended = ref.totalBytessended;
+		_bound = ref._bound;
 	}
 	return *this;
 }
@@ -120,6 +121,7 @@ std::ostream & operator<<(std::ostream & o, Request &ref)
 		<< "_keepAlive: [" << (ref.getkeepalive() == true ? "true" : "false") << "]" << std::endl
 		<< "_contentLength: [" << ref.getcontentlength() << "]" << std::endl
 		<< "_contentType: [" << (ref.getcontenttype().empty() ? "" : ref.getcontenttype()) << "]" << std::endl
+		<< "_bound: [" << ref.getbound() << "]" << std::endl
 		<< std::endl
 		<< "BODY :\n" << ref.getbody() << RESET;
 	return o;
@@ -160,6 +162,11 @@ std::string&	Request::getbody() {
 }
 /*----------------------------------------------------------------------------*/
 
+const std::string&	Request::getbound() const {
+	return _bound;
+}
+/*----------------------------------------------------------------------------*/
+
 size_t	Request::getcontentlength()	const {
 	return _contentLength;
 }
@@ -169,21 +176,63 @@ const std::string	&Request::getcontenttype()	const {
 	return _contentType;
 }
 /*----------------------------------------------------------------------------*/
+// ------WebKitFormBoundaryB7cCtwUs5HlQBHoJ
+// ----WebKitFormBoundaryB7cCtwUs5HlQBHoJ
+void	Request::setBody(const std::string &body)
+{
+	if (_body.empty() == true) {
+		std::cout	<< GREEN "BOUND:\n[" << _bound <<  "]" << std::endl
+					<<  "content_type: [" << _contentType << "]" RESET << std::endl;
+		_body = body;
+	}
+	else {
+		// extractBound(body);
+		std::cout << RED "BOUND:\n[" << _bound << "]" RESET << std::endl;
+		size_t idx = body.find(_bound);
+		if (idx == body.npos)
+			throw std::runtime_error("400 bad request in " __FILE__ " bound doesn't found");
+		idx = body.find_first_of("\r\n\r\n", idx);
+		if (idx == body.npos)
+			throw std::runtime_error("400 bad request in " __FILE__ " poorly formatted query");
+		idx += 4;
+		std::cout	<< YELLOW "body: " << body << std::endl
+					<< "bodySize: " << body.size() << std::endl
+					<< "start index: " << idx << RESET << std::endl;
 
-void	Request::setBody(const std::string &body) {
-	_body.empty() ? _body = body : _body.append(body);
+		_body.append(body, idx, body.size() - idx);
+		// std::cout	<< GREEN "APPEND" << std::endl
+		// 			<< "SIZE: " << _body.size() << std::endl 
+		// 			<< RESET << std::endl;
+	}
+
+	// else
+	// {
+	// 	size_t first_idx = body.find_first_of("\r\n");
+	// 	size_t last_idx = body.find_first_of("\r\n", first_idx);
+	// 	std::string result = body.substr(first_idx + 2, last_idx - first_idx);
+	// 	std::cout	<< "in setBody:\n"
+	// 				<< "brut body:\n" << body << std::endl
+	// 				<< "first_idx: " << first_idx << std::endl
+	// 				<< "last_idx: " << last_idx << std::endl
+	// 				<< result;
+	// }
 }
 /*----------------------------------------------------------------------------*/
 
 void	Request::clearRequest()
 {
-	this->_body.clear();
-	this->_contentLength = 0;
-	this->_hostName.clear();
-	this->_hostPort.clear();
-	this->_keepAlive = false;
-	this->_requestType.clear();
-	this->_uri.clear();
+	totalBytesReceived = 0;
+	totalBytessended = 0;
+
+	_keepAlive = false;
+	_contentLength = 0;
+	_uri.clear();
+	_hostName.clear();
+	_hostPort.clear();
+	_requestType.clear();
+	_body.clear();
+	_contentType.clear();
+	_bound.clear();	
 }
 /*----------------------------------------------------------------------------*/
 
@@ -310,6 +359,43 @@ void	Request::initContentType(const std::string &response)
 	{
 		std::cerr << e.what() << '\n';
 		throw std::runtime_error("500 internal error in initContentType in " __FILE__);
+	}
+	extractBound(_contentType);
+	// if (_contentType.find("multipart/form-data") != _contentType.npos)
+	// {
+	// 	size_t idx = _contentType.find("boundary=");
+	// 	if (idx == _contentType.npos)
+	// 		throw std::runtime_error("400 bad request in " __FILE__ " no body separator found");
+	// 	try {
+	// 		idx += 9;
+	// 		_bound = _contentType.substr(idx, _contentType.length() - idx);
+	// 	}
+	// 	catch(const std::exception& e)
+	// 	{
+	// 		std::cerr << e.what() << '\n';
+	// 		throw std::runtime_error("500 internal error in " __FILE__ " no boundary");
+	// 	}
+	// }
+}
+/*----------------------------------------------------------------------------*/
+
+void	Request::extractBound(const std::string &contentType)
+{
+	if (contentType.find("multipart/form-data") != contentType.npos)
+	{
+		size_t idx = contentType.find("boundary=", contentType.find("multipart/form-data"));
+		if (idx == contentType.npos)
+			throw std::runtime_error("400 bad request in " __FILE__ " no body separator found");
+		try {
+			idx += 9;
+			_bound = contentType.substr(idx, contentType.length() - idx);
+			_bound.insert(_bound.begin(), 2, '-');
+		}
+		catch(const std::exception& e)
+		{
+			std::cerr << e.what() << '\n';
+			throw std::runtime_error("500 internal error in " __FILE__ " no boundary");
+		}
 	}
 }
 /*----------------------------------------------------------------------------*/

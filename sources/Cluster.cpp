@@ -273,12 +273,22 @@ void	Cluster::recvData(const struct epoll_event &event)
 		
 		currentClient->request.totalBytesReceived += static_cast<size_t>(bytesReceived);
 		if (currentClient->request.totalBytesReceived > currentClient->clientServer->getMaxBodySize())
+		{
+			std::cout << "recvData() totalBytesReceived = " << currentClient->request.totalBytesReceived << std::endl; // test
 			throw std::runtime_error("recvData(): error 413 Request Entity Too Large\n"); // Request Entity Too Large
+		}
 	}
-	
+	// std::cout	<< "Request:\n" << currentClient->request << std::endl;
+	std::cout	<< "recvData() totalBytesReceived = " << currentClient->request.totalBytesReceived << std::endl
+				// << "recvData() maxBodySize = " << currentClient->clientServer->getMaxBodySize() << std::endl
+				<< "recvData() content length = " << currentClient->request.getcontentlength() << std::endl
+				<< "recvData() body size = " << currentClient->request.getbody().size() << std::endl;
+				// << "recvData() all message =\n" << message << std::endl;
+
+	std::cout	<< "body content:\n" << currentClient->request.getbody() << std::endl;
 	if (currentClient->request.getcontentlength() == currentClient->request.getbody().size())
 	{
-		currentClient->responseFormating(event.data.fd);
+		// currentClient->responseFormating(event.data.fd);
 		try {
 			changeEventMod(false, event.data.fd);
 		}
@@ -339,9 +349,12 @@ void	Cluster::sendData(const struct epoll_event &event)
 		client->request.totalBytessended += ret;
 	}
 	
+	std::cout	<< "TOTAL BYTE SENDED: [" << client->request.totalBytessended << "]" << std::endl
+				<< "TOTAL RESPONSE SIZE: [" << response.size() << "]" << std::endl;
 	if (client->request.getkeepalive() == true && \
-		client->request.totalBytesReceived == client->request.totalBytessended)
+		response.size() == client->request.totalBytessended)
 	{
+		client->request.clearRequest();
 		try {
 			changeEventMod(true, event.data.fd);
 		}
@@ -351,7 +364,7 @@ void	Cluster::sendData(const struct epoll_event &event)
 			throw;
 		}
 	}
-	else if(client->request.totalBytesReceived == client->request.totalBytessended)
+	else if(client->request.totalBytesReceived >= client->request.getcontentlength())
 		closeConnexion(event);
 }
 /*----------------------------------------------------------------------------*/
