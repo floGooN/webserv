@@ -41,7 +41,7 @@
 	* get body (if detected)
 */
 Request::Request(const std::string &response)
-  : totalBytesReceived(0), totalBytessended(0),
+  : totalBytessended(0),
 	_keepAlive(response.find("keep-alive") == response.npos ? false : true)
 {
 	size_t	idxBodySeparator = response.find(BODY_SEPARATOR);
@@ -68,7 +68,8 @@ Request::Request(const std::string &response)
 		initHost(++itToken, tokenHeader.end());
 	}
 	else
-	throw std::runtime_error("surprising 400 bad request\n");
+		throw std::runtime_error("surprising 400 bad request\n");
+	_body.clear();
 	setBody(response, response.size());
 }
 /*----------------------------------------------------------------------------*/
@@ -94,7 +95,6 @@ Request & Request::operator=(const Request &ref)
 		_hostPort = ref._hostPort;
 		_requestType = ref._requestType;
 		_body = ref._body;
-		totalBytesReceived = ref.totalBytesReceived;
 		totalBytessended = ref.totalBytessended;
 		_bound = ref._bound;
 	}
@@ -175,7 +175,6 @@ const std::string	&Request::getcontenttype()	const {
 
 void	Request::clearRequest()
 {
-	totalBytesReceived = 0;
 	totalBytessended = 0;
 
 	_keepAlive = false;
@@ -322,8 +321,6 @@ void	Request::initContentType(const std::string &response)
 }
 /*----------------------------------------------------------------------------*/
 
-#include <stdlib.h>
-
 size_t	Request::skipHeader(const std::string &body)
 {
 	size_t	idx = body.find(_bound);
@@ -331,18 +328,13 @@ size_t	Request::skipHeader(const std::string &body)
 		idx = body.find(BODY_SEPARATOR);
 	else
 		idx = body.find(BODY_SEPARATOR, idx);
-	if (idx == body.npos) {
-		// std::cout << body << std::endl;
-		// exit(130);
-		// throw std::runtime_error("Error 400 bad request format in skipHeader() in " __FILE__);
+	if (idx == body.npos)
 		return 0;
-	}
-
 	return idx + 4;
 }
 /*----------------------------------------------------------------------------*/
 
-void	Request::setBody(const std::string &body, ssize_t bodySize)
+void	Request::setBody(const std::string &body, ssize_t)
 {
 	if (_requestType.compare("GET") == 0)
 		return;
@@ -351,10 +343,14 @@ void	Request::setBody(const std::string &body, ssize_t bodySize)
 		extractBound(body);
 
 	size_t idx = skipHeader(body);
-	if (!idx)
-		_body.append(body);
-	else
-		_body = body.substr(idx, body.size() - idx);
+	try {
+		_body += body.substr(idx, body.size() - idx);
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+		throw std::runtime_error("Error 500 setBody() in " __FILE__);
+	}
 }
 /*----------------------------------------------------------------------------*/
 
@@ -375,17 +371,6 @@ void	Request::extractBound(const std::string &contentType)
 		std::cerr << e.what() << '\n';
 		throw std::runtime_error("500 internal error in " __FILE__);
 	}
-}
-/*----------------------------------------------------------------------------*/
-
-/*	*
-	*
-	* 
-*/
-void	Request::checkRequestValidity()
-{
-	std::cout	<< this->_body.size() << std::endl
-				<< this->_contentLength << std::endl;
 }
 /*----------------------------------------------------------------------------*/
 

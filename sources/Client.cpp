@@ -62,11 +62,111 @@ std::ostream & operator<<(std::ostream &o, const Client &ref)
 						/*### PRIVATE METHODS ###*/
 /*============================================================================*/
 
+/*	* extract path in URI ommitted arguments
+*/
+std::string	Client::extractPath(const std::string &uri) const
+{
+	try {
+		size_t idx = uri.find_first_of("?");
+		if (idx == uri.npos)
+			return uri.substr(0, uri.size());
+		else
+			return uri.substr(0, idx);
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+		throw std::runtime_error("500 Internal error in " __FILE__);
+	}
+}
+/*----------------------------------------------------------------------------*/
+
+const LocationConfig *	Client::buildCompleteUri(std::string &QueryPart) const
+{
+	std::set<LocationConfig>::iterator itLocation = clientServer->getLocation().begin();
+	while (itLocation != clientServer->getLocation().end())
+	{
+		if (itLocation->path.compare(QueryPart) == 0)
+			break ;
+		itLocation++;
+	}
+
+	std::string	RootPart;
+	if (itLocation != clientServer->getLocation().end() && ! itLocation->root.empty())
+		RootPart = itLocation->root;
+	else
+		RootPart = this->clientServer->getConfig().rootPath;
+
+	try {
+		QueryPart = RootPart + QueryPart;
+		if (itLocation == clientServer->getLocation().end())
+			return NULL;
+		return &(*itLocation) ;
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+		throw std::runtime_error("internal error buildCompleteUri() in " __FILE__);
+	}
+}
+/*----------------------------------------------------------------------------*/
+
+void	Client::checkMethodAuthor(const LocationConfig *current) const
+{
+	std::vector<std::string>::const_iterator itEnd;
+	std::vector<std::string>::const_iterator itStart;
+
+	if (current != NULL && ! current->methods.empty()) {
+		itStart = current->methods.begin();
+		itEnd = current->methods.end();
+	}
+	else {
+		itStart = clientServer->getConfig().methodAccept.begin();
+		itEnd = clientServer->getConfig().methodAccept.end();
+	}
+
+	while (itStart != itEnd)
+	{
+		if (itStart->compare(request.gettype()) == 0)
+			break;
+		itStart++;
+	}
+	if (itStart == itEnd)
+		throw std::runtime_error("Error 405 Method Not Allowed checkMethodAuthor() in " __FILE__);
+}
+/*----------------------------------------------------------------------------*/
+
+/*	*
+	* 
+*/
+void	Client::checkRequestValidity()
+{
+	// ne pas parser les arguments dans l'uri
+	//
+	// doit verifier si les paths sont valides
+	//
+	
+	// extrait uniquement le chemin de la requete :
+	std::string	URI_Query = extractPath(request.geturi());
+	
+	// concatener le root et le new uri
+	// retourne un pointeur sur une location qui match ou null
+	const LocationConfig *currentLocation = buildCompleteUri(URI_Query);
+	
+	// doit verifier que la methode est acceptee dans le scop (location - serveur)
+	checkMethodAuthor(currentLocation);
+
+
+	std::cout	<< "checkRequestValidity()\n"
+				<< this->request << std::endl
+				<< "newURI: [" << URI_Query << "]" << std::endl;
+}
+/*----------------------------------------------------------------------------*/
+
 void	Client::clearData()
 {
-	// memset(&request, 0, sizeof(request));
 	request.clearRequest();
-	memset(&response, 0, sizeof(response));
+	response.clearResponse();
 }
 /*----------------------------------------------------------------------------*/
 

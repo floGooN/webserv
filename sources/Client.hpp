@@ -10,6 +10,7 @@
 # include "Response.hpp"
 
 class Server;
+class LocationConfig;
 
 class Client
 {
@@ -24,8 +25,13 @@ class Client
 		Response	response;
 
 		void	clearData();
+		void	checkRequestValidity();
 		
 	private:
+		void			checkMethodAuthor(const LocationConfig *current)	const;
+		std::string		extractPath(const std::string &)		 			const;
+		const LocationConfig *	buildCompleteUri(std::string &uriFromQuery) const;
+
 		void	initMimeMap();
 		static std::map<std::string, std::string>	_mimeMap;
 };

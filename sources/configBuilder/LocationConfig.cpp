@@ -54,10 +54,6 @@ void	LocationConfig::controlDefaultLocationConf()
 {
 	if (path.empty())
 		throw std::invalid_argument("'location' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");
-	if (autoindex.empty())
-		autoindex = "off";
-	if (root.empty())
-		root = "none";
 }
 
 void	LocationConfig::checkSemiColonLocation()

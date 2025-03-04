@@ -20,6 +20,7 @@ class Response
 		Response &operator=(const Response &);
 		
 		void	buildResponse(const Request &);
+		void	clearResponse();
 
 	private:
 		void	getRequest(const Request &);

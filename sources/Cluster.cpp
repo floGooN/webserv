@@ -223,7 +223,9 @@ ssize_t	Cluster::safeRecv(const int clientFd, std::string &message)
 		throw std::runtime_error("safeRecv(): bytesReceived == 0  error 499\n"); // throw error 499 (client closed connexion)
 	
 	try {
-		message.empty() ? message.assign(buffer, bytesReceived) : message.append(buffer, bytesReceived);
+		message.clear();
+		message.assign(buffer, bytesReceived);
+		// message.empty() ? message.assign(buffer, bytesReceived) : message.append(buffer, bytesReceived);
 	}
 	catch(const std::exception& e) {
 		std::cerr << e.what() << '\n';
@@ -237,6 +239,9 @@ ssize_t	Cluster::safeRecv(const int clientFd, std::string &message)
     * The while loop receives data  
     * If it's a new client, create one; if it already exists, update its request  
 */
+
+#include <stdlib.h>
+
 void	Cluster::recvData(const struct epoll_event &event)
 {
 #ifdef TEST
@@ -254,13 +259,11 @@ void	Cluster::recvData(const struct epoll_event &event)
 		if (!currentClient)
 		{
 			currentClient = addClient(Request(message), event.data.fd);
-			std::cout << "contentlength: " << currentClient->request.getcontentlength() << std::endl;
-			std::cout << "maxBodySize: " << currentClient->clientServer->getMaxBodySize() << std::endl;
-			if (currentClient->request.getcontentlength() > currentClient->clientServer->getMaxBodySize())
+			if (currentClient->request.getcontentlength() > \
+				currentClient->clientServer->getMaxBodySize())
 				throw std::runtime_error("recvData(): error 413 Request Entity Too Large\n");
 		}
-		else
-		{
+		else {
 			if (currentClient->request.gettype().empty() == false) {
 				try {
 					currentClient->request.setBody(message, bytesReceived);
@@ -273,31 +276,22 @@ void	Cluster::recvData(const struct epoll_event &event)
 			else
 				currentClient->request = Request(message);
 		}
-		
-		currentClient->request.totalBytesReceived += static_cast<size_t>(bytesReceived); // useless
-		if (currentClient->request.getbody().size() > currentClient->clientServer->getMaxBodySize())
-		{
-			std::cerr << "recvData() totalBytesReceived = " << currentClient->request.totalBytesReceived << std::endl; // test
-			std::cerr << "recvData() serverMaxBodySize = " << currentClient->clientServer->getMaxBodySize() << std::endl; // test
-			std::cerr << "recvData() body size = " << currentClient->request.getbody().size() << std::endl; // test
+		if (currentClient->request.getbody().size() > \
+			currentClient->clientServer->getMaxBodySize())
 			throw std::runtime_error("recvData(): error 413 Request Entity Too Large\n");
-		}
 	}
 
 	{ // test
-		// std::cout	<< "Request:\n" << currentClient->request << std::endl;
-		// std::cout	<< "recvData() totalBytesReceived = " << currentClient->request.totalBytesReceived << std::endl
-					// << "recvData() maxBodySize = " << currentClient->clientServer->getMaxBodySize() << std::endl
-					// << "recvData() content length = " << currentClient->request.getcontentlength() << std::endl
-					// << "recvData() body size = " << currentClient->request.getbody().size() << std::endl;
+		// std::cout	<< "Request:\n" << currentClient->request << std::endl
+		// 			<< "recvData() maxBodySize = " << currentClient->clientServer->getMaxBodySize() << std::endl
+		// 			<< "recvData() content length = " << currentClient->request.getcontentlength() << std::endl
+		// 			<< "recvData() body size = " << currentClient->request.getbody().size() << std::endl;
 					// << "recvData() all message =\n" << message << std::endl;
-
-		// std::cout	<< BRIGHT_GREEN "Request:\n" << currentClient->request << RESET << std::endl;
 	}	
 	
 	if (currentClient->request.getcontentlength() == currentClient->request.getbody().size())
 	{
-		currentClient->request.checkRequestValidity();
+		currentClient->checkRequestValidity();
 		try {
 			changeEventMod(false, event.data.fd);
 		}
@@ -329,14 +323,20 @@ void	Cluster::sendData(const struct epoll_event &event)
 	{
 		// cette partie s'occupe de recuperer la data a renvoyer au client (fichier static html / CGI)
 		// elle enregistre les fichiers televerses
+		//
+		// si il y a des arguments dans l'uri il faut les extraires (REQUETES GET)
+		//
 		// la reponse est stockee dans un buffer
 		//
 		// elle verifie la validite de la requete ?
+
+
+
 		// client->response.buildResponse(client->request);
 
 		char buff[BUFFERSIZE] = {'\0'};
 		memset(buff, '\0', sizeof(buff));
-		int fd = open("./website/devis.com/formulaires/formUpload.html"/* "./googleIndex.html"*/, O_RDONLY);
+		int fd = open("./website/devis.com/formulaires/form.html"/* "./googleIndex.html"*/, O_RDONLY);
 		if (fd == -1)
 			perror("OPENTEST");
 
@@ -385,7 +385,7 @@ void	Cluster::sendData(const struct epoll_event &event)
 			throw std::runtime_error("sendData() Internal error 500");
 		}
 	}
-	else if(client->request.totalBytesReceived >= client->request.getcontentlength())
+	else
 		closeConnexion(event);
 }
 /*----------------------------------------------------------------------------*/

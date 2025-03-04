@@ -33,10 +33,8 @@ class Request
 		const std::string	&getcontenttype()	const;
 		
 		void	setBody(const std::string &, ssize_t);
-		void	checkRequestValidity();
 		void	clearRequest();
 
-		size_t	totalBytesReceived;
 		size_t	totalBytessended;
 
 	private:		

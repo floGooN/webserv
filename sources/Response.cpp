@@ -85,6 +85,12 @@ void	Response::deleteRequest(const Request &)
 }
 /*----------------------------------------------------------------------------*/
 
+void	Response::clearResponse()
+{
+	
+}
+/*----------------------------------------------------------------------------*/
+
 // /*  * build final path
 // 	* security check :
 // 		-> uri doesn't include ".." ()
