@@ -19,7 +19,6 @@ Client::Client(const Request &req)
 {
 	request = req;
 	clientServer = NULL;
-	memset(&response, 0, sizeof(response));
 	initMimeMap();
 }
 /*----------------------------------------------------------------------------*/
@@ -37,9 +36,8 @@ Client &Client::operator=(const Client &ref)
 {
 	if (this != &ref)
 	{
-		request = ref.request;
+		request = Request(ref.request);
 		clientServer = ref.clientServer;
-		response = ref.response;
 	}
 	return *this;
 }
@@ -49,7 +47,7 @@ std::ostream & operator<<(std::ostream &o, const Client &ref)
 {
 	o   << "CLIENT:" << std::endl
 		<< *ref.clientServer << std::endl;
-		// << "response : " << ref.response;
+
 	return o;
 }
 /*----------------------------------------------------------------------------*/
@@ -58,82 +56,23 @@ std::ostream & operator<<(std::ostream &o, const Client &ref)
 						/*### PUBLIC METHODS ###*/
 /*============================================================================*/
 
-void	Client::handlePostRequest()
-{
-	std::cout	<< BRIGHT_YELLOW "IN POST QUERY\nrequest:" << std::endl
-				<< request << RESET << std::endl;
+/*----------------------------------------------------------------------------*/
 
-	
+/*============================================================================*/
+						/*### PRIVATE METHODS ###*/
+/*============================================================================*/
+
+void	Client::clearData()
+{
+	// memset(&request, 0, sizeof(request));
+	request.clearRequest();
+	memset(&response, 0, sizeof(response));
 }
 /*----------------------------------------------------------------------------*/
 
-/*  * Formating header and body for client
-	* throw error page
-	* manage herself system exception
-*/
-void	Client::responseFormating()
+void Client::initMimeMap()
 {
-	// std::cout	<< "IN formatResponse():" << std::endl
-	// << *this << std::endl
-	// << this->request << std::endl;
-
-	// soccuper des POST query
-		// TOUT LES PARAMS SONT DANS UN BODY
-	if (request.gettype().compare("POST") == 0)
-	{
-		handlePostRequest();
-	}
-	else if (request.gettype().compare("GET") == 0)
-	{
-		std::cout << BRIGHT_GREEN "GET QUERY" << RESET << std::endl;
-		return;
-	}
-	else if (request.gettype().compare("DELETE") == 0)
-	{
-		std::cout << BRIGHT_CYAN "DELETE QUERY" << RESET << std::endl;
-	}
-	else
-		throw std::runtime_error("error XXX Request not supported");
-
-
-	// comment se formatte la reponse client ?
-
-	// extraire chemin + nom fichier
-	// differencier POST GET DELETE 
-	// if POST	-> extraire le content type
-	//				.application/x-www-form-urlencoded
-	//				.multipart/form-data	
-	//				.text/plain	
-	//			-> extraire arguments du body
-
-	// if GET	-> extraire les arguments de la query string
-	// 
-
-	// concatener le chemins correctement suivant l'url et le serveur qui recoit la requete
-	// verifier que toutes les conditions soient bonnes
-		// dossier et fichiers existants ?
-		// droits des requetes (POST ETC)
-		// est ce qu'il y a des cgi
-	
-	// buildUri(this->request.geturi());
-
-	// formatter header http
-	// dans un try catch pour formatter le header une fois le serveur trouve
-
-	// gestion requet favico
-	// toujours matter a la racine du site courrant si il en a un 
-	// sinon renvoyer le favico par defaut
-
-
-	// if (request.geturi().find("favicon") != std::string::npos)
-	// 	response = "";
-}
-/*----------------------------------------------------------------------------*/
-
-/*	* doit mettre a jour suivant le fichier du serveur
-*/
-void Client::initMimeMap() {
-	if (_mimeMap.empty() == false)
+	if (!_mimeMap.empty())
 		return;
 
 	_mimeMap.insert(std::make_pair(".aac", "audio/acc"));
@@ -174,48 +113,3 @@ void Client::initMimeMap() {
     _mimeMap.insert(std::make_pair(".bin", "application/octet-stream"));
 }
 /*----------------------------------------------------------------------------*/
-
-/*============================================================================*/
-						/*### PRIVATE METHODS ###*/
-/*============================================================================*/
-
-/*  * build final path
-	* security check :
-		-> uri doesn't include ".." ()
-		-> only allow Chars (RFC 3986 section 2.2)
-		-> don't care about uri longest
-*/
-void	Client::buildUri(const std::string &uri)
-{
-#ifdef TEST
-	std::cout << "in builduir() URI: [" << uri << "]" << std::endl;
-#endif
-	if (uri.find("..") != uri.npos)
-		throw std::runtime_error("400 bad request \'.. detected\'\n");
-	if (uri.find_first_not_of(HTTP_ALLOW_CHARS) != uri.npos) {
-		std::cout << "idx: " << uri.find_first_not_of(HTTP_ALLOW_CHARS) << "cha: [" << uri[uri.find_first_not_of(HTTP_ALLOW_CHARS)] << "]" << std::endl;
-		throw std::runtime_error("400 bad request \'invalid char\'\n");
-	}
-	
-	std::set<LocationConfig>::iterator itLocation = clientServer->getLocation().begin();
-
-	while (itLocation != clientServer->getLocation().end())
-	{
-		if (itLocation->path.compare(uri) == 0)
-		{
-			std::cout	<< *itLocation
-						<< "it : [" << itLocation->path << "]" << std::endl;
-			break;
-		}
-		itLocation++;
-	}
-
-}
-/*----------------------------------------------------------------------------*/
-
-
-// /*============================================================================*/
-// 							/*### EXCEPTIONS ###*/
-// /*============================================================================*/
-
-// /*----------------------------------------------------------------------------*/

@@ -7,15 +7,9 @@
 
 # include "Server.hpp"
 # include "Request.hpp"
+# include "Response.hpp"
 
 class Server;
-
-struct s_response 
-{
-	/* data */
-};
-
-typedef	struct s_response t_response;
 
 class Client
 {
@@ -27,23 +21,13 @@ class Client
 		
 		Server		*clientServer;
 		Request		request;
-		
-		
-		// std::string response;
-		
-		void	responseFormating(); // call in recvData()
-		t_response	response;
+		Response	response;
 
+		void	clearData();
+		
 	private:
 		void	initMimeMap();
-		
-		void	handlePostRequest();
-
-		void	buildUri(const std::string &);
-
 		static std::map<std::string, std::string>	_mimeMap;
-
-		std::string _header;
 };
 
 std::ostream & operator<<(std::ostream &, const Client &);

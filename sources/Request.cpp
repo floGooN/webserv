@@ -69,7 +69,7 @@ Request::Request(const std::string &response)
 	}
 	else
 	throw std::runtime_error("surprising 400 bad request\n");
-	setBody(response);
+	setBody(response, response.size());
 }
 /*----------------------------------------------------------------------------*/
 
@@ -97,7 +97,6 @@ Request & Request::operator=(const Request &ref)
 		totalBytesReceived = ref.totalBytesReceived;
 		totalBytessended = ref.totalBytessended;
 		_bound = ref._bound;
-		_metaData = ref._metaData;
 	}
 	return *this;
 }
@@ -159,6 +158,11 @@ const std::string&	Request::getbound() const {
 }
 /*----------------------------------------------------------------------------*/
 
+const std::string&	Request::getbody()	const {
+	return _body;
+}
+/*----------------------------------------------------------------------------*/
+
 size_t	Request::getcontentlength()	const {
 	return _contentLength;
 }
@@ -166,11 +170,6 @@ size_t	Request::getcontentlength()	const {
 
 const std::string	&Request::getcontenttype()	const {
 	return _contentType;
-}
-/*----------------------------------------------------------------------------*/
-
-const std::string	&Request::getMetaData()	const {
-	return _metaData;
 }
 /*----------------------------------------------------------------------------*/
 
@@ -216,11 +215,12 @@ void	Request::initRequestLine(const std::string &requestLine)
 	if (_requestType.empty() == true || requestLine.find(PROTOCOL_VERION) == std::string::npos)
 		throw std::runtime_error("throw 400 bad req in initRequestLine() unsupported protocol version\n");
 
-	size_t	idx = requestLine.find_first_of("/");
+	size_t	idx = requestLine.find_first_of(" ");
 	if (idx == std::string::npos)
 		throw std::runtime_error("function initRequestLine() throw 400 bad req");
 	
 	try {
+		idx++;	// place le curseur sur le premier caractere de l'uri
 		_uri = requestLine.substr(idx, requestLine.find_first_of(' ', idx) - idx);
 	}
 	catch(const std::exception& e) {
@@ -257,6 +257,8 @@ void	Request::initHost(std::vector<std::string>::const_iterator &itToken, std::v
 }
 /*----------------------------------------------------------------------------*/
 
+/*	* get size of the body
+*/
 void	Request::initContentLength(const std::string &response)
 {
 	size_t idx = response.find("Content-Length");
@@ -297,10 +299,10 @@ void	Request::initContentLength(const std::string &response)
 */
 void	Request::initContentType(const std::string &response)
 {
-	size_t	idx = response.find("Content-Type");
 	_contentType.clear();
-	_metaData.clear();
 	_bound.clear();
+
+	size_t	idx = response.find("Content-Type");
 	if (idx == response.npos)
 		return;
 	if ((idx = response.find_first_of(' ', idx)) == response.npos) {
@@ -320,46 +322,50 @@ void	Request::initContentType(const std::string &response)
 }
 /*----------------------------------------------------------------------------*/
 
-size_t	Request::skipMetaData(const std::string &body)
-{
-	try
-	{
-		size_t	idx = _bound.empty() ? 0 : body.find(_bound);
+#include <stdlib.h>
 
-		idx == 0 ? idx = body.find("\r\n\r\n") : idx = body.find("\r\n\r\n", idx);
-		if (idx == body.npos)
-			throw std::runtime_error("Error 400 bad request format in skipMetaData() in " __FILE__);
-		return idx + 4;
+size_t	Request::skipHeader(const std::string &body)
+{
+	size_t	idx = body.find(_bound);
+	if (idx == body.npos)
+		idx = body.find(BODY_SEPARATOR);
+	else
+		idx = body.find(BODY_SEPARATOR, idx);
+	if (idx == body.npos) {
+		// std::cout << body << std::endl;
+		// exit(130);
+		// throw std::runtime_error("Error 400 bad request format in skipHeader() in " __FILE__);
+		return 0;
 	}
-	catch(const std::exception& e)
-	{
-		std::cerr << e.what() << '\n';
-		throw std::runtime_error("internal error 500 in " __FILE__);
-	}
-	return body.npos;
+
+	return idx + 4;
 }
 /*----------------------------------------------------------------------------*/
 
-void	Request::setBody(const std::string &body)
+void	Request::setBody(const std::string &body, ssize_t bodySize)
 {
-	if (this->_requestType.compare("GET") == 0)
+	if (_requestType.compare("GET") == 0)
 		return;
 
-	if (_contentType.find("multipart/form-data") != _contentType.npos)
+	if (body.find("multipart/form-data") != body.npos)
 		extractBound(body);
-	size_t idx = skipMetaData(body);
-	if (idx == body.npos)
-		throw std::runtime_error("400 bad request in " __FILE__ " bound doesn't found");
-	
-	_body = body.substr(idx, body.size() - idx);
+
+	size_t idx = skipHeader(body);
+	if (!idx)
+		_body.append(body);
+	else
+		_body = body.substr(idx, body.size() - idx);
 }
 /*----------------------------------------------------------------------------*/
 
+/*	* get the delimiter for query POST type multipart/form-data (----webKit)
+*/
 void	Request::extractBound(const std::string &contentType)
 {
 	size_t idx = contentType.find("boundary=", contentType.find("multipart/form-data"));
 	if (idx == contentType.npos)
 		throw std::runtime_error("400 bad request in " __FILE__ " no body separator found");
+
 	try {
 		idx += 9;
 		_bound = contentType.substr(idx, contentType.find("\r\n", idx) - idx);
@@ -369,6 +375,17 @@ void	Request::extractBound(const std::string &contentType)
 		std::cerr << e.what() << '\n';
 		throw std::runtime_error("500 internal error in " __FILE__);
 	}
+}
+/*----------------------------------------------------------------------------*/
+
+/*	*
+	*
+	* 
+*/
+void	Request::checkRequestValidity()
+{
+	std::cout	<< this->_body.size() << std::endl
+				<< this->_contentLength << std::endl;
 }
 /*----------------------------------------------------------------------------*/
 

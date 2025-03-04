@@ -138,6 +138,7 @@ void	Cluster::runCluster()
 					}
 				}
 				catch(const std::exception& e) {
+					closeConnexion(events[i]);
 					std::cerr << e.what() << std::endl; // error page builder exception
 				}
 			}
@@ -253,14 +254,16 @@ void	Cluster::recvData(const struct epoll_event &event)
 		if (!currentClient)
 		{
 			currentClient = addClient(Request(message), event.data.fd);
+			std::cout << "contentlength: " << currentClient->request.getcontentlength() << std::endl;
+			std::cout << "maxBodySize: " << currentClient->clientServer->getMaxBodySize() << std::endl;
 			if (currentClient->request.getcontentlength() > currentClient->clientServer->getMaxBodySize())
-				throw std::runtime_error("recvData(): error 413 Request Entity Too Large\n"); // Request Entity Too Large
+				throw std::runtime_error("recvData(): error 413 Request Entity Too Large\n");
 		}
 		else
 		{
 			if (currentClient->request.gettype().empty() == false) {
 				try {
-					currentClient->request.setBody(message);
+					currentClient->request.setBody(message, bytesReceived);
 				}
 				catch(const std::exception& e) {
 					std::cerr << e.what() << '\n';
@@ -271,12 +274,13 @@ void	Cluster::recvData(const struct epoll_event &event)
 				currentClient->request = Request(message);
 		}
 		
-		currentClient->request.totalBytesReceived += static_cast<size_t>(bytesReceived);
+		currentClient->request.totalBytesReceived += static_cast<size_t>(bytesReceived); // useless
 		if (currentClient->request.getbody().size() > currentClient->clientServer->getMaxBodySize())
 		{
-			std::cout << "recvData() totalBytesReceived = " << currentClient->request.totalBytesReceived << std::endl; // test
-			std::cout << "recvData() body size = " << currentClient->request.getbody().size() << std::endl; // test
-			throw std::runtime_error("recvData(): error 413 Request Entity Too Large\n"); // Request Entity Too Large
+			std::cerr << "recvData() totalBytesReceived = " << currentClient->request.totalBytesReceived << std::endl; // test
+			std::cerr << "recvData() serverMaxBodySize = " << currentClient->clientServer->getMaxBodySize() << std::endl; // test
+			std::cerr << "recvData() body size = " << currentClient->request.getbody().size() << std::endl; // test
+			throw std::runtime_error("recvData(): error 413 Request Entity Too Large\n");
 		}
 	}
 
@@ -293,14 +297,14 @@ void	Cluster::recvData(const struct epoll_event &event)
 	
 	if (currentClient->request.getcontentlength() == currentClient->request.getbody().size())
 	{
-		currentClient->responseFormating();
+		currentClient->request.checkRequestValidity();
 		try {
 			changeEventMod(false, event.data.fd);
 		}
 		catch(const RunException& e) {
 			e.runExcept();
 			closeConnexion(event);
-			std::runtime_error("recvData(): error 500\n");
+			throw std::runtime_error("recvData(): error 500\n");
 		}
 	}
 }
@@ -317,33 +321,45 @@ void	Cluster::sendData(const struct epoll_event &event)
 				<< std::endl;
 #endif
 
-
-	char buff[BUFFERSIZE] = {'\0'};
-	memset(buff, '\0', sizeof(buff));
-	int fd = open("./website/devis.com/formulaires/form.html"/* "./googleIndex.html"*/, O_RDONLY);
-
-	if (fd == -1)
-		perror("OPENTEST");
-
-	std::string response("\0");
-	while (true) {
-		ssize_t ret = read(fd, buff, 1);
-		if (ret == 0)
-			break;
-		if (ret == -1){
-			perror("read() in sendData");
-			return;
-		}
-		response.append(buff, strlen(buff));
-	}
-	std::ostringstream convert;
-	convert << response.length();
-	response.insert(0, "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " + convert.str() + "\r\n\r\n");
-
-	// std::cout << "RESPONSE :\n" << response << std::endl;
 	Client	*client = findClient(event.data.fd);
 	if (!client)
-		std::cerr << RED "NO CLIENT" RESET << std::endl;
+		throw std::runtime_error("Error 500, client not found");
+
+	std::string response("\0");	
+	{
+		// cette partie s'occupe de recuperer la data a renvoyer au client (fichier static html / CGI)
+		// elle enregistre les fichiers televerses
+		// la reponse est stockee dans un buffer
+		//
+		// elle verifie la validite de la requete ?
+		// client->response.buildResponse(client->request);
+
+		char buff[BUFFERSIZE] = {'\0'};
+		memset(buff, '\0', sizeof(buff));
+		int fd = open("./website/devis.com/formulaires/formUpload.html"/* "./googleIndex.html"*/, O_RDONLY);
+		if (fd == -1)
+			perror("OPENTEST");
+
+		while (true) {
+			ssize_t ret = read(fd, buff, 1);
+			if (ret == 0)
+				break;
+			if (ret == -1){
+				perror("read() in sendData");
+				return;
+			}
+			response.append(buff, strlen(buff));
+		}
+	}
+
+	{
+		// cette partie prepare le header du client et le concatene au contenu du client
+		// client->response.buildHeader();
+		std::ostringstream convert;
+		convert << response.length();
+		response.insert(0, "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " + convert.str() + "\r\n\r\n");
+
+	}
 
 	while (client->request.totalBytessended != response.size())
 	{
@@ -359,14 +375,14 @@ void	Cluster::sendData(const struct epoll_event &event)
 	if (client->request.getkeepalive() == true && \
 		response.size() == client->request.totalBytessended)
 	{
-		client->request.clearRequest();
+		client->clearData();
 		try {
 			changeEventMod(true, event.data.fd);
 		}
 		catch(const RunException& e) {
 			e.runExcept();
 			closeConnexion(event);
-			throw;
+			throw std::runtime_error("sendData() Internal error 500");
 		}
 	}
 	else if(client->request.totalBytesReceived >= client->request.getcontentlength())

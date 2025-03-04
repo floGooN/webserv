@@ -26,7 +26,7 @@ Server::Server(ServerConfig & config, const std::string &service)
 		std::cout	<< "Invalid format on max body size: " << config.clientMaxBodySize << std::endl
 					<< "Max body size will be set by default (1 MB)"
 					<< std::endl;
-		_maxBodySize = 1000000; //octet
+		_maxBodySize = DFLT_BODYSIZE; //octet = 500 KO
 	}
 	setErrorPath();
 }

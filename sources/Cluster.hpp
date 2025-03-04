@@ -51,28 +51,16 @@ class Cluster
 			const char *	_msg;
 	};
 
-	class	ErrorPageException
-	{
-		public:
-			ErrorPageException(const int errorCode, Server &current)
-			  : _errorCode(errorCode), _server(current)
-			{	}
-
-		private:
-			int		_errorCode;
-			Server	_server;
-	};
-
 	public:
 		Cluster(const std::string &);
 		Cluster(const Cluster &);
 		~Cluster();
 		Cluster & operator=(const Cluster &);
 
+		void	runCluster();
+		
 		const HttpConfig				& getConfig() const;
 		std::map<std::string, Server>	& getServersByPort() const;
-
-		void	runCluster();
 
 	private:
 		int				_epollFd;		// fd vers structure epoll

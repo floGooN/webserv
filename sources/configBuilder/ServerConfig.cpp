@@ -86,7 +86,7 @@ void	ServerConfig::controlDefaultServerConf()
 	if (uploadPath.empty())
 		throw std::invalid_argument("'upload_path' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");
 	if (indexFile.empty())
-		throw std::invalid_argument("'index' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");
+		indexFile.clear();
 	if (pageErrorPath.empty())
 		pageErrorPath = PATH_ERRPAGE;
 	if (methodAccept.empty())
