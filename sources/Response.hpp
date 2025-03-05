@@ -22,11 +22,17 @@ class Response
 		void	buildResponse(const Request &);
 		void	clearResponse();
 
+
 	private:
 		void	getRequest(const Request &);
 		void	postRequest(const Request &);
 		void	deleteRequest(const Request &);
 
+		void	setHeader();
+		void	setPageContent();
+
+		std::string	_header;
+		std::string	_pageContent;
 };
 
 std::ostream & operator<<(std::ostream &, const Response &);

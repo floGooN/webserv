@@ -8,6 +8,7 @@
 /*============================================================================*/
 
 #include "Client.hpp"
+#include "Server.hpp"
 #include <cstring>
 std::map<std::string, std::string> Client::_mimeMap;
 
@@ -81,6 +82,8 @@ std::string	Client::extractPath(const std::string &uri) const
 }
 /*----------------------------------------------------------------------------*/
 
+/*	* build the complete uri and return the location associated with the path requested by client
+*/
 const LocationConfig *	Client::buildCompleteUri(std::string &QueryPart) const
 {
 	std::set<LocationConfig>::iterator itLocation = clientServer->getLocation().begin();
@@ -95,7 +98,7 @@ const LocationConfig *	Client::buildCompleteUri(std::string &QueryPart) const
 	if (itLocation != clientServer->getLocation().end() && ! itLocation->root.empty())
 		RootPart = itLocation->root;
 	else
-		RootPart = this->clientServer->getConfig().rootPath;
+		RootPart = clientServer->getConfig().rootPath;
 
 	try {
 		QueryPart = RootPart + QueryPart;
@@ -144,7 +147,6 @@ void	Client::checkRequestValidity()
 	// ne pas parser les arguments dans l'uri
 	//
 	// doit verifier si les paths sont valides
-	//
 	
 	// extrait uniquement le chemin de la requete :
 	std::string	URI_Query = extractPath(request.geturi());

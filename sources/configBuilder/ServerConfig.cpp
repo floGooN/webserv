@@ -77,18 +77,27 @@ std::ostream & operator<<(std::ostream & o, const ServerConfig &ref)
 
 void	ServerConfig::controlDefaultServerConf()
 {
-	if (listenPort.empty())
-		throw std::invalid_argument("'listen' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");
 	if (rootPath.empty())
 		throw std::invalid_argument("'root' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");
-	if (clientMaxBodySize.empty())
-		throw std::invalid_argument("'client_max_body_size' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");
+	else
+		UtilParsing::checkAccessRessource(rootPath, R_OK);
 	if (uploadPath.empty())
 		throw std::invalid_argument("'upload_path' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");
+	else
+		UtilParsing::checkAccessRessource(uploadPath, R_OK);
+	if (pageErrorPath.empty()) {
+		pageErrorPath = PATH_ERRPAGE;
+		UtilParsing::checkAccessRessource(pageErrorPath, R_OK);
+	}
+	else
+		UtilParsing::checkAccessRessource(pageErrorPath, R_OK);
+
 	if (indexFile.empty())
 		indexFile.clear();
-	if (pageErrorPath.empty())
-		pageErrorPath = PATH_ERRPAGE;
+	if (listenPort.empty())
+		throw std::invalid_argument("'listen' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");
+	if (clientMaxBodySize.empty())
+		throw std::invalid_argument("'client_max_body_size' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");	
 	if (methodAccept.empty())
 		methodAccept = UtilParsing::split(DFLT_METHOD, " ");
 	if (serverName.empty())

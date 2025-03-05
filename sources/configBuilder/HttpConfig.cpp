@@ -69,23 +69,8 @@ void HttpConfig::controlDefaultHttpConf()
 		keepalive_timeout = DFLT_TIMEOUT;
 	if (worker_connexion.empty())
 		worker_connexion = DFLT_WORKCONNEX;
-
-	std::vector<ServerConfig>::iterator it = serversConfig.begin();
-	
-	if (it == serversConfig.end())
+	if (serversConfig.empty() == true)
 		throw std::runtime_error("No server config");
-	while (it != serversConfig.end())
-	{
-		it->controlDefaultServerConf();
-		if (it->locationConfig.empty() == false) {
-			std::vector<LocationConfig>::iterator itLoc = it->locationConfig.begin();
-			while (itLoc != it->locationConfig.end()) {
-				itLoc->controlDefaultLocationConf();
-				itLoc++;
-			}
-		}
-		it++;
-	}
 }
 /*----------------------------------------------------------------------------*/
 

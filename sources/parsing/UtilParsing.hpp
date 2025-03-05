@@ -2,9 +2,13 @@
 # define IPARSING_HPP
 
 # include "webserv.hpp"
-#include <sys/stat.h>
-#include <sstream>
-#include <fstream>
+
+# include <unistd.h>
+# include <dirent.h>
+# include <sys/stat.h>
+
+# include <sstream>
+# include <fstream>
 
 class UtilParsing
 {
@@ -31,19 +35,21 @@ class UtilParsing
 		}
 
 		static bool	isOnlySpace(const std::string & str);
+		
+		static void	safeCloseDirectory(DIR *);
 		static void	displayVector(std::vector<std::string> vec);
+		static void	checkAccessRessource(const std::string &, int);
 		static void	printMapVector(const std::map<int, std::map<std::string, std::vector<std::string> > >& allMapRoads);
 		static void	manageControlMapLocation(std::map<int, std::map<std::string, std::vector<std::string> > > allMapRoads);
 		static void	controlMapLocation(std::map<int, std::map<std::string, std::vector<std::string> > > allMapRoads, std::string keyValue);
 		
-		static std::string	recoverExtension(const std::string &filename);
 		static std::string	intToString(int value);
 		static std::string	trim(const std::string& str);
 		static std::string	trimSemicolon(const std::string& str);
+		static std::string	recoverExtension(const std::string &filename);
 		static std::string	recoverValue(std::string line, std::string key);
 
-		static bool		fileExits(const std::string &filename);
-		static bool		directoryExists(const std::string &dirname);
+		static DIR		*openDirectory(const std::string &dirPath);
 		static size_t	safeMultiply(size_t value, size_t factor);
 		static size_t	convertBodySize(const std::string &);
 
@@ -51,6 +57,7 @@ class UtilParsing
         static std::vector<std::string>	cleanVectorClose(const std::vector<std::string> vec);
         static std::vector<std::string>	split(const std::string & line, const std::string & set); 
 		static std::vector<std::string>	splitSpecialDeleteKey(const std::string & line, const std::string & set);
+	
 	private:
 		UtilParsing() {};
 };

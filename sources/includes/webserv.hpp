@@ -3,7 +3,7 @@
 # define WEBSERV_HPP
 
 # include "colors"
-
+// # include "ErrorHandler.hpp"
 
 # include <iostream>
 # include <string>

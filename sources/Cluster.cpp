@@ -7,6 +7,8 @@
 #include "Cluster.hpp"
 #include "ConfigParser.hpp"
 
+#include "ErrorHandler.hpp"
+
 #include <sys/epoll.h>
 #include <fcntl.h>
 #include <netdb.h>
@@ -137,9 +139,9 @@ void	Cluster::runCluster()
 							std::cerr << "have to print EPOLLERR" << std::endl;
 					}
 				}
-				catch(const std::exception& e) {
+				catch(const ErrorHandler &e) {
+					e.generateErrorPage();
 					closeConnexion(events[i]);
-					std::cerr << e.what() << std::endl; // error page builder exception
 				}
 			}
 		}
@@ -225,7 +227,6 @@ ssize_t	Cluster::safeRecv(const int clientFd, std::string &message)
 	try {
 		message.clear();
 		message.assign(buffer, bytesReceived);
-		// message.empty() ? message.assign(buffer, bytesReceived) : message.append(buffer, bytesReceived);
 	}
 	catch(const std::exception& e) {
 		std::cerr << e.what() << '\n';
@@ -239,9 +240,6 @@ ssize_t	Cluster::safeRecv(const int clientFd, std::string &message)
     * The while loop receives data  
     * If it's a new client, create one; if it already exists, update its request  
 */
-
-#include <stdlib.h>
-
 void	Cluster::recvData(const struct epoll_event &event)
 {
 #ifdef TEST
@@ -264,15 +262,8 @@ void	Cluster::recvData(const struct epoll_event &event)
 				throw std::runtime_error("recvData(): error 413 Request Entity Too Large\n");
 		}
 		else {
-			if (currentClient->request.gettype().empty() == false) {
-				try {
-					currentClient->request.setBody(message, bytesReceived);
-				}
-				catch(const std::exception& e) {
-					std::cerr << e.what() << '\n';
-					std::runtime_error("recvData(): error 500\n");
-				}
-			}
+			if (currentClient->request.gettype().empty() == false)
+				currentClient->request.setBody(message, bytesReceived);
 			else
 				currentClient->request = Request(message);
 		}
@@ -325,12 +316,7 @@ void	Cluster::sendData(const struct epoll_event &event)
 		// elle enregistre les fichiers televerses
 		//
 		// si il y a des arguments dans l'uri il faut les extraires (REQUETES GET)
-		//
 		// la reponse est stockee dans un buffer
-		//
-		// elle verifie la validite de la requete ?
-
-
 
 		// client->response.buildResponse(client->request);
 

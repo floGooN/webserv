@@ -2,6 +2,7 @@
 
 #include "LocationConfig.hpp"
 #include "UtilParsing.hpp"
+#include <unistd.h>
 
 LocationConfig::LocationConfig()
 {
@@ -53,7 +54,7 @@ bool	LocationConfig::operator<(const LocationConfig &ref) const {
 void	LocationConfig::controlDefaultLocationConf()
 {
 	if (path.empty())
-		throw std::invalid_argument("'location' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");
+		throw std::invalid_argument("a path should never not be empty in a location description\nlocation [PATH]\n{\n\r**description**\n}");
 }
 
 void	LocationConfig::checkSemiColonLocation()
