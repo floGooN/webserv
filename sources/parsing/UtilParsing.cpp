@@ -2,10 +2,13 @@
 
 #include "UtilParsing.hpp"
 
-#include <iostream>
+#include <fcntl.h>
+
 #include <sstream>
 #include <cstring>
 #include <limits>
+
+#define BUFFER_SIZE	4096
 
 size_t	UtilParsing::safeMultiply(size_t value, size_t factor) {
 	if (value > std::numeric_limits<size_t>::max() / factor) {
@@ -250,8 +253,8 @@ void UtilParsing::checkAccessRessource(const std::string &ressourcePath, int typ
 void UtilParsing::safeCloseDirectory(DIR *current)
 {
 	if (closedir(current) == -1) {
-		perror(std::string("closedir() in " __FILE__ " at line " + UtilParsing::intToString(__LINE__)).c_str());
-		throw std::runtime_error(RED "Error system" RESET);
+		perror("closedir()");
+		throw std::runtime_error(RED "Error system in safeCloseDirectory()" RESET);
 	}
 }
 
@@ -261,6 +264,40 @@ DIR* UtilParsing::openDirectory(const std::string &dirPath)
 {
 	DIR *dirp = opendir(dirPath.c_str());
 	if (!dirp)
-		throw std::invalid_argument( "[" + dirPath + "] doesn't found\n");
+		throw std::invalid_argument("[" + dirPath + "] doesn't found\n");
 	return dirp;
+}
+
+/*	* return the content of the file or throw std::runtime_error
+*/
+std::string	UtilParsing::readFile(const std::string &filepath)
+{
+	int fd = open(filepath.c_str(), O_RDONLY);
+	if (fd == -1) {
+		perror("open()");
+		throw std::runtime_error("In ErrorHandler (generateContent())");
+	}
+
+	std::string	result("");
+	char		buff[BUFFER_SIZE] = {'\0'};
+	ssize_t		bytesReaded = read(fd, buff, BUFFER_SIZE);
+
+	if (bytesReaded == -1) {
+		perror("read()");
+		throw std::runtime_error("In ErrorHandler (generateContent())");
+	}
+	result = buff;
+
+	while (bytesReaded == BUFFER_SIZE)
+	{
+		bytesReaded = read(fd, buff, BUFFER_SIZE);		
+		if (bytesReaded == -1) {
+			perror("read()");
+			throw std::runtime_error("In ErrorHandler (generateContent())");
+		}
+		result.append(buff, bytesReaded);
+	}
+	if (close(fd) == -1)
+		perror("close() in UtilsParsing::readFile()");
+	return result;
 }

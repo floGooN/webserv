@@ -45,6 +45,7 @@ class UtilParsing
 		
 		static std::string	intToString(int value);
 		static std::string	trim(const std::string& str);
+		static std::string	readFile(const std::string &filepath);
 		static std::string	trimSemicolon(const std::string& str);
 		static std::string	recoverExtension(const std::string &filename);
 		static std::string	recoverValue(std::string line, std::string key);

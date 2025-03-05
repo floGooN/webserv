@@ -19,11 +19,13 @@ class Response
 		~Response();
 		Response &operator=(const Response &);
 		
+
 		void	buildResponse(const Request &);
 		void	clearResponse();
 
 
 	private:
+		// theses functions check 
 		void	getRequest(const Request &);
 		void	postRequest(const Request &);
 		void	deleteRequest(const Request &);

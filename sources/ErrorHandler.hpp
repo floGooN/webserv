@@ -8,6 +8,11 @@
 
 class Client;
 
+/*
+	prend qu'un client en parametre
+	le client peut etre null (donc il faut un ptr su Client en params)
+	si le client n'existe pas (NULLPTR) c'est quil y a une erreur systeme (add client)
+*/
 class ErrorHandler
 {
 	public:
@@ -21,7 +26,8 @@ class ErrorHandler
 		ErrorHandler		&operator=(const ErrorHandler &);
 		const std::string	_dfltErrorPath;
 
-		int	findErrorFile(DIR *, const std::string &) const;
+		std::string	findErrorFile(DIR *, const std::string &) const;
+		std::string generateContent() const;
 
 		std::string	&_errcode;
 		std::string	&_msg;

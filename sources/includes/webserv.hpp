@@ -25,7 +25,6 @@
 /* ---		    DEFINE PATH   	   	  --- */
 /* -------------------------------------- */
 # define PATH_DEFAULTSERV	"./config/default.conf"
-# define PATH_DEBUGSERR		"./config/debug.conf"
 # define PATH_ERRPAGE		"./error_pages"
 # define PATH_MIME			"./config/mime.types"
 
@@ -50,5 +49,17 @@
 							"ABCDEFGHIJKLMNOPQRSTUVWXYZ" \
 							"abcdefghijklmnopqrstuvwxyz" \
 							"0123456789"
+
+# define	DFLT_ERRORPAGE		"<!DOCTYPE html>" \
+								"<html lang=\"fr\">" \
+								"<head>" \
+    							"<meta charset=\"UTF-8\">" \
+    							"<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" \
+    							"<title>404 - Page non trouvée</title>" \
+								"</head>" \
+								"<body>" \
+    							"<h1>UNKNOWN ERROR</h1>" \
+								"</body>" \
+								"</html>"
 
 #endif
