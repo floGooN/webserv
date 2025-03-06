@@ -250,3 +250,33 @@ std::string UtilParsing::recoverExtension(const std::string &filename)
     std::size_t start = filename.find_last_of(".");
     return filename.substr(start); // on renvoie avec le . l'extension car dasn la map on garde le .
 }
+
+std::string UtilParsing::convertHexaToString(std::string value)
+{
+    std::string strConvert;
+    int number;
+    for(size_t i = 0; i < value.size(); i++)
+    {
+        if (value[i] == '%')
+        {
+            number = decryptHexa(value.substr(i + 1, 2));
+            char str = number;
+           if (strConvert.empty())
+                strConvert = value.substr(0, i);
+            strConvert += str;
+            i += 2; 
+        }
+    }
+    if (!strConvert.empty())
+        return strConvert + value.substr(value.find_last_of('%') + 3);
+    return value;
+}
+
+int UtilParsing::decryptHexa(std::string value)
+{
+    unsigned int x;
+    std::stringstream ss;
+    ss << std::hex << value;
+    ss >> x;
+    return x;
+}

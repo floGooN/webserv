@@ -51,6 +51,8 @@ class UtilParsing
         static std::vector<std::string>	cleanVectorClose(const std::vector<std::string> vec);
         static std::vector<std::string>	split(const std::string & line, const std::string & set); 
 		static std::vector<std::string>	splitSpecialDeleteKey(const std::string & line, const std::string & set);
+		static std::string convertHexaToString(std::string value);
+		static int decryptHexa(std::string value);
 	private:
 		UtilParsing() {};
 };

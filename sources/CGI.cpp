@@ -82,7 +82,7 @@ char** initEnv(Request req, Server server)
 {
       std::string environnement[] = {
         "REQUEST_METHOD=" + req.gettype(),
-        "QUERY_STRING=" + req.getbody(),
+        "QUERY_STRING=" + (req.gettype().compare("GET") == 0) ? ParseUri(req.geturi())  : req.getbody(),
         "CONTENT_TYPE=" + req.getcontenttype(),
         "HTTP_HOST=" + req.gethostname(),
         "SCRIPT_NAME=" + server.getService(),
@@ -178,76 +178,6 @@ std::string executeCGI(const std::string &path, Server server, Request req)
     return body;
 }
 
-// -------------------------ICI COMMENCE LA PARTIE TEST----------------------------
-
-
-void processCGITEST(const std::string &path)
-{
-    std::string response;
-    try 
-    {
-        if (UtilParsing::fileExits(path) != true) //ici voir mais a enlever le check normalement
-            throw ErrorCGI("Not found", 404);
-        if (access(path.c_str(), X_OK) != 0)
-            throw ErrorCGI("Not found", 404);
-        if (checkExtensionCGITEST(path) != true)
-            throw ErrorCGI("Bad Gateway", 502);
-        if (moveToDirectoryScript(extractDirectory(path)) != true)
-            throw ErrorCGI("Internal server error", 500);
-        response = executeCGITEST(path); 
-        if (response.empty())
-            throw ErrorCGI("Bad Gateway", 502);
-    }
-    catch (const ErrorCGI& e)
-    {
-        std::cerr << e.what() << std::endl;
-    }
-    std::cout << response << std::endl;
-}
-
-
-// ici on pourra rajouter d'autres option si on veut faire fonctionner d'autre type de CGI
-bool checkExtensionCGITEST(const std::string &path)
-{
-   std::string cgi_path = "support.pl";
-
-    if (UtilParsing::recoverExtension(path) == UtilParsing::recoverExtension(cgi_path))
-        return true;
-    return false;
-}
-
-std::string executeCGITEST(const std::string &path)
-{
-    char **env;
-    std::string body;
-    env = initEnvTEST();
-    body = playCGI(path, env);
-    freeEnv(env);
-    return body;
-}
-
-char** initEnvTEST()
-{
-      std::string environnement[] = {
-        "REQUEST_METHOD=POST",
-        "QUERY_STRING=value1=35",
-        "CONTENT_TYPE=text/html",
-        "HTTP_HOST=localhost",
-        "SCRIPT_NAME=script.pl",
-        "PATH_INFO=./cgi-bin/script.pl", 
-    };
-    int  environSize = sizeof(environnement) / sizeof(environnement[0]);
-    char** environTEST = new char*[environSize + 1]; 
-
-    for (int i = 0; i < environSize; i++) 
-    {
-        environTEST[i] = new char[environnement[i].size() + 1];
-        strcpy(environTEST[i], environnement[i].c_str());
-    }
-    environTEST[environSize] = NULL;
-
-    return environTEST;
-}
 void freeEnv(char** tab)
 {
     int i = 0;
@@ -257,4 +187,11 @@ void freeEnv(char** tab)
         i++;
     }
     delete[] tab;
+}
+std::string ParseUri(std::string uri)
+{
+    std::string::size_type start = uri.find('?');
+    if (start == std::string::npos)
+        return "";
+    return UtilParsing::convertHexaToString(uri.substr(start + 1));
 }
