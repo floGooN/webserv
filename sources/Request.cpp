@@ -220,7 +220,15 @@ void	Request::initRequestLine(const std::string &requestLine)
 	
 	try {
 		idx++;	// place le curseur sur le premier caractere de l'uri
-		_uri = requestLine.substr(idx, requestLine.find_first_of(' ', idx) - idx);
+		_uri = requestLine.substr(idx, requestLine.find_first_of(" ?", idx) - idx);
+		if (_requestType.compare("GET") == 0)
+		{
+			idx = requestLine.find_first_of('?', idx);
+			if (idx != requestLine.npos) {
+				idx++;
+				_body = requestLine.substr(idx, requestLine.find_first_of(" ", idx) - idx);
+			}
+		}
 	}
 	catch(const std::exception& e) {
 		std::cerr << e.what() << '\n';
@@ -372,11 +380,4 @@ void	Request::extractBound(const std::string &contentType)
 		throw std::runtime_error("500 internal error in " __FILE__);
 	}
 }
-/*----------------------------------------------------------------------------*/
-
-/*============================================================================*/
-						/*### EXCEPTIONS ###*/
-/*============================================================================*/
-
-
 /*----------------------------------------------------------------------------*/

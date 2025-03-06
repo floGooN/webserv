@@ -9,8 +9,12 @@
 
 #include "Client.hpp"
 #include "Server.hpp"
+#include "UtilParsing.hpp"
+
 #include <cstring>
+
 std::map<std::string, std::string> Client::_mimeMap;
+
 
 /*============================================================================*/
 				/*### CONSTRUCTORS - DESTRUCTOR - OVERLOAD OP ###*/
@@ -57,54 +61,103 @@ std::ostream & operator<<(std::ostream &o, const Client &ref)
 						/*### PUBLIC METHODS ###*/
 /*============================================================================*/
 
+void	Client::buildResponse()
+{
+	// verifier que le requete ne pointe pas sur un directory
+	// si c'est le cas, faire pointer le requete sur l'index de la location ou sur l'index serveur ou renvoyer bad request
+	std::cout	<< "Client::buildResponse()\n" << std::endl
+				<< "CompleteURI: " << response.completeUri << std::endl;
+	if (UtilParsing::isDirectory(response.completeUri) == true)
+	{
+		const LocationConfig *current = UtilParsing::findLocationConfig(clientServer->getLocation(), request.geturi());
+		if ( current && ! current->index.empty())
+			response.completeUri.append(current->index);
+		else if ( ! clientServer->getConfig().indexFile.empty())
+			response.completeUri.append(clientServer->getConfig().indexFile);
+		else //si l'autoindex est autorise envoyer l'arborescence ?
+		{
+			std::cout << "HEEEEERE : " << response.completeUri << std::endl;
+			throw std::runtime_error("400 Bad request the ressource pointed is a directory");
+		}
+	}
+
+	std::cout	<< YELLOW "completeUri: [" << response.completeUri << "]" RESET << std::endl;
+
+	UtilParsing::checkAccessRessource(response.completeUri.c_str(), R_OK);
+
+	// if (request.gettype().compare("GET") == 0)
+	// 	getRequest(request);
+	// else if (request.gettype().compare("POST") == 0)
+	// 	postRequest(request);
+	// else if (request.gettype().compare("DELETE") == 0)
+	// 	deleteRequest(request);
+	// else
+	// 	throw std::runtime_error("Error 405 method not allowed in " __FILE__);
+
+	response.finalMessage = UtilParsing::readFile(response.completeUri);
+
+	// set la page une fois qu'on est sur le l'avoir
+	buildHeader();
+	
+}
 /*----------------------------------------------------------------------------*/
 
 /*============================================================================*/
 						/*### PRIVATE METHODS ###*/
 /*============================================================================*/
-
-/*	* extract path in URI ommitted arguments
+/*
+	HTTP/1.1 404 Not Found
+	Date: Tue, 04 Mar 2025 12:34:56 GMT
+	Server: MyMinimalWebServer/1.0
+	Content-Type: text/html; charset=UTF-8
+	Content-Length: 123
+	Connection: close
 */
-std::string	Client::extractPath(const std::string &uri) const
+
+/*
+	1️⃣ Réponse 200 - OK (Page HTML servie avec succès)
+	👉 Cette réponse est envoyée lorsque la requête a été traitée avec succès et que le contenu demandé est retourné.
+
+	2️⃣ Réponse 201 - Created (Fichier créé sur le serveur)
+	👉 Utilisé lorsqu'une ressource a été créée avec succès (ex: upload d'un fichier via POST).
+
+	3️⃣ Réponse 204 - No Content (Aucune donnée retournée)
+	👉 Utilisé quand une action a réussi mais qu'il n'y a rien à retourner (ex: suppression d'un fichier avec DELETE).
+
+	4️⃣ Réponse 301 - Moved Permanently (Redirection permanente)
+	👉 Utilisé lorsqu'une ressource a été déplacée de façon permanente vers une autre URL.
+*/
+void	Client::buildHeader()
 {
-	try {
-		size_t idx = uri.find_first_of("?");
-		if (idx == uri.npos)
-			return uri.substr(0, uri.size());
-		else
-			return uri.substr(0, idx);
-	}
-	catch(const std::exception& e)
-	{
-		std::cerr << e.what() << '\n';
-		throw std::runtime_error("500 Internal error in " __FILE__);
-	}
+	std::string length = UtilParsing::intToString(static_cast<int>( response.finalMessage.length() ));
+	std::string final =	PROTOCOL_VERION " 200 OK\r\n" \
+						"Date: TODAY\r\n" \
+						"Server: MyMinimalWebServer/0.5\r\n" \
+						"Content-Type: text/html; charset=UTF-8\r\n" \
+						"Content-Length: " + length + "\r\n" \
+						"Connection: close\r\n\r\n";
+	response.finalMessage.insert(0, final);
+	std::cout	<< BRIGHT_YELLOW "Client::buildHeader()\n"
+				<< response.finalMessage << RESET <<std::endl;
+
 }
 /*----------------------------------------------------------------------------*/
 
 /*	* build the complete uri and return the location associated with the path requested by client
 */
-const LocationConfig *	Client::buildCompleteUri(std::string &QueryPart) const
+const LocationConfig *	Client::buildCompleteUri()
 {
-	std::set<LocationConfig>::iterator itLocation = clientServer->getLocation().begin();
-	while (itLocation != clientServer->getLocation().end())
-	{
-		if (itLocation->path.compare(QueryPart) == 0)
-			break ;
-		itLocation++;
-	}
-
-	std::string	RootPart;
-	if (itLocation != clientServer->getLocation().end() && ! itLocation->root.empty())
-		RootPart = itLocation->root;
+	std::string				RootPart;
+	const LocationConfig	*result = UtilParsing::findLocationConfig(clientServer->getLocation(), request.geturi());
+	
+	if (result && ! result->root.empty())
+		RootPart = result->root;
 	else
 		RootPart = clientServer->getConfig().rootPath;
 
 	try {
-		QueryPart = RootPart + QueryPart;
-		if (itLocation == clientServer->getLocation().end())
-			return NULL;
-		return &(*itLocation) ;
+		response.completeUri = RootPart + request.geturi();
+		return result;
 	}
 	catch(const std::exception& e)
 	{
@@ -144,24 +197,26 @@ void	Client::checkMethodAuthor(const LocationConfig *current) const
 */
 void	Client::checkRequestValidity()
 {
-	// ne pas parser les arguments dans l'uri
-	//
-	// doit verifier si les paths sont valides
-	
-	// extrait uniquement le chemin de la requete :
-	std::string	URI_Query = extractPath(request.geturi());
-	
 	// concatener le root et le new uri
 	// retourne un pointeur sur une location qui match ou null
-	const LocationConfig *currentLocation = buildCompleteUri(URI_Query);
+	std::cout	<< BRIGHT_RED "checkRequestValidity()\n"
+				<< "brut uri: " << request.geturi() << std::endl;
+				// << this->request << std::endl;
+	const LocationConfig *currentLocation = buildCompleteUri();
 	
-	// doit verifier que la methode est acceptee dans le scop (location - serveur)
+	// doit verifier que la methode est acceptee dans le scop (si location est null recherche dans les methods server)
 	checkMethodAuthor(currentLocation);
 
+	std::cout	<< "complete uriPath: [" << response.completeUri << "]\n";
 
-	std::cout	<< "checkRequestValidity()\n"
-				<< this->request << std::endl
-				<< "newURI: [" << URI_Query << "]" << std::endl;
+	// doit verifier si le paths pointe sur une donee accessible
+	UtilParsing::checkAccessRessource(response.completeUri.c_str(), R_OK);
+
+// 	* security check :
+// 		-> uri doesn't include ".." ()
+// 		-> only allow Chars (RFC 3986 section 2.2)
+// 		-> don't care about uri longest
+
 }
 /*----------------------------------------------------------------------------*/
 
@@ -169,6 +224,7 @@ void	Client::clearData()
 {
 	request.clearRequest();
 	response.clearResponse();
+	clientServer = NULL;
 }
 /*----------------------------------------------------------------------------*/
 

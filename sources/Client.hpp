@@ -5,7 +5,6 @@
 
 # include "webserv.hpp"
 
-// # include "Server.hpp"
 # include "Request.hpp"
 # include "Response.hpp"
 
@@ -24,13 +23,15 @@ class Client
 		Request		request;
 		Response	response;
 
-		void	clearData();
 		void	checkRequestValidity();
+		void	buildResponse();
+		void	clearData();
 		
 	private:
-		void			checkMethodAuthor(const LocationConfig *current)	const;
-		std::string		extractPath(const std::string &)		 			const;
-		const LocationConfig *	buildCompleteUri(std::string &uriFromQuery) const;
+
+		void					buildHeader();
+		void					checkMethodAuthor(const LocationConfig *current)	const;
+		const LocationConfig *	buildCompleteUri();
 
 		void	initMimeMap();
 		static std::map<std::string, std::string>	_mimeMap;

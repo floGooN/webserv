@@ -49,7 +49,6 @@ class Request
 		std::string	_bound;
 		std::string	_contentType;
 
-
 		void	initRequestLine(const std::string &);
 		void	initHost(std::vector<std::string>::const_iterator &, std::vector<std::string>::const_iterator);
 		void	initContentLength(const std::string &);

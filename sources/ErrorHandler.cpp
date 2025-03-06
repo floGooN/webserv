@@ -79,7 +79,7 @@ std::string	ErrorHandler::findErrorFile(DIR *current, const std::string &errorCo
 }
 /*----------------------------------------------------------------------------*/
 
-/*	* find the 
+/* 
 */
 std::string ErrorHandler::generateContent() const
 {
@@ -109,43 +109,43 @@ std::string ErrorHandler::generateContent() const
 }
 /*----------------------------------------------------------------------------*/
 
-/*
-HTTP/1.1 404 Not Found
-Date: Tue, 04 Mar 2025 12:34:56 GMT
-Server: MyMinimalWebServer/1.0
-Content-Type: text/html; charset=UTF-8
-Content-Length: 123
-Connection: close
+/*	* exemple header
+	HTTP/1.1 404 Not Found
+	Date: Tue, 04 Mar 2025 12:34:56 GMT
+	Server: MyMinimalWebServer/1.0
+	Content-Type: text/html; charset=UTF-8
+	Content-Length: 123
+	Connection: close
 
-HTTP/1.1 500 Internal Server Error
-Date: Tue, 04 Mar 2025 12:35:10 GMT
-Server: MyMinimalWebServer/1.0
-Content-Type: text/html; charset=UTF-8
-Content-Length: 145
-Connection: close
+	HTTP/1.1 500 Internal Server Error
+	Date: Tue, 04 Mar 2025 12:35:10 GMT
+	Server: MyMinimalWebServer/1.0
+	Content-Type: text/html; charset=UTF-8
+	Content-Length: 145
+	Connection: close
 
-HTTP/1.1 200 OK
-Date: Tue, 04 Mar 2025 12:40:00 GMT
-Server: MyMinimalWebServer/1.0
-Content-Type: text/html; charset=UTF-8
-Content-Length: 5123
-Connection: keep-alive
+	HTTP/1.1 200 OK
+	Date: Tue, 04 Mar 2025 12:40:00 GMT
+	Server: MyMinimalWebServer/1.0
+	Content-Type: text/html; charset=UTF-8
+	Content-Length: 5123
+	Connection: keep-alive
 
-HTTP/1.1 201 Created
-Date: Tue, 04 Mar 2025 12:41:10 GMT
-Server: MyMinimalWebServer/1.0
-Content-Type: application/json
-Content-Length: 45
-Connection: keep-alive
-Location: /uploads/newfile.txt
+	HTTP/1.1 201 Created
+	Date: Tue, 04 Mar 2025 12:41:10 GMT
+	Server: MyMinimalWebServer/1.0
+	Content-Type: application/json
+	Content-Length: 45
+	Connection: keep-alive
+	Location: /uploads/newfile.txt
 
 
-Utilisé quand une action a réussi mais qu'il n'y a rien à retourner 
-(ex: suppression d'un fichier avec DELETE).
-HTTP/1.1 204 No Content
-Date: Tue, 04 Mar 2025 12:42:00 GMT
-Server: MyMinimalWebServer/1.0
-Connection: close
+	Utilisé quand une action a réussi mais qu'il n'y a rien à retourner 
+	(ex: suppression d'un fichier avec DELETE).
+	HTTP/1.1 204 No Content
+	Date: Tue, 04 Mar 2025 12:42:00 GMT
+	Server: MyMinimalWebServer/1.0
+	Connection: close
 
 */
 

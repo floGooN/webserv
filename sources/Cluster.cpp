@@ -133,14 +133,17 @@ void	Cluster::runCluster()
 							recvData(events[i]);
 						else if (events[i].events & EPOLLOUT)
 							sendData(events[i]);
-						else if (events[i].events & (EPOLLHUP | EPOLLRDHUP))
+						else if (events[i].events & (EPOLLHUP | EPOLLRDHUP)) {
+							std::cout << "IN RUN" << std::endl;
 							closeConnexion(events[i]);
+						}
 						else
 							std::cerr << "have to print EPOLLERR" << std::endl;
 					}
 				}
-				catch(const ErrorHandler &e) {
-					e.generateErrorPage();
+				catch(const std::exception &e) {
+					std::cout << "IN RUN except" << std::endl;
+					e.what();
 					closeConnexion(events[i]);
 				}
 			}
@@ -272,15 +275,15 @@ void	Cluster::recvData(const struct epoll_event &event)
 			throw std::runtime_error("recvData(): error 413 Request Entity Too Large\n");
 	}
 
-	{ // test
-		// std::cout	<< "Request:\n" << currentClient->request << std::endl
-		// 			<< "recvData() maxBodySize = " << currentClient->clientServer->getMaxBodySize() << std::endl
-		// 			<< "recvData() content length = " << currentClient->request.getcontentlength() << std::endl
-		// 			<< "recvData() body size = " << currentClient->request.getbody().size() << std::endl;
-					// << "recvData() all message =\n" << message << std::endl;
-	}	
+	// { // test
+	// 	std::cout	<< "Request:\n" << currentClient->request << std::endl
+	// 				<< "recvData() maxBodySize = " << currentClient->clientServer->getMaxBodySize() << std::endl
+	// 				<< "recvData() content length = " << currentClient->request.getcontentlength() << std::endl
+	// 				<< "recvData() body size = " << currentClient->request.getbody().size() << std::endl;
+	// 				// << "recvData() all message =\n" << message << std::endl;
+	// }	
 	
-	if (currentClient->request.getcontentlength() == currentClient->request.getbody().size())
+	if (currentClient->request.getcontentlength() <= currentClient->request.getbody().size())
 	{
 		currentClient->checkRequestValidity();
 		try {
@@ -310,56 +313,57 @@ void	Cluster::sendData(const struct epoll_event &event)
 	if (!client)
 		throw std::runtime_error("Error 500, client not found");
 
-	std::string response("\0");	
+	client->buildResponse();
+	// std::string response("\0");	
 	{
 		// cette partie s'occupe de recuperer la data a renvoyer au client (fichier static html / CGI)
 		// elle enregistre les fichiers televerses
 		//
 		// si il y a des arguments dans l'uri il faut les extraires (REQUETES GET)
 		// la reponse est stockee dans un buffer
+		//
 
-		// client->response.buildResponse(client->request);
 
-		char buff[BUFFERSIZE] = {'\0'};
-		memset(buff, '\0', sizeof(buff));
-		int fd = open("./website/devis.com/formulaires/form.html"/* "./googleIndex.html"*/, O_RDONLY);
-		if (fd == -1)
-			perror("OPENTEST");
+		// char buff[BUFFERSIZE] = {'\0'};
+		// memset(buff, '\0', sizeof(buff));
+		// int fd = open("./website/devis.com/formulaires/form.html"/* "./googleIndex.html"*/, O_RDONLY);
+		// if (fd == -1)
+		// 	perror("OPENTEST");
 
-		while (true) {
-			ssize_t ret = read(fd, buff, 1);
-			if (ret == 0)
-				break;
-			if (ret == -1){
-				perror("read() in sendData");
-				return;
-			}
-			response.append(buff, strlen(buff));
-		}
+		// while (true) {
+		// 	ssize_t ret = read(fd, buff, 1);
+		// 	if (ret == 0)
+		// 		break;
+		// 	if (ret == -1){
+		// 		perror("read() in sendData");
+		// 		return;
+		// 	}
+		// 	response.append(buff, strlen(buff));
+		// }
 	}
 
 	{
 		// cette partie prepare le header du client et le concatene au contenu du client
 		// client->response.buildHeader();
-		std::ostringstream convert;
-		convert << response.length();
-		response.insert(0, "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " + convert.str() + "\r\n\r\n");
+		// std::ostringstream convert;
+		// convert << response.length();
+		// response.insert(0, "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " + convert.str() + "\r\n\r\n");
 
 	}
 
-	while (client->request.totalBytessended != response.size())
+	while (client->request.totalBytessended != client->response.finalMessage.size())
 	{
 		// std::cout << "IN SENDATA:\n" << *client << std::endl;
-		ssize_t ret = send(event.data.fd, response.c_str(), response.length(), 0);
+		ssize_t ret = send(event.data.fd, client->response.finalMessage.c_str(), client->response.finalMessage.length(), 0);
 		if (ret <= 0)
 			break;
 		client->request.totalBytessended += ret;
 	}
 	
 	std::cout	<< "TOTAL BYTE SENDED: [" << client->request.totalBytessended << "]" << std::endl
-				<< "TOTAL RESPONSE SIZE: [" << response.size() << "]" << std::endl;
+				<< "TOTAL RESPONSE SIZE: [" << client->response.finalMessage.length() << "]" << std::endl;
 	if (client->request.getkeepalive() == true && \
-		response.size() == client->request.totalBytessended)
+		client->response.finalMessage.length() == client->request.totalBytessended)
 	{
 		client->clearData();
 		try {
@@ -371,8 +375,10 @@ void	Cluster::sendData(const struct epoll_event &event)
 			throw std::runtime_error("sendData() Internal error 500");
 		}
 	}
-	else
+	else {
+		std::cout << "HERE" << std::endl;
 		closeConnexion(event);
+	}
 }
 /*----------------------------------------------------------------------------*/
 

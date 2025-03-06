@@ -1,8 +1,10 @@
 
 
 #include "UtilParsing.hpp"
+#include "LocationConfig.hpp"
 
 #include <fcntl.h>
+#include <sys/stat.h>
 
 #include <sstream>
 #include <cstring>
@@ -108,6 +110,14 @@ std::vector<std::string>	UtilParsing::cleanVectorClose(std::vector<std::string> 
 	return vec;
 }
 
+bool	UtilParsing::isDirectory(const std::string & path)
+{
+	struct stat info;
+    if (stat(path.c_str(), &info) != 0)
+        throw std::runtime_error("403 Forbidden isDirectory");
+    return S_ISDIR(info.st_mode);
+}
+
 bool	UtilParsing::isOnlySpace(const std::string & str)
 {
 	size_t  i;
@@ -119,6 +129,26 @@ bool	UtilParsing::isOnlySpace(const std::string & str)
 		}
 	}
 	return (i == size);
+}
+
+/*	* throws invalid_argument if acess is refused
+*/
+void UtilParsing::checkAccessRessource(const std::string &ressourcePath, int type)
+{
+	if (access(ressourcePath.c_str(), type)) {
+		perror("checkAccessRessource()");
+		throw std::invalid_argument("checkAccessRessource() : access(\"" + ressourcePath + "\")" + std::string(strerror(errno)));
+	}
+}
+
+/*	* throws a runtime exception if closedir fail 
+*/
+void UtilParsing::safeCloseDirectory(DIR *current)
+{
+	if (closedir(current) == -1) {
+		perror("closedir()");
+		throw std::runtime_error(RED "Error system in safeCloseDirectory()" RESET);
+	}
 }
 
 void	UtilParsing::printMapVector(const std::map<int, std::map<std::string, std::vector<std::string> > >& allMapRoads)
@@ -195,6 +225,40 @@ std::string	UtilParsing::trim(const std::string& str)
 	return str.substr(first, last - first + 1);
 }
 
+/*	* return the content of the file or throw std::runtime_error
+*/
+std::string	UtilParsing::readFile(const std::string &filepath)
+{
+	int fd = open(filepath.c_str(), O_RDONLY);
+	if (fd == -1) {
+		perror("open()");
+		throw std::runtime_error("In ErrorHandler (generateContent())");
+	}
+
+	std::string	result("");
+	char		buff[BUFFER_SIZE] = {'\0'};
+	ssize_t		bytesReaded = read(fd, buff, BUFFER_SIZE);
+
+	if (bytesReaded == -1) {
+		perror("read()");
+		throw std::runtime_error("In ErrorHandler (generateContent())");
+	}
+	result = buff;
+
+	while (bytesReaded == BUFFER_SIZE)
+	{
+		bytesReaded = read(fd, buff, BUFFER_SIZE);		
+		if (bytesReaded == -1) {
+			perror("read()");
+			throw std::runtime_error("In ErrorHandler (generateContent())");
+		}
+		result.append(buff, bytesReaded);
+	}
+	if (close(fd) == -1)
+		perror("close() in UtilsParsing::readFile()");
+	return result;
+}
+
 std::string	UtilParsing::trimSemicolon(const std::string& str) 
 {
 	std::size_t first = str.find_first_not_of(';');
@@ -240,24 +304,6 @@ std::string UtilParsing::recoverExtension(const std::string &filename)
 	return filename.substr(start);
 }
 
-/*	* throws invalid_argument if acess is refused
-*/
-void UtilParsing::checkAccessRessource(const std::string &ressourcePath, int type)
-{
-	if (access(ressourcePath.c_str(), type))
-		throw std::invalid_argument("checkAccessRessource() : access(\"" + ressourcePath + "\")" + std::string(strerror(errno)));
-}
-
-/*	* throws a runtime exception if closedir fail 
-*/
-void UtilParsing::safeCloseDirectory(DIR *current)
-{
-	if (closedir(current) == -1) {
-		perror("closedir()");
-		throw std::runtime_error(RED "Error system in safeCloseDirectory()" RESET);
-	}
-}
-
 /*	* returns an open directory or throws invalid_argument if dir is not found
 */
 DIR* UtilParsing::openDirectory(const std::string &dirPath)
@@ -268,36 +314,21 @@ DIR* UtilParsing::openDirectory(const std::string &dirPath)
 	return dirp;
 }
 
-/*	* return the content of the file or throw std::runtime_error
+/*	*
 */
-std::string	UtilParsing::readFile(const std::string &filepath)
+std::string	UtilParsing::findFile(std::string &filePath)
 {
-	int fd = open(filepath.c_str(), O_RDONLY);
-	if (fd == -1) {
-		perror("open()");
-		throw std::runtime_error("In ErrorHandler (generateContent())");
-	}
+	return "";
+}
 
-	std::string	result("");
-	char		buff[BUFFER_SIZE] = {'\0'};
-	ssize_t		bytesReaded = read(fd, buff, BUFFER_SIZE);
-
-	if (bytesReaded == -1) {
-		perror("read()");
-		throw std::runtime_error("In ErrorHandler (generateContent())");
-	}
-	result = buff;
-
-	while (bytesReaded == BUFFER_SIZE)
+const LocationConfig * UtilParsing::findLocationConfig(const std::set<LocationConfig> &allLocation, const std::string &locationPath)
+{
+	std::set<LocationConfig>::iterator itLocation = allLocation.begin();
+	while (itLocation != allLocation.end())
 	{
-		bytesReaded = read(fd, buff, BUFFER_SIZE);		
-		if (bytesReaded == -1) {
-			perror("read()");
-			throw std::runtime_error("In ErrorHandler (generateContent())");
-		}
-		result.append(buff, bytesReaded);
+		if (itLocation->path.compare(locationPath) == 0)
+			return &(*itLocation);
+		itLocation++;
 	}
-	if (close(fd) == -1)
-		perror("close() in UtilsParsing::readFile()");
-	return result;
+	return NULL;
 }
