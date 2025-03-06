@@ -17,28 +17,26 @@
 /*============================================================================*/
 
 
-const std::string _dfltErrorPath = PATH_ERRPAGE;
-
-ErrorHandler::ErrorHandler(std::string &errCode, std::string &msg, Client &current)
-  :	_errcode(errCode), _msg(msg), _client(current)
-{	}
+ErrorHandler::ErrorHandler(Client &client, std::string errorKey, std::string errlog = "")
+  :	_client(client), _errorLog(errlog)
+{
+	_errorKey = errorKey;
+	if (errorKey.empty() == true)
+		_errorKey = ERR_520;
+		
+}
 /*----------------------------------------------------------------------------*/
 
 ErrorHandler::ErrorHandler(const ErrorHandler &ref)
-  : _errcode(ref._errcode), _msg(ref._msg), _client(ref._client)
+  : _client(ref._client), _errorKey(ref._errorKey), _errorLog(ref._errorLog)
 {	}
 /*----------------------------------------------------------------------------*/
 
-ErrorHandler::~ErrorHandler()
+ErrorHandler::~ErrorHandler() throw()
 {	}
 /*----------------------------------------------------------------------------*/
 
-ErrorHandler &	ErrorHandler::operator=(const ErrorHandler &ref)
-{
-	_errcode = ref._errcode;
-	_msg = ref._msg;
-	_client = ref._client;
-	
+ErrorHandler &	ErrorHandler::operator=(const ErrorHandler &) {
 	return *this;
 }
 /*----------------------------------------------------------------------------*/
@@ -55,49 +53,55 @@ ErrorHandler &	ErrorHandler::operator=(const ErrorHandler &ref)
 
 /*	* return the complete and correct file name or an empty str if nothing is found
 */
-std::string	ErrorHandler::findErrorFile(DIR *current, const std::string &errorCode) const
+std::string	ErrorHandler::findErrorFile(DIR *current, const std::string &errorKey) const
 {
-	std::string result;
-
+	std::string result = "";
+	std::string codeNumber = errorKey.substr(0, errorKey.find_first_of(" "));
 	while (current)
 	{
-		result = "";
 		struct dirent *dirp = readdir(current);
 		if (dirp)
 		{
 			result = dirp->d_name;
-			if (result.find(errorCode) != result.npos)
+			if (result.find(codeNumber) != result.npos) {
 				break ;
+			}
+			result = "";
 		}
 		else
 			break ;
 	}
 	UtilParsing::safeCloseDirectory(current);
-	if ( errno )
+	if ( result.empty() && errno )
 		perror("readdir()");
 	return result ;
 }
 /*----------------------------------------------------------------------------*/
 
-/* 
-*/
 std::string ErrorHandler::generateContent() const
 {
-	std::string filename("");
 	try
 	{
-		filename = findErrorFile(UtilParsing::openDirectory(_client.clientServer->getConfig().pageErrorPath), _errcode);
+		std::string filename("");
+		std::string	dirErrorPath = _client.clientServer->getConfig().pageErrorPath;
+		filename = findErrorFile(UtilParsing::openDirectory(dirErrorPath), _errorKey);
 		if (filename.empty())
 		{
-			filename = findErrorFile(UtilParsing::openDirectory(PATH_ERRPAGE), _errcode);
+			filename = findErrorFile(UtilParsing::openDirectory(PATH_ERRPAGE), _errorKey);
 			if (filename.empty())
 				return std::string(DFLT_ERRORPAGE);
 		}
-		filename.insert(0, _client.clientServer->getConfig().pageErrorPath);
+		if (filename[0] != '/' && dirErrorPath[dirErrorPath.size() - 1] != '/') {
+			filename.insert(0, "/");
+		}
+		else if (filename[0] == '/' && dirErrorPath[dirErrorPath.size() - 1] == '/') {
+			filename.erase(0, 1);
+		}
+		filename.insert(0, dirErrorPath);
 #ifdef TEST
-		std::cout	<< BRIGHT_YELLOW "IN " __FILE__ " AT LINE : " << __LINE__ << std::endl
-					<< "comple path to the error page : [" << filename 
-					<< "]" RESET << std::endl;
+		// std::cout	<< BRIGHT_YELLOW "IN " __FILE__ " AT LINE : " << __LINE__ << std::endl
+		// 			<< "comple path to the error page : [" << filename 
+		// 			<< "]" RESET << std::endl;
 #endif
 		return UtilParsing::readFile(filename);
 	}
@@ -110,26 +114,6 @@ std::string ErrorHandler::generateContent() const
 /*----------------------------------------------------------------------------*/
 
 /*	* exemple header
-	HTTP/1.1 404 Not Found
-	Date: Tue, 04 Mar 2025 12:34:56 GMT
-	Server: MyMinimalWebServer/1.0
-	Content-Type: text/html; charset=UTF-8
-	Content-Length: 123
-	Connection: close
-
-	HTTP/1.1 500 Internal Server Error
-	Date: Tue, 04 Mar 2025 12:35:10 GMT
-	Server: MyMinimalWebServer/1.0
-	Content-Type: text/html; charset=UTF-8
-	Content-Length: 145
-	Connection: close
-
-	HTTP/1.1 200 OK
-	Date: Tue, 04 Mar 2025 12:40:00 GMT
-	Server: MyMinimalWebServer/1.0
-	Content-Type: text/html; charset=UTF-8
-	Content-Length: 5123
-	Connection: keep-alive
 
 	HTTP/1.1 201 Created
 	Date: Tue, 04 Mar 2025 12:41:10 GMT
@@ -138,40 +122,45 @@ std::string ErrorHandler::generateContent() const
 	Content-Length: 45
 	Connection: keep-alive
 	Location: /uploads/newfile.txt
-
-
+	
 	Utilisé quand une action a réussi mais qu'il n'y a rien à retourner 
 	(ex: suppression d'un fichier avec DELETE).
 	HTTP/1.1 204 No Content
 	Date: Tue, 04 Mar 2025 12:42:00 GMT
 	Server: MyMinimalWebServer/1.0
 	Connection: close
-
-*/
-
+	*/
+std::string	ErrorHandler::generateHeader() const
+{
+	std::string length = UtilParsing::intToString(static_cast<int>( _client.response.finalMessage.length() ));
+	std::string final =	PROTOCOL_VERION + _errorKey + HTTP_SEPARATOR \
+						"Date: TODAY" HTTP_SEPARATOR \
+						"Server: Rob_&_Flo__WEBSERV42__/0.5" HTTP_SEPARATOR \
+						"Content-Type: text/html; charset=UTF-8" HTTP_SEPARATOR \
+						"Content-Length: " + length + HTTP_SEPARATOR \
+						"Connection: close" \
+						HTTP_SEPARATOR \
+						HTTP_SEPARATOR;
+	return final;
+}
 /*----------------------------------------------------------------------------*/
 
-/*	*
-*/
-void	ErrorHandler::generateErrorPage() const
+void	ErrorHandler::generateErrorPage()
 {
-	std::string	pageContent(generateContent());
-	// std::string	headerContent(generateHeader());
-
-
-	// 	std::ostringstream convert;
-	// 	convert << response.length();
-	// response.insert(0, 
-	// "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " 
-	// + convert.str() + "\r\n\r\n");
-
-
-
-	// former le header
-
-	// concatener les deux et creer la reponse client
-	// passer en mode ecriture pour renvoyer la page d'erreur au client
-
+	// tout est dans un try catch pour que le serveur ne crash pas
+	try
+	{
+		_client.response.finalMessage = generateContent();
+		if (_client.response.finalMessage.empty())
+			_client.response.finalMessage = DFLT_ERRORPAGE;
+		_client.response.finalMessage.insert(0, generateHeader());
+		_client.request.keepAlive = false;
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+		_client.response.finalMessage = generateHeader() + DFLT_ERRORPAGE;
+	}
 }
 /*----------------------------------------------------------------------------*/
 

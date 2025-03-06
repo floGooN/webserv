@@ -21,8 +21,7 @@ class Request
 		Request() {};
 		Request & operator=(const Request &);
 		
-		bool		getkeepalive() 		const;
-		size_t		getcontentlength()	const;
+		size_t				getcontentlength()	const;
 		std::string			&getbody();
 		const std::string	&geturi()			const;
 		const std::string	&gettype()			const;
@@ -36,9 +35,9 @@ class Request
 		void	clearRequest();
 
 		size_t	totalBytessended;
+		bool	keepAlive;
 
 	private:		
-		bool		_keepAlive;
 		size_t		_contentLength;
 		std::string	_uri;
 		std::string	_hostName;

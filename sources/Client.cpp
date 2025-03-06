@@ -10,6 +10,7 @@
 #include "Client.hpp"
 #include "Server.hpp"
 #include "UtilParsing.hpp"
+#include "ErrorHandler.hpp"
 
 #include <cstring>
 
@@ -70,14 +71,15 @@ void	Client::buildResponse()
 	if (UtilParsing::isDirectory(response.completeUri) == true)
 	{
 		const LocationConfig *current = UtilParsing::findLocationConfig(clientServer->getLocation(), request.geturi());
-		if ( current && ! current->index.empty())
+		if ( current && ! current->index.empty()) {
 			response.completeUri.append(current->index);
-		else if ( ! clientServer->getConfig().indexFile.empty())
+		}
+		else if ( ! clientServer->getConfig().indexFile.empty()) {
 			response.completeUri.append(clientServer->getConfig().indexFile);
-		else //si l'autoindex est autorise envoyer l'arborescence ?
-		{
-			std::cout << "HEEEEERE : " << response.completeUri << std::endl;
-			throw std::runtime_error("400 Bad request the ressource pointed is a directory");
+		}
+		else {
+			//si l'autoindex est autorise envoyer l'arborescence ?
+			throw ErrorHandler(*this, ERR_404, ("[" + request.geturi() + "] request didn't succeed"));
 		}
 	}
 

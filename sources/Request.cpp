@@ -41,8 +41,7 @@
 	* get body (if detected)
 */
 Request::Request(const std::string &response)
-  : totalBytessended(0),
-	_keepAlive(response.find("keep-alive") == response.npos ? false : true)
+  : totalBytessended(0)
 {
 	size_t	idxBodySeparator = response.find(BODY_SEPARATOR);
 	if (!response.size() || idxBodySeparator == response.npos)
@@ -50,6 +49,7 @@ Request::Request(const std::string &response)
 
 	initContentLength(response);
 	initContentType(response);
+	keepAlive = response.find("keep-alive") == response.npos ? false : true;
 	
 	std::vector<std::string>					tokenHeader;
 	std::vector<std::string>::const_iterator	itToken;
@@ -87,7 +87,7 @@ Request & Request::operator=(const Request &ref)
 {
 	if (this != &ref)
 	{
-		_keepAlive = ref._keepAlive;
+		keepAlive = ref.keepAlive;
 		_contentLength = ref._contentLength;
 		_contentType = ref._contentType;
 		_uri = ref._uri;
@@ -109,7 +109,7 @@ std::ostream & operator<<(std::ostream & o, Request &ref)
 		<< "_uri: [" << ref.geturi() << "]" << std::endl
 		<< "_hostName: [" << ref.gethostname() << "]" << std::endl
 		<< "_hostPort: [" << ref.gethostport() << "]" << std::endl
-		<< "_keepAlive: [" << (ref.getkeepalive() == true ? "true" : "false") << "]" << std::endl
+		<< "keepAlive: [" << (ref.keepAlive == true ? "true" : "false") << "]" << std::endl
 		<< "_contentLength: [" << ref.getcontentlength() << "]" << std::endl
 		<< "_contentType: [" << (ref.getcontenttype().empty() ? "" : ref.getcontenttype()) << "]" << std::endl
 		<< "_bound: [" << ref.getbound() << "]" << std::endl
@@ -122,11 +122,6 @@ std::ostream & operator<<(std::ostream & o, Request &ref)
 /*============================================================================*/
 						/*### PUBLIC METHODS ###*/
 /*============================================================================*/
-
-bool Request::getkeepalive() const {
-	return _keepAlive;
-}
-/*----------------------------------------------------------------------------*/
 
 const std::string&	Request::geturi() const {
 	return _uri;
@@ -177,7 +172,7 @@ void	Request::clearRequest()
 {
 	totalBytessended = 0;
 
-	_keepAlive = false;
+	keepAlive = false;
 	_contentLength = 0;
 	_uri.clear();
 	_hostName.clear();
@@ -357,6 +352,7 @@ void	Request::setBody(const std::string &body, ssize_t)
 	catch(const std::exception& e)
 	{
 		std::cerr << e.what() << '\n';
+		
 		throw std::runtime_error("Error 500 setBody() in " __FILE__);
 	}
 }

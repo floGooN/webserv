@@ -141,10 +141,12 @@ void	Cluster::runCluster()
 							std::cerr << "have to print EPOLLERR" << std::endl;
 					}
 				}
-				catch(const std::exception &e) {
+				catch(ErrorHandler &e) {
 					std::cout << "IN RUN except" << std::endl;
-					e.what();
-					closeConnexion(events[i]);
+					std::cerr << BRIGHT_YELLOW << e.what() << RESET << std::endl;
+					e.generateErrorPage();
+					changeEventMod(false, events[i].data.fd);
+					// closeConnexion(events[i]);
 				}
 			}
 		}
@@ -170,7 +172,7 @@ Client * Cluster::addClient(const Request &req, const int fdClient)
 		current = &getServersByPort().at(req.gethostport());
 	}
 	catch(const std::exception& e) {
-		throw std::runtime_error("addClient(): error 404\n"); // ressource not found
+		throw std::runtime_error(RED "addClient(): the host required by the client isn't handle by any server\n" RESET);
 	}
 
 	try {
@@ -182,10 +184,9 @@ Client * Cluster::addClient(const Request &req, const int fdClient)
 		return &it.first->second;
 	}
 	catch(const std::exception& e) {
-		std::cerr << RED " Error\nadding client to list\n" RESET << e.what();
-		throw std::runtime_error("addClient(): error 500\n");
+		throw std::runtime_error(RED " Error\nadding client to list\n" RESET);
 	}
-	throw std::runtime_error("addClient(): error 500\n");
+	throw std::runtime_error(BRIGHT_RED "addClient(): IMPROBABLE ERROR\n" RED);
 }
 /*----------------------------------------------------------------------------*/
 
@@ -217,23 +218,25 @@ Client *	Cluster::findClient(int fdClient)
 	* return nb bytes received (for exit loop)
 	* throw error with correct page if an error occured
 */
-ssize_t	Cluster::safeRecv(const int clientFd, std::string &message)
+ssize_t	Cluster::safeRecv(const int clientFd, std::string &message, Client *client)
 {
 	char	buffer[BUFFERSIZE] = {'\0'};
 	ssize_t	bytesReceived = recv(clientFd, buffer, BUFFERSIZE, 0);
 	
-	if (bytesReceived == -1)
-		throw std::runtime_error("safeRecv(): bytesReceived == -1 error 500\n"); // throw error 500 (internal error)
-	if (bytesReceived == 0)
-		throw std::runtime_error("safeRecv(): bytesReceived == 0  error 499\n"); // throw error 499 (client closed connexion)
-	
+	if (bytesReceived == -1 || bytesReceived == 0) {
+		if (!client)
+			client = addClient(Request(""), clientFd);
+		throw ErrorHandler(*client, (bytesReceived == -1 ? ERR_500 : ERR_499), \
+									(bytesReceived == -1 ? "recv(): error system" : "") );
+	}
 	try {
 		message.clear();
 		message.assign(buffer, bytesReceived);
 	}
 	catch(const std::exception& e) {
-		std::cerr << e.what() << '\n';
-		throw std::runtime_error("safeRecv(): error 500\n");
+		if (!client)
+			client = addClient(Request(""), clientFd);
+		throw ErrorHandler(*client, ERR_500, std::string(e.what() + '\n') );
 	}
 	return bytesReceived;
 }
@@ -256,13 +259,13 @@ void	Cluster::recvData(const struct epoll_event &event)
 
 	while (bytesReceived == BUFFERSIZE)
 	{
-		bytesReceived = safeRecv(event.data.fd, message);
+		bytesReceived = safeRecv(event.data.fd, message, currentClient);
 		if (!currentClient)
 		{
 			currentClient = addClient(Request(message), event.data.fd);
 			if (currentClient->request.getcontentlength() > \
 				currentClient->clientServer->getMaxBodySize())
-				throw std::runtime_error("recvData(): error 413 Request Entity Too Large\n");
+				throw ErrorHandler(*currentClient, ERR_413, "");
 		}
 		else {
 			if (currentClient->request.gettype().empty() == false)
@@ -272,7 +275,7 @@ void	Cluster::recvData(const struct epoll_event &event)
 		}
 		if (currentClient->request.getbody().size() > \
 			currentClient->clientServer->getMaxBodySize())
-			throw std::runtime_error("recvData(): error 413 Request Entity Too Large\n");
+			throw ErrorHandler(*currentClient, ERR_413, "");
 	}
 
 	// { // test
@@ -313,7 +316,8 @@ void	Cluster::sendData(const struct epoll_event &event)
 	if (!client)
 		throw std::runtime_error("Error 500, client not found");
 
-	client->buildResponse();
+	if (client->response.finalMessage.empty() == true)
+		client->buildResponse();
 	// std::string response("\0");	
 	{
 		// cette partie s'occupe de recuperer la data a renvoyer au client (fichier static html / CGI)
@@ -360,11 +364,12 @@ void	Cluster::sendData(const struct epoll_event &event)
 		client->request.totalBytessended += ret;
 	}
 	
-	std::cout	<< "TOTAL BYTE SENDED: [" << client->request.totalBytessended << "]" << std::endl
-				<< "TOTAL RESPONSE SIZE: [" << client->response.finalMessage.length() << "]" << std::endl;
-	if (client->request.getkeepalive() == true && \
-		client->response.finalMessage.length() == client->request.totalBytessended)
+	if (client->response.finalMessage.length() == client->request.totalBytessended && \
+		client->request.keepAlive == true)
 	{
+		std::cout	<< "TOTAL BYTE SENDED: [" << client->request.totalBytessended << "]" << std::endl
+					<< "TOTAL RESPONSE SIZE: [" << client->response.finalMessage.length() << "]" << std::endl;
+
 		client->clearData();
 		try {
 			changeEventMod(true, event.data.fd);
@@ -376,7 +381,7 @@ void	Cluster::sendData(const struct epoll_event &event)
 		}
 	}
 	else {
-		std::cout << "HERE" << std::endl;
+		std::cout << "closeConnexion in sendData()" << std::endl;
 		closeConnexion(event);
 	}
 }

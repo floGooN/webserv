@@ -86,7 +86,7 @@ class Cluster
 
 		void	sendData(const struct epoll_event &);
 		void	recvData(const struct epoll_event &);
-		ssize_t	safeRecv(const int, std::string &);
+		ssize_t	safeRecv(const int, std::string &, Client *);
 };
 
 std::ostream	& operator<<(std::ostream &, const Cluster &);

@@ -9,29 +9,29 @@
 class Client;
 
 /*
-	prend qu'un client en parametre
-	le client peut etre null (donc il faut un ptr su Client en params)
-	si le client n'existe pas (NULLPTR) c'est quil y a une erreur systeme (add client)
+	CLIENT, ERR_KEY, ERR_LOG
 */
-class ErrorHandler
+class ErrorHandler : std::exception
 {
 	public:
-		ErrorHandler(std::string &, std::string &, Client &);
+		ErrorHandler(Client &, std::string, std::string err);
 		ErrorHandler(const ErrorHandler &);
-		~ErrorHandler();
+		ErrorHandler &operator=(const ErrorHandler &);
+		~ErrorHandler() throw();
 		
-		void	generateErrorPage() const;
+		const char *	what() const throw() {
+			return _errorLog.c_str();
+		};
+		void	generateErrorPage();
 
 	private:
-		ErrorHandler		&operator=(const ErrorHandler &);
-		const std::string	_dfltErrorPath;
-
 		std::string	findErrorFile(DIR *, const std::string &) const;
 		std::string generateContent() const;
+		std::string generateHeader() const;
 
-		std::string	&_errcode;
-		std::string	&_msg;
 		Client		&_client;
+		std::string	_errorKey;
+		std::string	_errorLog;
 
 };
 
