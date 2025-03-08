@@ -69,7 +69,7 @@ class Cluster
 		std::map<std::string, Server >	_serversByService;
 
 		Client	*addClient(const Request &req, const int);
-		Client	*findClient(int fdClient);
+		Client	*findClient(const int fdClient, std::string portNumber);
 
 		void	setEpollFd();
 		void	setServersByPort();

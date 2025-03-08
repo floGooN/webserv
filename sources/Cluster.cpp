@@ -19,7 +19,6 @@
 #include <sstream>
 
 #define MAXEVENT	10
-#define BUFFERSIZE	2048
 
 int g_runServer = 0;
 
@@ -142,11 +141,15 @@ void	Cluster::runCluster()
 					}
 				}
 				catch(ErrorHandler &e) {
-					std::cout << "IN RUN except" << std::endl;
-					std::cerr << BRIGHT_YELLOW << e.what() << RESET << std::endl;
+					std::cout << BRIGHT_YELLOW << "IN RUN except" << std::endl;
+					std::cerr << e.what() << RESET << std::endl;
 					e.generateErrorPage();
-					changeEventMod(false, events[i].data.fd);
-					// closeConnexion(events[i]);
+					try {
+						changeEventMod(false, events[i].data.fd);
+					}
+					catch(const std::exception& e) {
+						std::cerr << e.what() << '\n';
+					}
 				}
 			}
 		}
@@ -167,26 +170,31 @@ void	Cluster::runCluster()
 */
 Client * Cluster::addClient(const Request &req, const int fdClient)
 {
-	Server *current = NULL;
+	Server *server = NULL;
 	try {
-		current = &getServersByPort().at(req.gethostport());
+		server = &getServersByPort().at(req.gethostport());
 	}
 	catch(const std::exception& e) {
-		throw std::runtime_error(RED "addClient(): the host required by the client isn't handle by any server\n" RESET);
+		throw ErrorHandler(*(&Client(req)), ERR_403, req.gethostport() + " is an invalid host.");
 	}
 
 	try {
-		std::pair<std::map<int, Client>::iterator, bool> it;
-		
-		it = current->getClientList().insert(std::pair<int, Client>(fdClient, Client(req)));
-		it.first->second.clientServer = current;
-		
-		return &it.first->second;
+		Client *currentClient = findClient(fdClient, req.gethostport());
+		if ( ! currentClient )
+		{
+			std::pair<std::map<int, Client>::iterator, bool> it;
+			
+			it = server->getClientList().insert(std::pair<int, Client>(fdClient, Client(req)));
+			it.first->second.clientServer = server;
+			
+			return &it.first->second;
+		}
+		else
+			return currentClient;
 	}
 	catch(const std::exception& e) {
 		throw std::runtime_error(RED " Error\nadding client to list\n" RESET);
 	}
-	throw std::runtime_error(BRIGHT_RED "addClient(): IMPROBABLE ERROR\n" RED);
 }
 /*----------------------------------------------------------------------------*/
 
@@ -194,22 +202,45 @@ Client * Cluster::addClient(const Request &req, const int fdClient)
     * If no client is found, return a null pointer
 	* Don't throw an exception
 */
-Client *	Cluster::findClient(int fdClient)
+Client *	Cluster::findClient(const int fdClient, std::string portNumber)
 {
-	std::map<std::string, Server>::iterator itServer = _serversByService.begin();
-	while (itServer != _serversByService.end())
+	if (portNumber.empty())
 	{
+		std::map<std::string, Server>::iterator itServer = _serversByService.begin();
+		while (itServer != _serversByService.end())
+		{
+			try {
+				Client *client = &itServer->second.getClientList().at(fdClient);
+				client->clientServer = &itServer->second;
+				return client;
+			}
+			catch(const std::exception& e) {
+				;
+			}
+			itServer++;
+		}
+	}
+	else
+	{
+		Server *server;
 		try {
-			Client *client = &itServer->second.getClientList().at(fdClient);
-			client->clientServer = &itServer->second;
-			return client;
+			server = &_serversByService.at(portNumber);
+		}
+		catch(const std::exception& e)
+		{
+			Client *client = addClient(Request(""), fdClient);
+			throw ErrorHandler(*client, ERR_403, portNumber + " is an invalid host.");
+		}
+		try {
+			return &server->getClientList().at(fdClient);
 		}
 		catch(const std::exception& e) {
 			;
 		}
-		itServer++;
+		
 	}
 	return NULL;
+
 }
 /*----------------------------------------------------------------------------*/
 
@@ -220,14 +251,14 @@ Client *	Cluster::findClient(int fdClient)
 */
 ssize_t	Cluster::safeRecv(const int clientFd, std::string &message, Client *client)
 {
-	char	buffer[BUFFERSIZE] = {'\0'};
-	ssize_t	bytesReceived = recv(clientFd, buffer, BUFFERSIZE, 0);
+	char	buffer[STATIC_BUFFSIZE] = {'\0'};
+	ssize_t	bytesReceived = recv(clientFd, buffer, STATIC_BUFFSIZE, 0);
 	
 	if (bytesReceived == -1 || bytesReceived == 0) {
 		if (!client)
 			client = addClient(Request(""), clientFd);
 		throw ErrorHandler(*client, (bytesReceived == -1 ? ERR_500 : ERR_499), \
-									(bytesReceived == -1 ? "recv(): error system" : "") );
+									(bytesReceived == -1 ? "recv(): error system\n\n" : "") );
 	}
 	try {
 		message.clear();
@@ -236,7 +267,7 @@ ssize_t	Cluster::safeRecv(const int clientFd, std::string &message, Client *clie
 	catch(const std::exception& e) {
 		if (!client)
 			client = addClient(Request(""), clientFd);
-		throw ErrorHandler(*client, ERR_500, std::string(e.what() + '\n') );
+		throw ErrorHandler(*client, ERR_500, std::string(e.what() + '\n' + '\n') );
 	}
 	return bytesReceived;
 }
@@ -253,21 +284,20 @@ void	Cluster::recvData(const struct epoll_event &event)
 				<< "ClientSocket [" RESET PURPLE << event.data.fd << BOLD BRIGHT_PURPLE "]" RESET
 				<< std::endl;
 #endif
-	Client		*currentClient = findClient(event.data.fd);
-	ssize_t		bytesReceived = BUFFERSIZE;
+	Client		*currentClient = NULL;// = findClient(event.data.fd, "");
+	ssize_t		bytesReceived = STATIC_BUFFSIZE;
 	std::string	message("\0");
 
-	while (bytesReceived == BUFFERSIZE)
+	while (bytesReceived == STATIC_BUFFSIZE)
 	{
 		bytesReceived = safeRecv(event.data.fd, message, currentClient);
 		if (!currentClient)
 		{
 			currentClient = addClient(Request(message), event.data.fd);
-			if (currentClient->request.getcontentlength() > \
-				currentClient->clientServer->getMaxBodySize())
-				throw ErrorHandler(*currentClient, ERR_413, "");
+			
 		}
-		else {
+		else
+		{
 			if (currentClient->request.gettype().empty() == false)
 				currentClient->request.setBody(message, bytesReceived);
 			else
@@ -292,10 +322,8 @@ void	Cluster::recvData(const struct epoll_event &event)
 		try {
 			changeEventMod(false, event.data.fd);
 		}
-		catch(const RunException& e) {
-			e.runExcept();
-			closeConnexion(event);
-			throw std::runtime_error("recvData(): error 500\n");
+		catch(const std::runtime_error& e) {
+			throw ErrorHandler(*currentClient, ERR_500, "in recvData()\n\n");
 		}
 	}
 }
@@ -312,7 +340,7 @@ void	Cluster::sendData(const struct epoll_event &event)
 				<< std::endl;
 #endif
 
-	Client	*client = findClient(event.data.fd);
+	Client	*client = findClient(event.data.fd, "");
 	if (!client)
 		throw std::runtime_error("Error 500, client not found");
 
@@ -627,7 +655,7 @@ void	Cluster::changeEventMod(const bool changeForRead, const int fd) const
 	ev.events = EPOLLET | EPOLLHUP | EPOLLRDHUP | (changeForRead ? EPOLLIN : EPOLLOUT);
 	
 	if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, fd, &ev) == -1)
-		throw RunException(__FILE__, __LINE__ - 1, "Error epoll_ctl() in changeEventMod():");
+		throw std::runtime_error("changeEventMod(): " + std::string(strerror(errno)));
 }
 /*----------------------------------------------------------------------------*/
 

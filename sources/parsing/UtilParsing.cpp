@@ -10,8 +10,6 @@
 #include <cstring>
 #include <limits>
 
-#define BUFFER_SIZE	4096
-
 size_t	UtilParsing::safeMultiply(size_t value, size_t factor) {
 	if (value > std::numeric_limits<size_t>::max() / factor) {
 		throw std::overflow_error("Multiplication overflow");
@@ -236,8 +234,8 @@ std::string	UtilParsing::readFile(const std::string &filepath)
 	}
 
 	std::string	result("");
-	char		buff[BUFFER_SIZE] = {'\0'};
-	ssize_t		bytesReaded = read(fd, buff, BUFFER_SIZE);
+	char		buff[STATIC_BUFFSIZE] = {'\0'};
+	ssize_t		bytesReaded = read(fd, buff, STATIC_BUFFSIZE);
 
 	if (bytesReaded == -1) {
 		perror("read()");
@@ -245,9 +243,9 @@ std::string	UtilParsing::readFile(const std::string &filepath)
 	}
 	result = buff;
 
-	while (bytesReaded == BUFFER_SIZE)
+	while (bytesReaded == STATIC_BUFFSIZE)
 	{
-		bytesReaded = read(fd, buff, BUFFER_SIZE);		
+		bytesReaded = read(fd, buff, STATIC_BUFFSIZE);		
 		if (bytesReaded == -1) {
 			perror("read()");
 			throw std::runtime_error("In ErrorHandler (generateContent())");

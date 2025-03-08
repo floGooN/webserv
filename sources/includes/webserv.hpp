@@ -79,5 +79,10 @@
 # define	ERR_501	"501 Not Implemented"
 # define	ERR_520	"520 Unknown Error"
 
+/* -------------------------------------- */
+/* ---		    USEFULL VARS   	   	  --- */
+/* -------------------------------------- */
+
+#define	STATIC_BUFFSIZE	4096
 
 #endif
