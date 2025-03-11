@@ -12,13 +12,15 @@
 # define	BODY_SEPARATOR	"\r\n\r\n"
 # define	PROTOCOL_VERION	"HTTP/1.1"
 
+class Cluster;
+
 class Request
 {
 	public:
 		Request(const std::string &);
 		Request(const Request &);
+		Request(const Cluster &);
 		~Request();
-		Request() {};
 		Request & operator=(const Request &);
 		
 		size_t				getcontentlength()	const;

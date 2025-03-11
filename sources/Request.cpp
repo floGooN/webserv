@@ -25,6 +25,7 @@
 /*============================================================================*/
 
 #include "Request.hpp"
+#include "Cluster.hpp"
 #include "UtilParsing.hpp"
 #include <sstream>
 
@@ -46,6 +47,8 @@ Request::Request(const std::string &response)
 	size_t	idxBodySeparator = response.find(BODY_SEPARATOR);
 	if (!response.size() || idxBodySeparator == response.npos)
 		throw std::runtime_error("400 bad request empty request\n");
+	else
+		std::cout << BRIGHT_GREEN << response << RESET << std::endl;
 
 	initContentLength(response);
 	initContentType(response);
@@ -71,6 +74,25 @@ Request::Request(const std::string &response)
 		throw std::runtime_error("surprising 400 bad request\n");
 	_body.clear();
 	setBody(response, response.size());
+}
+/*----------------------------------------------------------------------------*/
+
+/*	* this constructor mak a "fake request" to handle an error
+*/
+Request::Request(const Cluster &cluster)
+{
+	Server &server = cluster.getServersByPort().begin()->second;
+
+	this->_body.clear();
+	this->_bound. clear();
+	this->_contentLength = 0;
+	this->_contentType.clear();
+	this->_hostName = *server.getNameList().begin();
+	this->_hostPort = server.getService();
+	this->_requestType = "GET";
+	this->_uri = "/fake";
+	this->totalBytessended = 0;
+	this->keepAlive = false;
 }
 /*----------------------------------------------------------------------------*/
 

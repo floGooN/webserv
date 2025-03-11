@@ -148,6 +148,7 @@ std::string	ErrorHandler::generateHeader() const
 void	ErrorHandler::generateErrorPage()
 {
 	// tout est dans un try catch pour que le serveur ne crash pas
+	std::cout << "IN ::generateErrorPage():\n" << *this->_client.clientServer << std::endl;
 	try
 	{
 		_client.response.finalMessage = generateContent();

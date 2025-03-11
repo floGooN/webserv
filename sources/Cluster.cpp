@@ -175,13 +175,20 @@ Client * Cluster::addClient(const Request &req, const int fdClient)
 		server = &getServersByPort().at(req.gethostport());
 	}
 	catch(const std::exception& e) {
-		throw ErrorHandler(*(&Client(req)), ERR_403, req.gethostport() + " is an invalid host.");
+		Client client = Client(req);
+		throw ErrorHandler(client, ERR_403, req.gethostport() + " is an invalid host.");
 	}
 
+	Client *currentClient = NULL;
 	try {
-		Client *currentClient = findClient(fdClient, req.gethostport());
-		if ( ! currentClient )
-		{
+		currentClient = &server->getClientList().at(fdClient);
+	}
+	catch(const std::exception& e) {
+		std::cout	<< "New Client in server [" <<  req.gethostport() << "]" << std::endl;
+	}
+	if ( ! currentClient )
+	{
+		try {
 			std::pair<std::map<int, Client>::iterator, bool> it;
 			
 			it = server->getClientList().insert(std::pair<int, Client>(fdClient, Client(req)));
@@ -189,12 +196,13 @@ Client * Cluster::addClient(const Request &req, const int fdClient)
 			
 			return &it.first->second;
 		}
-		else
-			return currentClient;
+		catch(const std::exception& e) {
+			throw std::runtime_error(RED " Error\nadding client to list\n" RESET);
+		}
 	}
-	catch(const std::exception& e) {
-		throw std::runtime_error(RED " Error\nadding client to list\n" RESET);
-	}
+	*currentClient = Client(req);
+	currentClient->clientServer = server;
+	return currentClient;
 }
 /*----------------------------------------------------------------------------*/
 
@@ -202,45 +210,24 @@ Client * Cluster::addClient(const Request &req, const int fdClient)
     * If no client is found, return a null pointer
 	* Don't throw an exception
 */
-Client *	Cluster::findClient(const int fdClient, std::string portNumber)
+Client *	Cluster::findClient(const int fdClient)
 {
-	if (portNumber.empty())
+	std::map<std::string, Server>::iterator itServer = _serversByService.begin();
+	while (itServer != _serversByService.end())
 	{
-		std::map<std::string, Server>::iterator itServer = _serversByService.begin();
-		while (itServer != _serversByService.end())
-		{
-			try {
-				Client *client = &itServer->second.getClientList().at(fdClient);
-				client->clientServer = &itServer->second;
-				return client;
-			}
-			catch(const std::exception& e) {
-				;
-			}
-			itServer++;
-		}
-	}
-	else
-	{
-		Server *server;
 		try {
-			server = &_serversByService.at(portNumber);
-		}
-		catch(const std::exception& e)
-		{
-			Client *client = addClient(Request(""), fdClient);
-			throw ErrorHandler(*client, ERR_403, portNumber + " is an invalid host.");
-		}
-		try {
-			return &server->getClientList().at(fdClient);
+			Client *client = &itServer->second.getClientList().at(fdClient);
+			if (client->request.gettype().empty())
+				throw std::runtime_error("");
+			client->clientServer = &itServer->second;
+			return client;
 		}
 		catch(const std::exception& e) {
 			;
 		}
-		
+		itServer++;
 	}
 	return NULL;
-
 }
 /*----------------------------------------------------------------------------*/
 
@@ -249,25 +236,28 @@ Client *	Cluster::findClient(const int fdClient, std::string portNumber)
 	* return nb bytes received (for exit loop)
 	* throw error with correct page if an error occured
 */
-ssize_t	Cluster::safeRecv(const int clientFd, std::string &message, Client *client)
+ssize_t	Cluster::safeRecv(const int clientFd, std::string &message, Client **client)
 {
 	char	buffer[STATIC_BUFFSIZE] = {'\0'};
 	ssize_t	bytesReceived = recv(clientFd, buffer, STATIC_BUFFSIZE, 0);
 	
-	if (bytesReceived == -1 || bytesReceived == 0) {
-		if (!client)
-			client = addClient(Request(""), clientFd);
-		throw ErrorHandler(*client, (bytesReceived == -1 ? ERR_500 : ERR_499), \
-									(bytesReceived == -1 ? "recv(): error system\n\n" : "") );
+	if ( ! bytesReceived )
+		return 0 ;
+	if (bytesReceived == -1) {
+		if ( ! *client ) {
+			*client = addClient(Request(*this), clientFd);
+		}
+		throw ErrorHandler(**client,ERR_500, "recv(): error system\n\n");
 	}
 	try {
 		message.clear();
 		message.assign(buffer, bytesReceived);
 	}
 	catch(const std::exception& e) {
-		if (!client)
-			client = addClient(Request(""), clientFd);
-		throw ErrorHandler(*client, ERR_500, std::string(e.what() + '\n' + '\n') );
+		if ( ! *client ) {
+			*client = addClient(Request(*this), clientFd);
+		}
+		throw ErrorHandler(**client, ERR_500, std::string(e.what(), "\n\n") );
 	}
 	return bytesReceived;
 }
@@ -284,24 +274,28 @@ void	Cluster::recvData(const struct epoll_event &event)
 				<< "ClientSocket [" RESET PURPLE << event.data.fd << BOLD BRIGHT_PURPLE "]" RESET
 				<< std::endl;
 #endif
-	Client		*currentClient = NULL;// = findClient(event.data.fd, "");
+	Client		*currentClient = NULL;
 	ssize_t		bytesReceived = STATIC_BUFFSIZE;
 	std::string	message("\0");
 
 	while (bytesReceived == STATIC_BUFFSIZE)
 	{
-		bytesReceived = safeRecv(event.data.fd, message, currentClient);
-		if (!currentClient)
-		{
+		bytesReceived = safeRecv(event.data.fd, message, &currentClient);
+		if ( ! bytesReceived ) {
+			closeConnexion(event);
+			return;
+		}
+		if ( ! currentClient ) {
 			currentClient = addClient(Request(message), event.data.fd);
-			
 		}
 		else
 		{
 			if (currentClient->request.gettype().empty() == false)
 				currentClient->request.setBody(message, bytesReceived);
-			else
+			else {
+				std::cout << RED "Passing here ?" RESET << std::endl;
 				currentClient->request = Request(message);
+			}
 		}
 		if (currentClient->request.getbody().size() > \
 			currentClient->clientServer->getMaxBodySize())
@@ -340,76 +334,37 @@ void	Cluster::sendData(const struct epoll_event &event)
 				<< std::endl;
 #endif
 
-	Client	*client = findClient(event.data.fd, "");
+	Client	*client = findClient(event.data.fd);
 	if (!client)
-		throw std::runtime_error("Error 500, client not found");
+		throw std::runtime_error("Error 500, client not found in sendData()");
 
 	if (client->response.finalMessage.empty() == true)
 		client->buildResponse();
-	// std::string response("\0");	
-	{
-		// cette partie s'occupe de recuperer la data a renvoyer au client (fichier static html / CGI)
-		// elle enregistre les fichiers televerses
-		//
-		// si il y a des arguments dans l'uri il faut les extraires (REQUETES GET)
-		// la reponse est stockee dans un buffer
-		//
-
-
-		// char buff[BUFFERSIZE] = {'\0'};
-		// memset(buff, '\0', sizeof(buff));
-		// int fd = open("./website/devis.com/formulaires/form.html"/* "./googleIndex.html"*/, O_RDONLY);
-		// if (fd == -1)
-		// 	perror("OPENTEST");
-
-		// while (true) {
-		// 	ssize_t ret = read(fd, buff, 1);
-		// 	if (ret == 0)
-		// 		break;
-		// 	if (ret == -1){
-		// 		perror("read() in sendData");
-		// 		return;
-		// 	}
-		// 	response.append(buff, strlen(buff));
-		// }
-	}
-
-	{
-		// cette partie prepare le header du client et le concatene au contenu du client
-		// client->response.buildHeader();
-		// std::ostringstream convert;
-		// convert << response.length();
-		// response.insert(0, "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " + convert.str() + "\r\n\r\n");
-
-	}
 
 	while (client->request.totalBytessended != client->response.finalMessage.size())
 	{
-		// std::cout << "IN SENDATA:\n" << *client << std::endl;
-		ssize_t ret = send(event.data.fd, client->response.finalMessage.c_str(), client->response.finalMessage.length(), 0);
-		if (ret <= 0)
+		ssize_t ret = send(event.data.fd, client->response.finalMessage.c_str(), \
+										client->response.finalMessage.length(), 0);
+		if (ret <= 0) {
+			// throw ErrorHandler(*client, ERR_??, "0 - 1"); 
 			break;
+		}
 		client->request.totalBytessended += ret;
 	}
-	
+
 	if (client->response.finalMessage.length() == client->request.totalBytessended && \
 		client->request.keepAlive == true)
 	{
-		std::cout	<< "TOTAL BYTE SENDED: [" << client->request.totalBytessended << "]" << std::endl
-					<< "TOTAL RESPONSE SIZE: [" << client->response.finalMessage.length() << "]" << std::endl;
-
 		client->clearData();
 		try {
 			changeEventMod(true, event.data.fd);
 		}
-		catch(const RunException& e) {
-			e.runExcept();
-			closeConnexion(event);
-			throw std::runtime_error("sendData() Internal error 500");
+		catch(const std::exception& e) {
+			throw ErrorHandler(*client, ERR_500, e.what());
 		}
 	}
 	else {
-		std::cout << "closeConnexion in sendData()" << std::endl;
+		std::cout << "closeConnexion(event); in sendData()" << std::endl;
 		closeConnexion(event);
 	}
 }

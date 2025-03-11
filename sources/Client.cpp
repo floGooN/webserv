@@ -16,20 +16,21 @@
 
 std::map<std::string, std::string> Client::_mimeMap;
 
-
 /*============================================================================*/
 				/*### CONSTRUCTORS - DESTRUCTOR - OVERLOAD OP ###*/
 /*============================================================================*/
 
 Client::Client(const Request &req)
+  :	request(req)
 {
-	request = req;
 	clientServer = NULL;
+
 	initMimeMap();
 }
 /*----------------------------------------------------------------------------*/
 
-Client::Client(const Client &ref) {
+Client::Client(const Client &ref)
+  : request(ref.request) {
 	*this = ref;
 }
 /*----------------------------------------------------------------------------*/
@@ -42,8 +43,10 @@ Client &Client::operator=(const Client &ref)
 {
 	if (this != &ref)
 	{
-		request = Request(ref.request);
 		clientServer = ref.clientServer;
+		request = Request(ref.request);
+		response = ref.response;
+		_mimeMap = ref._mimeMap;
 	}
 	return *this;
 }
@@ -139,8 +142,8 @@ void	Client::buildHeader()
 						"Content-Length: " + length + "\r\n" \
 						"Connection: close\r\n\r\n";
 	response.finalMessage.insert(0, final);
-	std::cout	<< BRIGHT_YELLOW "Client::buildHeader()\n"
-				<< response.finalMessage << RESET <<std::endl;
+	// std::cout	<< BRIGHT_YELLOW "Client::buildHeader()\n"
+	// 			<< response.finalMessage << RESET <<std::endl;
 
 }
 /*----------------------------------------------------------------------------*/
@@ -212,7 +215,13 @@ void	Client::checkRequestValidity()
 	std::cout	<< "complete uriPath: [" << response.completeUri << "]\n";
 
 	// doit verifier si le paths pointe sur une donee accessible
-	UtilParsing::checkAccessRessource(response.completeUri.c_str(), R_OK);
+	try {
+		UtilParsing::checkAccessRessource(response.completeUri.c_str(), R_OK);
+	}
+	catch(const std::exception& e) {
+		throw ErrorHandler(*this, ERR_404, e.what());
+	}
+	
 
 // 	* security check :
 // 		-> uri doesn't include ".." ()

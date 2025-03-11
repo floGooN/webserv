@@ -69,7 +69,7 @@ class Cluster
 		std::map<std::string, Server >	_serversByService;
 
 		Client	*addClient(const Request &req, const int);
-		Client	*findClient(const int fdClient, std::string portNumber);
+		Client	*findClient(const int fdClient);
 
 		void	setEpollFd();
 		void	setServersByPort();
@@ -86,7 +86,7 @@ class Cluster
 
 		void	sendData(const struct epoll_event &);
 		void	recvData(const struct epoll_event &);
-		ssize_t	safeRecv(const int, std::string &, Client *);
+		ssize_t	safeRecv(const int, std::string &, Client **);
 };
 
 std::ostream	& operator<<(std::ostream &, const Cluster &);
