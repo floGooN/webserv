@@ -5,6 +5,7 @@
 								/*### HEADERS ###*/
 /*============================================================================*/
 #include "Cluster.hpp"
+#include "Request.hpp"
 #include "ConfigParser.hpp"
 
 #include "ErrorHandler.hpp"
@@ -69,8 +70,10 @@ Cluster::Cluster(const Cluster & )
 {	}
 /*----------------------------------------------------------------------------*/
 
-Cluster::~Cluster() {
-	_epollFd > 0 ? close(_epollFd) : _epollFd;
+Cluster::~Cluster()
+{
+	if (_epollFd > 0 && close(_epollFd) == -1)
+		perror("close() in Cluster destuctor");
 	closeFdSet();
 }
 /*----------------------------------------------------------------------------*/
@@ -289,8 +292,14 @@ void	Cluster::recvData(const struct epoll_event &event)
 	
 	bytesReceived = safeRecv(event.data.fd, message);
 	checkByteReceived(event, bytesReceived);
-	currentClient = addClient(Request(message), event.data.fd);
-	
+	try {
+		currentClient = addClient(Request(message), event.data.fd);
+	}
+	catch(const Request::RequestException& e) {
+		Client *errClient = addClient(Request(*this), event.data.fd);
+		throw ErrorHandler(*errClient, e.errNumber, e.what());
+	}
+
 	while (bytesReceived == STATIC_BUFFSIZE)
 	{
 		bytesReceived = safeRecv(event.data.fd, message);
@@ -301,14 +310,6 @@ void	Cluster::recvData(const struct epoll_event &event)
 		}
 	}
 
-	// { // test
-	// 	std::cout	<< "Request:\n" << currentClient->request << std::endl
-	// 				<< "recvData() maxBodySize = " << currentClient->clientServer->getMaxBodySize() << std::endl
-	// 				<< "recvData() content length = " << currentClient->request.getcontentlength() << std::endl
-	// 				<< "recvData() body size = " << currentClient->request.getbody().size() << std::endl;
-	// 				// << "recvData() all message =\n" << message << std::endl;
-	// }	
-	
 	if (currentClient->request.getcontentlength() <= currentClient->request.getbody().size())
 	{
 		currentClient->checkRequestValidity();
@@ -524,7 +525,7 @@ void	Cluster::createAndLinkSocketServer(const struct addrinfo &res, const std::s
 /*----------------------------------------------------------------------------*/
 
 /*	* accept a new client connexion, set the socket and add the fd in the epoll set
-	*
+	* doesn't throwing exception
 */
 void	Cluster::acceptConnexion(const struct epoll_event &event)
 {
@@ -556,7 +557,7 @@ void	Cluster::acceptConnexion(const struct epoll_event &event)
 	}
 	catch(const std::exception& e)
 	{
-		perror("epoll_ctl()");
+		perror("epoll_ctl() in acceptConnexion()");
 		if (close(clientSocket) == -1)
 			perror("close in acceptConnexion()");
 		return ;

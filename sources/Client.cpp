@@ -207,8 +207,8 @@ void	Client::checkRequestValidity()
 {
 	// concatener le root et le new uri
 	// retourne un pointeur sur une location qui match ou null
-	std::cout	<< BRIGHT_RED "checkRequestValidity()\n"
-				<< "brut uri: " << request.geturi() << std::endl;
+	// std::cout	<< BRIGHT_RED "checkRequestValidity()\n"
+	// 			<< "brut uri: " << request.geturi() << std::endl;
 				// << this->request << std::endl;
 	const LocationConfig *currentLocation = buildCompleteUri();
 	

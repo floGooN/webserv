@@ -47,7 +47,7 @@ Request::Request(const std::string &response)
 	size_t	idxBodySeparator = response.find(BODY_SEPARATOR);
 	if (!response.size() || idxBodySeparator == response.npos) {
 		std::cout << BRIGHT_GREEN "{" << response << "}" RESET << std::endl;
-		throw std::runtime_error("400 bad request empty request\n");
+		throw RequestException(ERR_400, "empty request\n");
 	}
 
 	initContentLength(response);
@@ -57,11 +57,10 @@ Request::Request(const std::string &response)
 	std::vector<std::string>					tokenHeader;
 	std::vector<std::string>::const_iterator	itToken;
 	try {
-		tokenHeader = UtilParsing::split(response.substr(0, idxBodySeparator), "\r\n"); // split header line by line
+		tokenHeader = UtilParsing::split(response.substr(0, idxBodySeparator), "\r\n");
 	}
 	catch(const std::exception& e) {
-		std::cerr << e.what() << '\n';
-		throw std::runtime_error("error 500 in constructor request\n");
+		throw RequestException(ERR_500, e.what());
 	}
 	
 	itToken = tokenHeader.begin();
@@ -71,28 +70,28 @@ Request::Request(const std::string &response)
 		initHost(++itToken, tokenHeader.end());
 	}
 	else
-		throw std::runtime_error("surprising 400 bad request\n");
-	_body.clear();
+		throw RequestException(ERR_400, "surprising 400 bad request\n");
 	setBody(response, response.size());
 }
 /*----------------------------------------------------------------------------*/
 
-/*	* this constructor mak a "fake request" to handle an error
+/*	* this constructor make a "fake request" to handle an error
+	* doesn't throwing an error
 */
 Request::Request(const Cluster &cluster)
 {
 	Server &server = cluster.getServersByPort().begin()->second;
 
-	this->_body.clear();
-	this->_bound. clear();
-	this->_contentLength = 0;
-	this->_contentType.clear();
-	this->_hostName.assign(*server.getNameList().begin());
-	this->_hostPort.assign(server.getService());
-	this->_requestType.assign("GET");
-	this->_uri.assign("/fake");
-	this->totalBytessended = 0;
-	this->keepAlive = false;
+	_body.clear();
+	_bound. clear();
+	_contentLength = 0;
+	_contentType.clear();
+	_hostName.assign(*server.getNameList().begin());
+	_hostPort.assign(server.getService());
+	_requestType.assign("GET");
+	_uri.assign("/fake");
+	totalBytessended = 0;
+	keepAlive = false;
 }
 /*----------------------------------------------------------------------------*/
 
@@ -226,16 +225,15 @@ void	Request::initRequestLine(const std::string &requestLine)
 		_requestType = requestLine.substr(0, requestLine.find_first_of(" "));
 	}
 	catch(const std::exception& e) {
-		std::cerr << e.what() << '\n';
-		throw std::runtime_error("throw exception with error 500 internal error in initRequestLine()\n");
+		throw RequestException(ERR_500, std::string(e.what(), " in initRequestLine()\n"));
 	}
 
 	if (_requestType.empty() == true || requestLine.find(PROTOCOL_VERION) == std::string::npos)
-		throw std::runtime_error("throw 400 bad req in initRequestLine() unsupported protocol version\n");
+		throw RequestException(ERR_400, "unsupported protocol version\n");
 
 	size_t	idx = requestLine.find_first_of(" ");
 	if (idx == std::string::npos)
-		throw std::runtime_error("function initRequestLine() throw 400 bad req");
+		throw RequestException(ERR_400, "bad request formating\n");
 	
 	try {
 		idx++;	// place le curseur sur le premier caractere de l'uri
@@ -250,8 +248,7 @@ void	Request::initRequestLine(const std::string &requestLine)
 		}
 	}
 	catch(const std::exception& e) {
-		std::cerr << e.what() << '\n';
-		throw std::runtime_error("throw 500 internal error in initRequestLine()");
+		throw RequestException(ERR_500, "internal error in initRequestLine()");
 	}
 }
 
@@ -304,7 +301,7 @@ void	Request::initContentLength(const std::string &response)
 	catch(const std::exception& e)
 	{
 		std::cerr << e.what() << '\n';
-		throw std::runtime_error("error 500 initContentLength() request constructor\n");
+		throw RequestException(ERR_500, std::string(e.what(), " in initContentLength()"));
 	}
 }
 /*----------------------------------------------------------------------------*/

@@ -149,7 +149,6 @@ std::string	ErrorHandler::generateHeader() const
 }
 /*----------------------------------------------------------------------------*/
 
-#include <cstdlib>
 void	ErrorHandler::generateErrorPage()
 {
 	// tout est dans un try catch pour que le serveur ne crash pas

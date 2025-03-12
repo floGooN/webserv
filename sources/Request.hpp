@@ -39,6 +39,20 @@ class Request
 		size_t	totalBytessended;
 		bool	keepAlive;
 
+		class RequestException : std::exception
+		{
+			public:
+				RequestException(const std::string & error, const std::string log = "")
+				:	errNumber(error), errLog(log)
+				{	}
+				virtual ~RequestException() throw() {};
+				virtual const char *	what() const throw () {
+					return errLog.c_str();
+				}
+			std::string	errNumber;
+			std::string	errLog;
+		};
+
 	private:		
 		size_t		_contentLength;
 		std::string	_uri;
