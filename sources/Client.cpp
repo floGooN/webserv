@@ -23,7 +23,7 @@ std::map<std::string, std::string> Client::_mimeMap;
 Client::Client(const Request &req)
   :	request(req)
 {
-	clientServer = NULL;
+	clientServer =  ;
 
 	initMimeMap();
 }
@@ -140,7 +140,7 @@ void	Client::buildHeader()
 						"Server: MyMinimalWebServer/0.5\r\n" \
 						"Content-Type: text/html; charset=UTF-8\r\n" \
 						"Content-Length: " + length + "\r\n" \
-						"Connection: close\r\n\r\n";
+						"Connection: keep-alive\r\n\r\n";
 	response.finalMessage.insert(0, final);
 	// std::cout	<< BRIGHT_YELLOW "Client::buildHeader()\n"
 	// 			<< response.finalMessage << RESET <<std::endl;

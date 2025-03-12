@@ -45,10 +45,10 @@ Request::Request(const std::string &response)
   : totalBytessended(0)
 {
 	size_t	idxBodySeparator = response.find(BODY_SEPARATOR);
-	if (!response.size() || idxBodySeparator == response.npos)
+	if (!response.size() || idxBodySeparator == response.npos) {
+		std::cout << BRIGHT_GREEN "{" << response << "}" RESET << std::endl;
 		throw std::runtime_error("400 bad request empty request\n");
-	else
-		std::cout << BRIGHT_GREEN << response << RESET << std::endl;
+	}
 
 	initContentLength(response);
 	initContentType(response);
