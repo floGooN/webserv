@@ -87,10 +87,10 @@ Request::Request(const Cluster &cluster)
 	this->_bound. clear();
 	this->_contentLength = 0;
 	this->_contentType.clear();
-	this->_hostName = *server.getNameList().begin();
-	this->_hostPort = server.getService();
-	this->_requestType = "GET";
-	this->_uri = "/fake";
+	this->_hostName.assign(*server.getNameList().begin());
+	this->_hostPort.assign(server.getService());
+	this->_requestType.assign("GET");
+	this->_uri.assign("/fake");
 	this->totalBytessended = 0;
 	this->keepAlive = false;
 }
@@ -111,14 +111,14 @@ Request & Request::operator=(const Request &ref)
 	{
 		keepAlive = ref.keepAlive;
 		_contentLength = ref._contentLength;
-		_contentType = ref._contentType;
-		_uri = ref._uri;
-		_hostName = ref._hostName;
-		_hostPort = ref._hostPort;
-		_requestType = ref._requestType;
-		_body = ref._body;
+		_contentType.assign(ref._contentType);
+		_uri.assign(ref._uri);
+		_hostName.assign(ref._hostName);
+		_hostPort.assign(ref._hostPort);
+		_requestType.assign(ref._requestType);
+		_body.assign(ref._body);
 		totalBytessended = ref.totalBytessended;
-		_bound = ref._bound;
+		_bound.assign(ref._bound);
 	}
 	return *this;
 }
@@ -193,16 +193,17 @@ const std::string	&Request::getcontenttype()	const {
 void	Request::clearRequest()
 {
 	totalBytessended = 0;
-
 	keepAlive = false;
+
 	_contentLength = 0;
 	_uri.clear();
 	_hostName.clear();
 	_hostPort.clear();
 	_requestType.clear();
+
 	_body.clear();
-	_contentType.clear();
 	_bound.clear();	
+	_contentType.clear();
 }
 /*----------------------------------------------------------------------------*/
 
@@ -220,6 +221,7 @@ void	Request::clearRequest()
 */
 void	Request::initRequestLine(const std::string &requestLine)
 {
+	std::cout << "RequestLine: " << requestLine << std::endl;
 	try {
 		_requestType = requestLine.substr(0, requestLine.find_first_of(" "));
 	}

@@ -64,7 +64,7 @@ debug:
 
 test:
 	$(MAKE) MODE=debug
-	$(VALGRIND) ./$(NAME) 
+	$(VALGRIND) --track-fds=yes ./$(NAME) 
 #-------------------# ==== LINKING & BUILDING PROGRAM ==== #-------------------#
 $(NAME)	: $(OBJ)
 	@echo "$(GREEN)-- compilation completed --$(RESET)"

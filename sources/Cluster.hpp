@@ -66,6 +66,7 @@ class Cluster
 		int				_epollFd;		// fd vers structure epoll
 		HttpConfig		_config;
 		std::set<int>	_serverSockets;	// ensemble des socket serveur (un par port)
+		std::set<int>	_clientSockets;	// ensemble des socket client (un par port)
 		std::map<std::string, Server >	_serversByService;
 
 		Client	*addClient(const Request &req, const int);
@@ -81,8 +82,8 @@ class Cluster
 
 		void	addFdInEpoll(const bool, const int)	const;
 		void	changeEventMod(const bool, const int) const;
-		void	acceptConnexion(const struct epoll_event &) const;
-		void	closeConnexion(const struct epoll_event &event) const;
+		void	acceptConnexion(const struct epoll_event &);
+		void	closeConnexion(const struct epoll_event &event);
 
 		void	sendData(const struct epoll_event &);
 		void	recvData(const struct epoll_event &);

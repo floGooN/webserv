@@ -16,14 +16,12 @@
 			/*### CONSTRUCTORS - DESTRUCTOR _ OVERLOAD OPERATORS ###*/
 /*============================================================================*/
 
-
 ErrorHandler::ErrorHandler(Client &client, std::string errorKey, std::string errlog = "")
   :	_client(client), _errorLog(errlog)
 {
 	_errorKey = errorKey;
 	if (errorKey.empty() == true)
 		_errorKey = ERR_520;
-		
 }
 /*----------------------------------------------------------------------------*/
 
@@ -36,7 +34,13 @@ ErrorHandler::~ErrorHandler() throw()
 {	}
 /*----------------------------------------------------------------------------*/
 
-ErrorHandler &	ErrorHandler::operator=(const ErrorHandler &) {
+ErrorHandler &	ErrorHandler::operator=(const ErrorHandler &ref) {
+	if (this != &ref)
+	{
+		_client = ref._client;
+		_errorKey = ref._errorKey;
+		_errorLog = ref._errorLog;
+	}
 	return *this;
 }
 /*----------------------------------------------------------------------------*/
@@ -145,10 +149,10 @@ std::string	ErrorHandler::generateHeader() const
 }
 /*----------------------------------------------------------------------------*/
 
+#include <cstdlib>
 void	ErrorHandler::generateErrorPage()
 {
 	// tout est dans un try catch pour que le serveur ne crash pas
-	std::cout << "IN ::generateErrorPage():\n" << *this->_client.clientServer << std::endl;
 	try
 	{
 		_client.response.finalMessage = generateContent();

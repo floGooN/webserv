@@ -19,12 +19,13 @@ std::map<std::string, std::string> Client::_mimeMap;
 /*============================================================================*/
 				/*### CONSTRUCTORS - DESTRUCTOR - OVERLOAD OP ###*/
 /*============================================================================*/
+#include <cstdlib>
 
 Client::Client(const Request &req)
   :	request(req)
 {
-	clientServer =  ;
-
+	request = req;
+	clientServer = NULL ;
 	initMimeMap();
 }
 /*----------------------------------------------------------------------------*/
@@ -71,6 +72,8 @@ void	Client::buildResponse()
 	// si c'est le cas, faire pointer le requete sur l'index de la location ou sur l'index serveur ou renvoyer bad request
 	std::cout	<< "Client::buildResponse()\n" << std::endl
 				<< "CompleteURI: " << response.completeUri << std::endl;
+	
+	
 	if (UtilParsing::isDirectory(response.completeUri) == true)
 	{
 		const LocationConfig *current = UtilParsing::findLocationConfig(clientServer->getLocation(), request.geturi());

@@ -17,6 +17,7 @@
 */
 #include <csignal>
 #include <sstream>
+#include <cstdlib>
 
 #define MAXEVENT	10
 
@@ -264,8 +265,9 @@ void	Cluster::checkByteReceived(const struct epoll_event &event, ssize_t bytes)
 		throw ErrorHandler(*clientErr, ERR_499, "Client closed connexion");
 	}
 	if ( bytes == -1 ) {
+		perror("recvData()");
 		Client *clientErr = addClient(Request(*this), event.data.fd);
-		throw ErrorHandler(*clientErr, ERR_500, "recvData() at line " + __LINE__ );
+		throw ErrorHandler(*clientErr, ERR_500, "");
 	}
 }
 /*----------------------------------------------------------------------------*/
@@ -355,13 +357,14 @@ void	Cluster::sendData(const struct epoll_event &event)
 		client->clearData();
 		try {
 			changeEventMod(true, event.data.fd);
+			std::cout << "sended with success" << std::endl;
 		}
 		catch(const std::exception& e) {
 			throw ErrorHandler(*client, ERR_500, e.what());
 		}
 	}
 	else {
-		std::cout << "closeConnexion(event); in sendData()" << std::endl;
+		std::cout << "closeConnexion in sendData()\nsended with success" << std::endl;
 		closeConnexion(event);
 	}
 }
@@ -523,7 +526,7 @@ void	Cluster::createAndLinkSocketServer(const struct addrinfo &res, const std::s
 /*	* accept a new client connexion, set the socket and add the fd in the epoll set
 	*
 */
-void	Cluster::acceptConnexion(const struct epoll_event &event) const
+void	Cluster::acceptConnexion(const struct epoll_event &event)
 {
 	struct sockaddr addr;
 	socklen_t		addrSize = sizeof(addr);
@@ -540,28 +543,30 @@ void	Cluster::acceptConnexion(const struct epoll_event &event) const
 		return;
 	}
 
-	if (fcntl(clientSocket, F_SETFL, O_NONBLOCK | FD_CLOEXEC) == 0)
+	if (fcntl(clientSocket, F_SETFL, O_NONBLOCK | FD_CLOEXEC) == -1)
 	{
 		perror("fcntl() in acceptConnexion()");
 		if (close(clientSocket) == -1)
-			perror("close() in acceptConnexion()");
-		
-		Client client(Request(*this));
-		throw ErrorHandler(client, ERR_500, "");
+			perror("close in acceptConnexion()");
+		return ;
 	}
 	try {
 		addFdInEpoll(false, clientSocket);
+		_clientSockets.insert(clientSocket);
 	}
-	catch(const std::exception& e) {
-		Client client(Request(*this));
-		throw ErrorHandler(client, ERR_500, e.what());
+	catch(const std::exception& e)
+	{
+		perror("epoll_ctl()");
+		if (close(clientSocket) == -1)
+			perror("close in acceptConnexion()");
+		return ;
 	}
 }
 /*----------------------------------------------------------------------------*/
 
 /*	* close a client connexion
 */
-void	Cluster::closeConnexion(const struct epoll_event &event) const
+void	Cluster::closeConnexion(const struct epoll_event &event)
 {
 #ifdef TEST
 	std::cout	<< BOLD BRIGHT_PURPLE "\nFunction -> closeConnexion()\n"
@@ -569,7 +574,13 @@ void	Cluster::closeConnexion(const struct epoll_event &event) const
 				<< BOLD BRIGHT_PURPLE "]" RESET
 				<< std::endl;
 #endif
-	
+	std::map<std::string, Server>::iterator it = _serversByService.begin();
+	for (; it != _serversByService.end(); it++) {
+		it->second.getClientList().erase(event.data.fd);
+	}
+
+	_clientSockets.erase(event.data.fd);
+
 	if (epoll_ctl(_epollFd, EPOLL_CTL_DEL, event.data.fd, NULL) == -1)
 		perror("epoll_ctl() in closeConnexion()");
 
@@ -590,7 +601,7 @@ void	Cluster::addFdInEpoll(const bool isServerSocket, const int fd) const
 	
 	if (isServerSocket == false)
 		ev.events |= EPOLLET;
-	
+
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, fd, &ev) == -1)
 		throw std::runtime_error("addFdInEpoll : error epoll_ctl()");
 }
@@ -616,6 +627,9 @@ void	Cluster::changeEventMod(const bool changeForRead, const int fd) const
 void	Cluster::closeFdSet() const
 {
 	for (std::set<int>::iterator it = _serverSockets.begin(); it != _serverSockets.end(); it++)
+		if (*it > 0 && close(*it) != 0)
+			perror("close()");
+	for (std::set<int>::iterator it = _clientSockets.begin(); it != _clientSockets.end(); it++)
 		if (*it > 0 && close(*it) != 0)
 			perror("close()");
 }
