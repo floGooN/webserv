@@ -13,9 +13,8 @@
 /*============================================================================*/
 
 Server::Server(ServerConfig & config, const std::string &service)
+  : _config(config), _service(service)
 {
-	_config = config;
-	_service = service;
 	UtilParsing::convertVectorToSet(_nameList, _config.serverName);
 	setLocation();
 	_clientList.clear();
@@ -23,10 +22,10 @@ Server::Server(ServerConfig & config, const std::string &service)
 		_maxBodySize = UtilParsing::convertBodySize(config.clientMaxBodySize);
 	}
 	catch(const std::exception& e) {
-		std::cout	<< "Invalid format on max body size: " << config.clientMaxBodySize << std::endl
+		std::cerr	<< "Invalid format on max body size: " << config.clientMaxBodySize << std::endl
 					<< "Max body size will be set by default (1 MB)"
 					<< std::endl;
-		_maxBodySize = DFLT_BODYSIZE; //octet = 500 KO
+		_maxBodySize = DFLT_BODYSIZE;
 	}
 	setErrorPath();
 }

@@ -41,57 +41,18 @@
 	* get host
 	* get body (if detected)
 */
-Request::Request(const std::string &response)
-  : totalBytessended(0)
+Request::Request(const std::string &content)
+throw (ErrorHandler) : totalBytessended(0), keepAlive(false)
 {
-	size_t	idxBodySeparator = response.find(BODY_SEPARATOR);
-	if (!response.size() || idxBodySeparator == response.npos) {
-		std::cout << BRIGHT_GREEN "{" << response << "}" RESET << std::endl;
-		throw RequestException(ERR_400, "empty request\n");
-	}
-
-	initContentLength(response);
-	initContentType(response);
-	keepAlive = response.find("keep-alive") == response.npos ? false : true;
-	
-	std::vector<std::string>					tokenHeader;
-	std::vector<std::string>::const_iterator	itToken;
-	try {
-		tokenHeader = UtilParsing::split(response.substr(0, idxBodySeparator), "\r\n");
-	}
-	catch(const std::exception& e) {
-		throw RequestException(ERR_500, e.what());
-	}
-	
-	itToken = tokenHeader.begin();
-	if (itToken != tokenHeader.end())
-	{
-		initRequestLine(*itToken);
-		initHost(++itToken, tokenHeader.end());
-	}
-	else
-		throw RequestException(ERR_400, "surprising 400 bad request\n");
-	setBody(response, response.size());
+	updateRequest(content);
 }
 /*----------------------------------------------------------------------------*/
 
 /*	* this constructor make a "fake request" to handle an error
 	* doesn't throwing an error
 */
-Request::Request(const Cluster &cluster)
-{
-	Server &server = cluster.getServersByPort().begin()->second;
+Request::Request(const Cluster &cluster) {
 
-	_body.clear();
-	_bound. clear();
-	_contentLength = 0;
-	_contentType.clear();
-	_hostName.assign(*server.getNameList().begin());
-	_hostPort.assign(server.getService());
-	_requestType.assign("GET");
-	_uri.assign("/fake");
-	totalBytessended = 0;
-	keepAlive = false;
 }
 /*----------------------------------------------------------------------------*/
 
@@ -108,16 +69,11 @@ Request & Request::operator=(const Request &ref)
 {
 	if (this != &ref)
 	{
-		keepAlive = ref.keepAlive;
-		_contentLength = ref._contentLength;
-		_contentType.assign(ref._contentType);
-		_uri.assign(ref._uri);
-		_hostName.assign(ref._hostName);
-		_hostPort.assign(ref._hostPort);
-		_requestType.assign(ref._requestType);
-		_body.assign(ref._body);
-		totalBytessended = ref.totalBytessended;
-		_bound.assign(ref._bound);
+		this->keepAlive = ref.keepAlive;
+		this->totalBytessended = ref.totalBytessended;
+
+		_header = ref._header;
+		_body = ref._body;
 	}
 	return *this;
 }
@@ -126,16 +82,16 @@ Request & Request::operator=(const Request &ref)
 std::ostream & operator<<(std::ostream & o, Request &ref)
 {
 	o	<< BOLD BRIGHT_BLUE "Request:" << std::endl
-		<< "_requestType: [" << ref.gettype() << "]" << std::endl
-		<< "_uri: [" << ref.geturi() << "]" << std::endl
-		<< "_hostName: [" << ref.gethostname() << "]" << std::endl
-		<< "_hostPort: [" << ref.gethostport() << "]" << std::endl
+		<< "_requestType: [" << ref.getHeader().requestType << "]" << std::endl
+		<< "_uri: [" << ref.getHeader().uri << "]" << std::endl
+		<< "_hostName: [" << ref.getHeader().hostName << "]" << std::endl
+		<< "_hostPort: [" << ref.getHeader().hostPort << "]" << std::endl
 		<< "keepAlive: [" << (ref.keepAlive == true ? "true" : "false") << "]" << std::endl
-		<< "_contentLength: [" << ref.getcontentlength() << "]" << std::endl
-		<< "_contentType: [" << (ref.getcontenttype().empty() ? "" : ref.getcontenttype()) << "]" << std::endl
-		<< "_bound: [" << ref.getbound() << "]" << std::endl
+		<< "_contentLength: [" << ref.getbody().body.length() << "]" << std::endl
+		<< "_contentType: [" << (ref.getbody().contentType.empty() ? "" : ref.getbody().contentType) << "]" << std::endl
+		<< "_bound: [" << ref.getbody().bound << "]" << std::endl
 		<< std::endl
-		<< "BODY :\n" << ref.getbody() << RESET;
+		<< "body_content :\n" << ref.getbody().body << RESET;
 	return o;
 }
 /*----------------------------------------------------------------------------*/
@@ -144,71 +100,124 @@ std::ostream & operator<<(std::ostream & o, Request &ref)
 						/*### PUBLIC METHODS ###*/
 /*============================================================================*/
 
-const std::string&	Request::geturi() const {
-	return _uri;
+const s_header & Request::getHeader() const {
+	return _header;
 }
 /*----------------------------------------------------------------------------*/
 
-const std::string&	Request::gethostname() const {
-	return _hostName;
-}
-/*----------------------------------------------------------------------------*/
-
-const std::string&	Request::gethostport() const {
-	return _hostPort;
-}
-/*----------------------------------------------------------------------------*/
-
-const std::string&	Request::gettype() const {
-	return _requestType;
-}
-/*----------------------------------------------------------------------------*/
-
-std::string&	Request::getbody() {
+const s_body & Request::getbody() const {
 	return _body;
 }
 /*----------------------------------------------------------------------------*/
 
-const std::string&	Request::getbound() const {
-	return _bound;
+void Request::updateRequest(const std::string &content)
+throw(ErrorHandler)
+{
+	size_t idxSeparator = content.find(BODY_SEPARATOR);
+	if (idxSeparator == content.npos)
+	{
+		if ( content.empty() )
+			throw ErrorHandler(ERR_400, "the request is empty");
+		setBody(content);
+	}
+	else
+	{
+		try
+		{
+			setHeader(content.substr(0, idxSeparator));
+			if ( ! _header.requestType.compare("POST") ) {
+				idxSeparator += 4;
+				setBody(content.substr(idxSeparator, content.length() - idxSeparator));
+			}
+		}
+		catch(const std::exception& e) {
+			std::string log = RED "in updateRequest(): " + std::string(e.what()) + RESET;
+			throw ErrorHandler(ERR_500, log);
+		}
+	}
 }
 /*----------------------------------------------------------------------------*/
 
-const std::string&	Request::getbody()	const {
-	return _body;
-}
-/*----------------------------------------------------------------------------*/
-
-size_t	Request::getcontentlength()	const {
-	return _contentLength;
-}
-/*----------------------------------------------------------------------------*/
-
-const std::string	&Request::getcontenttype()	const {
-	return _contentType;
-}
-/*----------------------------------------------------------------------------*/
-
-void	Request::clearRequest()
+void Request::clearRequest()
 {
 	totalBytessended = 0;
 	keepAlive = false;
 
-	_contentLength = 0;
-	_uri.clear();
-	_hostName.clear();
-	_hostPort.clear();
-	_requestType.clear();
-
+	_header.clear();
 	_body.clear();
-	_bound.clear();	
-	_contentType.clear();
 }
 /*----------------------------------------------------------------------------*/
 
 /*============================================================================*/
 						/*### PRIVATE METHODS ###*/
 /*============================================================================*/
+
+void Request::setHeader(const std::string &header)
+throw(ErrorHandler)
+{
+#ifdef TEST
+	std::cout	<< ITAL BLUE "setHeader():" << std::endl
+				<< "brut header:\n" << header
+				<< RESET << std::endl;
+#endif
+	// split le header ligne par ligne
+	// remplir tous les infos dans header ET body (contentLength & contentType)
+
+}
+/*----------------------------------------------------------------------------*/
+
+
+/*----------------------------------------------------------------------------*/
+
+
+
+
+void Request::setBody(const std::string &body)
+throw(ErrorHandler)
+{
+#ifdef TEST
+	std::cout	<< ITAL CYAN "setBody():" << std::endl
+				<< "brut body:\n" << body
+				<< RESET << std::endl;
+#endif
+
+	this->_body.body;
+	this->_body.bound;
+	this->_body.contentType;
+
+
+}
+/*----------------------------------------------------------------------------*/
+
+void	Request::setContentType()
+throw(ErrorHandler)
+{
+	// this->_header.
+}
+/*----------------------------------------------------------------------------*/
+
+/*	* get the delimiter for query POST type multipart/form-data (----webKit)
+*/
+void	Request::setBoundLimiter()
+throw(ErrorHandler)
+{
+	
+	size_t idx = _header.requestType.find("boundary=");
+	if (idx == _header.requestType.npos)
+		throw ErrorHandler(ERR_400, "No bound found");
+
+	try {
+		idx += 9;
+		_body.bound = contentType.substr(idx, contentType.find("\r\n", idx) - idx);
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+		throw std::runtime_error("500 internal error in " __FILE__);
+	}
+}
+/*----------------------------------------------------------------------------*/
+
 
 /*	* check validity of the request line (METHOD PATH_TO_RESSOURCE PROTOCOL_VERSION)
 	*
@@ -220,63 +229,14 @@ void	Request::clearRequest()
 */
 void	Request::initRequestLine(const std::string &requestLine)
 {
-	std::cout << "RequestLine: " << requestLine << std::endl;
-	try {
-		_requestType = requestLine.substr(0, requestLine.find_first_of(" "));
-	}
-	catch(const std::exception& e) {
-		throw RequestException(ERR_500, std::string(e.what(), " in initRequestLine()\n"));
-	}
 
-	if (_requestType.empty() == true || requestLine.find(PROTOCOL_VERION) == std::string::npos)
-		throw RequestException(ERR_400, "unsupported protocol version\n");
-
-	size_t	idx = requestLine.find_first_of(" ");
-	if (idx == std::string::npos)
-		throw RequestException(ERR_400, "bad request formating\n");
-	
-	try {
-		idx++;	// place le curseur sur le premier caractere de l'uri
-		_uri = requestLine.substr(idx, requestLine.find_first_of(" ?", idx) - idx);
-		if (_requestType.compare("GET") == 0)
-		{
-			idx = requestLine.find_first_of('?', idx);
-			if (idx != requestLine.npos) {
-				idx++;
-				_body = requestLine.substr(idx, requestLine.find_first_of(" ", idx) - idx);
-			}
-		}
-	}
-	catch(const std::exception& e) {
-		throw RequestException(ERR_500, "internal error in initRequestLine()");
-	}
 }
 
 /*	* extract the hostname and the host port required by the client
 */
 void	Request::initHost(std::vector<std::string>::const_iterator &itToken, std::vector<std::string>::const_iterator itEnd)
 {
-	while (itToken != itEnd)
-	{
-		if (itToken->find("Host") != itToken->npos)
-			break;
-		itToken++;
-	}
-	if (itToken == itEnd)
-		throw std::runtime_error("400 Bad request no host specified\n");
-	
-	try {
-		size_t idxSpace = itToken->find_last_of(" ");
-		size_t idxSemicolon = itToken->find_last_of(":");
 
-		_hostName = itToken->substr(idxSpace + 1, idxSemicolon - idxSpace - 1);
-		_hostPort = itToken->substr(idxSemicolon + 1, itToken->length() - idxSemicolon);
-	}
-	catch (std::exception &e)
-	{
-		std::cerr << e.what() << std::endl;
-		throw std::runtime_error("500 internal error\n");
-	}
 }
 /*----------------------------------------------------------------------------*/
 
@@ -284,70 +244,13 @@ void	Request::initHost(std::vector<std::string>::const_iterator &itToken, std::v
 */
 void	Request::initContentLength(const std::string &response)
 {
-	size_t idx = response.find("Content-Length");
-	if (idx == response.npos) {
-		_contentLength = 0;
-		return ;
-	}
-	idx = response.find_first_of("0123456789", idx);
-	if (idx != response.npos && !response[idx]) {
-		_contentLength = 0;
-		return ;
-	}
-	try {
-		_contentLength = UtilParsing::convertBodySize(response.substr(idx, response.length() - \
-													response.find_first_of("0123456789", idx)));
-	}
-	catch(const std::exception& e)
-	{
-		std::cerr << e.what() << '\n';
-		throw RequestException(ERR_500, std::string(e.what(), " in initContentLength()"));
-	}
 }
 /*----------------------------------------------------------------------------*/
 
-/*	* 3 types value possible (help for the parsing of arguments)
-	*
-	* application/x-www-form-urlencoded
-		-> Default setting. All characters are encoded before sent
-			.spaces are converted to "+" symbols
-			.special characters are converted to ASCII HEX values (ex: %20 == ASCII ' ' 32)
-	* multipart/form-data
-		-> necessary if the user will upload a file through the form
-			. body is detached from url
-	* text/plain
-		-> Sending data without any encoding at all. Not recommended
-	
-	for each of them, data is in a specific format in the request
-*/
-void	Request::initContentType(const std::string &response)
-{
-	_contentType.clear();
-	_bound.clear();
-
-	size_t	idx = response.find("Content-Type");
-	if (idx == response.npos)
-		return;
-	if ((idx = response.find_first_of(' ', idx)) == response.npos) {
-		_contentType = DFLT_CONTENT_TYPE;
-		return;
-	}
-
-	try {
-		idx++;
-		_contentType = response.substr(idx, response.find_first_of("\r\n", idx) - idx);
-	}
-	catch(const std::exception& e)
-	{
-		std::cerr << e.what() << '\n';
-		throw std::runtime_error("500 internal error in initContentType in " __FILE__);
-	}
-}
-/*----------------------------------------------------------------------------*/
 
 size_t	Request::skipHeader(const std::string &body)
 {
-	size_t	idx = body.find(_bound);
+	size_t	idx = body.find(this->_body.bound);
 	if (idx == body.npos)
 		idx = body.find(BODY_SEPARATOR);
 	else
@@ -360,41 +263,6 @@ size_t	Request::skipHeader(const std::string &body)
 
 void	Request::setBody(const std::string &body, ssize_t)
 {
-	if (_requestType.compare("GET") == 0)
-		return;
-
-	if (body.find("multipart/form-data") != body.npos)
-		extractBound(body);
-
-	size_t idx = skipHeader(body);
-	try {
-		_body += body.substr(idx, body.size() - idx);
-	}
-	catch(const std::exception& e)
-	{
-		std::cerr << e.what() << '\n';
-		
-		throw std::runtime_error("Error 500 setBody() in " __FILE__);
-	}
 }
 /*----------------------------------------------------------------------------*/
 
-/*	* get the delimiter for query POST type multipart/form-data (----webKit)
-*/
-void	Request::extractBound(const std::string &contentType)
-{
-	size_t idx = contentType.find("boundary=", contentType.find("multipart/form-data"));
-	if (idx == contentType.npos)
-		throw std::runtime_error("400 bad request in " __FILE__ " no body separator found");
-
-	try {
-		idx += 9;
-		_bound = contentType.substr(idx, contentType.find("\r\n", idx) - idx);
-	}
-	catch(const std::exception& e)
-	{
-		std::cerr << e.what() << '\n';
-		throw std::runtime_error("500 internal error in " __FILE__);
-	}
-}
-/*----------------------------------------------------------------------------*/

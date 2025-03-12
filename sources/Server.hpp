@@ -11,32 +11,29 @@ class Client;
 class Server
 {
 	public:
-		Server(ServerConfig &, const std::string&);
-		Server(const Server &);
-		~Server();
-		Server() {};
-		Server	&operator=(const Server &);
-		bool 	operator<(const Server &other) const;
+	Server(ServerConfig &, const std::string&);
+	Server(const Server &);
+	~Server();
+	Server() {};
+	Server	&operator=(const Server &);
+	bool 	operator<(const Server &other) const;
 
-		size_t				getMaxBodySize() const;
-		const ServerConfig	&getConfig() const;
-		const std::string	&getService() const;
-		std::map<int, Client>			&getClientList() const;
-		const std::set<std::string>		&getNameList() const;
-		const std::set<LocationConfig>	&getLocation() const;
-
-		std::map<int, Client>		_clientList;
+	size_t				getMaxBodySize() const;
+	const ServerConfig	&getConfig() const;
+	const std::string	&getService() const;
+	const std::set<std::string>		&getNameList() const;
+	const std::set<LocationConfig>	&getLocation() const;
 
 	private:
-		ServerConfig	_config;
-		size_t						_maxBodySize;
-		std::string					_service;		//service name(port)
-		std::set<std::string>		_nameList;		//localhost - serverExemple.com - www.serverExemple.fr
-		std::set<LocationConfig>	_location;		//websites handle by the server (/website/site1.com)
+	size_t						_maxBodySize;
+	const ServerConfig			_config;
+	const std::string			_service;		//service name(port)
+	std::set<std::string>		_nameList;		//localhost - serverExemple.com - www.serverExemple.fr
+	std::set<LocationConfig>	_location;		//websites handle by the server (/website/site1.com)
 		
-		std::set<std::pair<int, std::string> >	_errorPathList;
-		void	setLocation();
-		void	setErrorPath();
+	std::set<std::pair<int, std::string> >	_errorPathList;
+	void	setLocation();
+	void	setErrorPath();
 
 };
 std::ostream	& operator<<(std::ostream &, const Server &);

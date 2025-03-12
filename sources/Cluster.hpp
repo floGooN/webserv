@@ -66,6 +66,8 @@ class Cluster
 		int				_epollFd;		// fd vers structure epoll
 		HttpConfig		_config;
 		std::set<int>	_serverSockets;	// ensemble des socket serveur (un par port)
+		std::map<int, std::set<Client> >	_clientList;
+
 		std::set<int>	_clientSockets;	// ensemble des socket client (un par port)
 		std::map<std::string, Server >	_serversByService;
 

@@ -1,38 +1,22 @@
 
-
-#ifndef ERRORHANDLER_HPP
-# define ERRORHANDLER_HPP
+#ifndef ERROR_HANDLER_HPP
+# define ERROR_HANDLER_HPP
 
 # include "webserv.hpp"
-# include <dirent.h>
 
-class Client;
-
-/*
-	CLIENT, ERR_KEY, ERR_LOG
+/*  * PARAMS :
+    * ERR_XXX
+    * error log (std::string)
 */
-class ErrorHandler : std::exception
+class ErrorHandler
 {
-	public:
-		ErrorHandler(Client &, std::string, std::string err);
-		ErrorHandler(const ErrorHandler &);
-		ErrorHandler &operator=(const ErrorHandler &);
-		~ErrorHandler() throw();
-		
-		const char *	what() const throw() {
-			return _errorLog.c_str();
-		};
-		void	generateErrorPage();
+    public:
+    ErrorHandler(const std::string &errNum, const std::string &errLog = "")
+    : errorNumber(errNum), errorLog(errLog)
+    {   }
 
-	private:
-		std::string	findErrorFile(DIR *, const std::string &) const;
-		std::string generateContent() const;
-		std::string generateHeader() const;
-
-		Client		&_client;
-		std::string	_errorKey;
-		std::string	_errorLog;
-
+    const std::string errorNumber;
+    const std::string errorLog;
 };
 
 #endif

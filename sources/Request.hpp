@@ -8,68 +8,44 @@
 # define REQUEST_HPP
 
 # include "webserv.hpp"
+# include "RequestStructure.hpp"
 
 # define	BODY_SEPARATOR	"\r\n\r\n"
 # define	PROTOCOL_VERION	"HTTP/1.1"
+
 
 class Cluster;
 
 class Request
 {
 	public:
-		Request(const std::string &);
+		Request(const std::string &) throw(ErrorHandler);
 		Request(const Request &);
-		Request(const Cluster &);
 		~Request();
 		Request & operator=(const Request &);
+
+		Request(const Cluster &);
 		
-		size_t				getcontentlength()	const;
-		std::string			&getbody();
-		const std::string	&geturi()			const;
-		const std::string	&gettype()			const;
-		const std::string	&getbody()			const;
-		const std::string	&getbound()			const;
-		const std::string	&gethostport()		const;
-		const std::string	&gethostname()		const;
-		const std::string	&getcontenttype()	const;
-		
-		void	setBody(const std::string &, ssize_t);
+		const s_header	&getHeader()	const;
+		const s_body	&getbody()		const;
+
+		void	updateRequest(const std::string &) throw(ErrorHandler);
 		void	clearRequest();
 
 		size_t	totalBytessended;
 		bool	keepAlive;
 
-		class RequestException : std::exception
-		{
-			public:
-				RequestException(const std::string & error, const std::string log = "")
-				:	errNumber(error), errLog(log)
-				{	}
-				virtual ~RequestException() throw() {};
-				virtual const char *	what() const throw () {
-					return errLog.c_str();
-				}
-			std::string	errNumber;
-			std::string	errLog;
-		};
+	private:
+		s_header	_header;	
+		s_body		_body;
 
-	private:		
-		size_t		_contentLength;
-		std::string	_uri;
-		std::string	_hostName;
-		std::string	_hostPort;
-		std::string	_requestType;
+		void	setHeader(const std::string &header) throw(ErrorHandler);
 		
-		std::string	_body;
-		std::string	_bound;
-		std::string	_contentType;
+		void	setBody(const std::string &)				throw(ErrorHandler);
+		void	setContentType() throw(ErrorHandler);
+		void	setBoundLimiter()							throw(ErrorHandler);
+		
 
-		void	initRequestLine(const std::string &);
-		void	initHost(std::vector<std::string>::const_iterator &, std::vector<std::string>::const_iterator);
-		void	initContentLength(const std::string &);
-		void	initContentType(const std::string &);
-		void	extractBound(const std::string &);
-		size_t	skipHeader(const std::string &);
 };
 
 std::ostream & operator<<(std::ostream &, Request &);
