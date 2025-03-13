@@ -68,7 +68,7 @@ struct t_header
         requestType = GET;        
     }
 
-    bool            keepAlive;//Connection
+    bool            keepAlive;
 	std::string	    uri;
 	std::string	    hostName;
 	std::string     hostPort;
@@ -111,5 +111,25 @@ struct t_body
     e_contentType   contentType;
 
 };
+
+std::ostream & operator<<(std::ostream &o, const t_header &ref)
+{
+    o   << ITAL BLUE "t_header:\n"
+        << "URI: " << ref.uri
+        << "Request type: " << ref.requestType
+        << "HostPort: " << ref.hostPort
+        << "HostName: " << ref.hostName
+        << "Keep-alive: " << ref.keepAlive
+        << RESET << std::endl;
+}
+
+std::ostream & operator<<(std::ostream &o, const t_body &ref)
+{
+    o   << ITAL CYAN "t_header:\n"
+        << "Content type: " << ref.contentType
+        << "Content length: " << ref.contentLength
+        << "Boundary: " << ref.bound
+        << RESET << std::endl;
+}
 
 #endif

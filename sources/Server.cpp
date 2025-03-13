@@ -48,9 +48,11 @@ Server::~Server()
 
 Server  & Server::operator=(const Server &ref)
 {
-	_service = ref._service;
-	UtilParsing::deepCopieSet(_nameList, ref._nameList);
-	UtilParsing::deepCopieSet(_location, ref._location);
+	if (this != &ref)
+	{
+		UtilParsing::deepCopieSet(_nameList, ref._nameList);
+		UtilParsing::deepCopieSet(_location, ref._location);
+	}
 
 	return *this;
 }

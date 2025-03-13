@@ -21,10 +21,12 @@ class Client
 		
 		Server		*clientServer;
 		Request		request;
+		
 		Response	response;
 
 		void	checkRequestValidity();
 		void	buildResponse();
+		
 		void	clearData();
 		
 	private:

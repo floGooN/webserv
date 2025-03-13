@@ -27,9 +27,9 @@ class Server
 	private:
 	size_t						_maxBodySize;
 	const ServerConfig			_config;
-	const std::string			_service;		//service name(port)
-	std::set<std::string>		_nameList;		//localhost - serverExemple.com - www.serverExemple.fr
-	std::set<LocationConfig>	_location;		//websites handle by the server (/website/site1.com)
+	const std::string			_service;
+	std::set<std::string>		_nameList;
+	std::set<LocationConfig>	_location;
 		
 	std::set<std::pair<int, std::string> >	_errorPathList;
 	void	setLocation();

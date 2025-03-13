@@ -63,7 +63,8 @@
 							"abcdefghijklmnopqrstuvwxyz" \
 							"0123456789"
 
-# define HTTP_SEPARATOR		"\r\n"
+# define	HTTP_SEPARATOR	"\r\n"
+# define	BODY_SEPARATOR	"\r\n\r\n"
 
 /* -------------------------------------- */
 /* ---    DEFINE ALL ERRORS KEYS      --- */
@@ -79,12 +80,14 @@
 # define	ERR_499	"499 Client Closed Request"
 # define	ERR_500	"500 Internal Server Error"
 # define	ERR_501	"501 Not Implemented"
+# define	ERR_505	"HTTP Version not supported"
 # define	ERR_520	"520 Unknown Error"
 
 /* -------------------------------------- */
 /* ---		    USEFULL VARS   	   	  --- */
 /* -------------------------------------- */
 
-#define	STATIC_BUFFSIZE	4096
+# define	STATIC_BUFFSIZE	4096
+# define	PROTOCOL_VERION	"HTTP/1.1"
 
 #endif

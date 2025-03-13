@@ -8,10 +8,9 @@
 
 #include "webserv.hpp"
 #include "HttpConfig.hpp"
+
 #include "Client.hpp"
 #include "Server.hpp"
-
-// timeout client ne fonctionne pas correctement
 
 class Cluster
 {
@@ -63,17 +62,17 @@ class Cluster
 		std::map<std::string, Server>	& getServersByPort() const;
 
 	private:
-		int				_epollFd;		// fd vers structure epoll
+		int				_epollFd;
 		HttpConfig		_config;
-		std::set<int>	_serverSockets;	// ensemble des socket serveur (un par port)
-		std::map<int, std::set<Client> >	_clientList;
+		std::set<int>	_serverSockets;
 
-		std::set<int>	_clientSockets;	// ensemble des socket client (un par port)
-		std::map<std::string, Server >	_serversByService;
+		std::map<std::string, Server >		_serversByService;
+		std::map<int, std::set<Client> >	_clientList;
 
 		Client	*addClient(const Request &req, const int);
 		Client	*findClient(const int fdClient);
 
+		
 		void	setEpollFd();
 		void	setServersByPort();
 		void	setServerSockets();
@@ -91,7 +90,6 @@ class Cluster
 		void	recvData(const struct epoll_event &);
 		void	checkByteReceived(const struct epoll_event &event, ssize_t bytes);
 		ssize_t	safeRecv(const int, std::string &);
-
 };
 
 std::ostream	& operator<<(std::ostream &, const Cluster &);
