@@ -4,8 +4,9 @@
 /*============================================================================*/
 							/*### HEADER FILES ###*/
 /*============================================================================*/
-#include "webserv.hpp"
+
 #include "Server.hpp"
+#include "ServerConfig.hpp"
 #include "UtilParsing.hpp"
 
 /*============================================================================*/
@@ -13,33 +14,17 @@
 /*============================================================================*/
 
 Server::Server(ServerConfig & config, const std::string &service)
-  : _config(config), _service(service)
-{
-	UtilParsing::convertVectorToSet(_nameList, _config.serverName);
-	setLocation();
-	_clientList.clear();
-	try {
-		_maxBodySize = UtilParsing::convertBodySize(config.clientMaxBodySize);
-	}
-	catch(const std::exception& e) {
-		std::cerr	<< "Invalid format on max body size: " << config.clientMaxBodySize << std::endl
-					<< "Max body size will be set by default (1 MB)"
-					<< std::endl;
-		_maxBodySize = DFLT_BODYSIZE;
-	}
-	setErrorPath();
-}
+  : _params(setParams(config, service)),
+	_locationSet(setLocation(config.locationConfig)),
+	_errorPathList(setErrorPath())
+{	}
 /*----------------------------------------------------------------------------*/
 
 Server::Server(const Server &ref)
-{
-	_config = ref._config;
-	_service = ref._service;
-	UtilParsing::deepCopieSet(_nameList, ref._nameList);
-	UtilParsing::deepCopieSet(_location, ref._location);
-	_clientList = ref._clientList;
-	_maxBodySize = ref._maxBodySize;
-}
+  : _params(ref._params),
+	_locationSet(ref._locationSet),
+	_errorPathList(ref._errorPathList)
+{	}
 /*----------------------------------------------------------------------------*/
 
 Server::~Server() 
@@ -48,10 +33,8 @@ Server::~Server()
 
 Server  & Server::operator=(const Server &ref)
 {
-	if (this != &ref)
-	{
-		UtilParsing::deepCopieSet(_nameList, ref._nameList);
-		UtilParsing::deepCopieSet(_location, ref._location);
+	if (this != &ref) {
+		_errorPathList = ref._errorPathList;
 	}
 
 	return *this;
@@ -59,19 +42,25 @@ Server  & Server::operator=(const Server &ref)
 /*----------------------------------------------------------------------------*/
 
 bool	Server::operator<(const Server &ref) const {
-	return _service < ref._service;
+	return this->_params.service < ref._params.service;
 }
 /*----------------------------------------------------------------------------*/
 
 std::ostream & operator<<(std::ostream & o, const Server &ref)
 {
-	o	<< BOLD "SERVER:" RESET << std::endl
-		<< "_nameList: ";
-	for (std::set<std::string>::const_iterator it = ref.getNameList().begin();
-		it != ref.getNameList().end(); it++)
-			o	<< "[" << *it << "] ";
+	o	<< BOLD "SERVER:\n"
+		<< BOLD "Params:\n" << ref.getParams()
+		<< BOLD "Locations:\n";
 
-	o	<< "\n_service: " << ref.getService() ;
+	if (ref.getLocationSet().empty())
+		o << "no specific path\n";
+	else
+	{
+		std::set<s_location>::iterator it = ref.getLocationSet().begin();
+		for (; it != ref.getLocationSet().end(); it++) {
+			o << *it << std::endl;
+		}
+	}
 
 	return o << RESET;
 }
@@ -81,56 +70,56 @@ std::ostream & operator<<(std::ostream & o, const Server &ref)
 						/*### PUBLIC METHODS ###*/
 /*============================================================================*/
 
-size_t Server::getMaxBodySize() const {
-	return _maxBodySize;
+const s_params	Server::getParams() const {
+	return _params;
 }
 /*----------------------------------------------------------------------------*/
 
-const std::set<std::string>	& Server::getNameList() const {
-	return const_cast<std::set<std::string> &>(_nameList);
-}
-/*----------------------------------------------------------------------------*/
-
-const ServerConfig	&Server::getConfig() const {
-	return _config;
-}
-/*----------------------------------------------------------------------------*/
-
-const std::string & Server::getService() const {
-	return _service;
-}
-/*----------------------------------------------------------------------------*/
-
-const std::set<LocationConfig>	& Server::getLocation() const {
-	return _location;
-}
-/*----------------------------------------------------------------------------*/
-
-std::map<int, Client>	&Server::getClientList() const {
-	return const_cast<std::map<int, Client>& >(_clientList);
+const std::set<s_location>	Server::getLocationSet() const {
+	return _locationSet;
 }
 /*----------------------------------------------------------------------------*/
 
 /*============================================================================*/
 						/*### PRIVATE METHODS ###*/
 /*============================================================================*/
-void	Server::setLocation()
+s_params Server::setParams(const ServerConfig &config, const std::string &service)
 {
-	for (std::vector<LocationConfig>::const_iterator it = _config.locationConfig.begin();
-		it != _config.locationConfig.end(); it++) {
-			try {
-				_location.insert(*it);
-			}
-			catch(const std::exception& e)
-			{
-				std::cerr << e.what() << '\n';
-			}
-			
-		}
+	this->_params.maxBodySize;
+	this->_params.nameList;
+	this->_params.service;
+
+	config.clientMaxBodySize;
+	config.indexFile;
+	config.listenPort;
+	config.methodAccept;
+	config.pageErrorPath;
+	config.rootPath;
+	config.serverName;
+	config.uploadPath;
+
 }
 /*----------------------------------------------------------------------------*/
 
-void	Server::setErrorPath()
+std::set<s_location> Server::setLocations(const std::vector<LocationConfig> &config)
+{
+	setAutoindex();
+	setCgiPath();
+	setIndex();
+	setMethods();
+	setUrl();
+	setRootPath();
+
+	config.begin()->autoindex;
+	config.begin()->cgipath;
+	config.begin()->index;
+	config.begin()->methods;
+	config.begin()->path;
+	config.begin()->root;
+}
+/*----------------------------------------------------------------------------*/
+
+std::set<std::pair<int, std::string> >	Server::setErrorPath()
 {
 	try {
 		_errorPathList.insert(std::make_pair(0, "_config._errorPath"));
@@ -138,5 +127,6 @@ void	Server::setErrorPath()
 	catch(const std::exception& e) {
 		std::cerr << e.what() << "\n" __FILE__ " at : " << __LINE__;
 	}
+	return _errorPathList;
 }
 /*----------------------------------------------------------------------------*/

@@ -1,7 +1,7 @@
 
 
-#ifndef REQUEST_STRUCT
-# define REQUEST_STRUCT
+#ifndef STRUCT_REQUEST
+# define STRUCT_REQUEST
 
 # include "webserv.hpp"
 
@@ -125,7 +125,7 @@ std::ostream & operator<<(std::ostream &o, const t_header &ref)
 
 std::ostream & operator<<(std::ostream &o, const t_body &ref)
 {
-    o   << ITAL CYAN "t_header:\n"
+    o   << ITAL BRIGHT_BLUE "t_header:\n"
         << "Content type: " << ref.contentType
         << "Content length: " << ref.contentLength
         << "Boundary: " << ref.bound

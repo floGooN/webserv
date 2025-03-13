@@ -71,11 +71,11 @@ Request & Request::operator=(const Request &ref)
 
 std::ostream & operator<<(std::ostream & o, Request &ref)
 {
-	o	<< BOLD BRIGHT_BLUE "Request:\n"
-		<< BOLD BRIGHT_BLUE "Header:\n" << ref.getHeader() << std::endl
-		<< BOLD BRIGHT_BLUE "Args:\n" << ref.getArgs() << std::endl
-		<< BOLD BRIGHT_BLUE "Body:\n" << ref.getbody() << std::endl
-		<< BOLD BRIGHT_BLUE "body_content:\n" << ref.getbody().body;
+	o	<< BOLD "Request:\n"
+		<< BOLD "Header:\n" << ref.getHeader() << std::endl
+		<< BOLD "Args:\n" << ref.getArgs() << std::endl
+		<< BOLD "Body:\n" << ref.getbody() << std::endl
+		<< BOLD "body_content:\n" << ref.getbody().body;
 
 	return o << RESET << std::endl;
 }

@@ -1,41 +1,39 @@
+
+
 #ifndef SERVER_HPP
 # define SERVER_HPP
 
-# include "webserv.hpp"
-
-# include "ServerConfig.hpp"
-# include "Client.hpp"
+# include "ServerStructure.hpp"
 
 class Client;
+class ServerConfig;
 
 class Server
 {
 	public:
-	Server(ServerConfig &, const std::string&);
-	Server(const Server &);
-	~Server();
-	Server() {};
-	Server	&operator=(const Server &);
-	bool 	operator<(const Server &other) const;
-
-	size_t				getMaxBodySize() const;
-	const ServerConfig	&getConfig() const;
-	const std::string	&getService() const;
-	const std::set<std::string>		&getNameList() const;
-	const std::set<LocationConfig>	&getLocation() const;
+		Server(ServerConfig &, const std::string&);
+		Server(const Server &);
+		~Server();
+		Server	&operator=(const Server &);
+		bool 	operator<(const Server &other) const;
+		
+		const s_params				getParams() 		const;
+		const std::set<s_location>	getLocationSet()	const;
 
 	private:
-	size_t						_maxBodySize;
-	const ServerConfig			_config;
-	const std::string			_service;
-	std::set<std::string>		_nameList;
-	std::set<LocationConfig>	_location;
+		const s_params				_params;
+		const std::set<s_location>	_locationSet;
+
+		s_params				setParams(const ServerConfig &, const std::string &);
 		
-	std::set<std::pair<int, std::string> >	_errorPathList;
-	void	setLocation();
-	void	setErrorPath();
+		std::set<s_location>	setLocations(const std::vector<LocationConfig> &);
+		
+
+		std::set<std::pair<int, std::string> >	_errorPathList;
+		std::set<std::pair<int, std::string> >	setErrorPath();
 
 };
+
 std::ostream	& operator<<(std::ostream &, const Server &);
 
 #endif
