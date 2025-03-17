@@ -18,7 +18,7 @@ class Server
 		bool 	operator<(const Server &other) const;
 		
 		const t_params				getParams() 		const;
-		const std::set<s_location>	getLocationSet()	const;
+		const std::set<t_location>	getLocationSet()	const;
 
 	private:
 		const t_params				_params;

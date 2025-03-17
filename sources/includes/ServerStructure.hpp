@@ -8,6 +8,15 @@
 typedef struct s_location	t_location;
 typedef struct s_params		t_params;
 
+enum e_methods
+{
+    ERROR = -1,
+    GET,
+    POST,
+    DELETE,
+    EMPTY
+};
+
 struct s_location
 {
 	s_location() {
@@ -47,7 +56,7 @@ struct s_location
 	std::string	index;
 	std::string	path;
 	std::string	root;
-	std::set<std::string> methods;
+	std::set<e_methods> methods;
 
 };
 
@@ -95,7 +104,7 @@ struct s_params
 	std::string				indexFile;
 	std::string				rootPath;
 	std::string				service;
-	std::set<std::string>	methods;
+	std::set<e_methods>		methods;
 	std::set<std::string>	nameList;
 
 };
@@ -125,7 +134,7 @@ std::ostream & operator<<(std::ostream &o, const t_location &ref)
 		<< "root: " << ref.root << std::endl
 		<< "methods: ";
 		
-		std::set<std::string>::iterator it = ref.methods.begin();
+		std::set<e_methods>::iterator it = ref.methods.begin();
 		for (; it != ref.methods.end(); it++) {
 			o << *it << " ";
 		}

@@ -1,8 +1,6 @@
 
 
 #include "UtilParsing.hpp"
-#include "LocationConfig.hpp"
-
 #include <fcntl.h>
 #include <sys/stat.h>
 
@@ -135,8 +133,7 @@ bool	UtilParsing::isOnlySpace(const std::string & str)
 void UtilParsing::checkAccessRessource(const std::string &ressourcePath, int type)
 {
 	if (access(ressourcePath.c_str(), type)) {
-		perror("checkAccessRessource()");
-		throw std::invalid_argument("checkAccessRessource() : access(\"" + ressourcePath + "\")" + std::string(strerror(errno)));
+		throw std::invalid_argument("access() at \"" + ressourcePath + "\"" + std::string(strerror(errno)));
 	}
 }
 
@@ -320,9 +317,9 @@ std::string	UtilParsing::findFile(std::string &filePath)
 	return "";
 }
 
-const LocationConfig * UtilParsing::findLocationConfig(const std::set<LocationConfig> &allLocation, const std::string &locationPath)
+const t_location * UtilParsing::findLocation(const std::set<t_location> &allLocation, const std::string &locationPath)
 {
-	std::set<LocationConfig>::iterator itLocation = allLocation.begin();
+	std::set<t_location>::iterator itLocation = allLocation.begin();
 	while (itLocation != allLocation.end())
 	{
 		if (itLocation->path.compare(locationPath) == 0)

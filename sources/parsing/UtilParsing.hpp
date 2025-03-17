@@ -2,14 +2,13 @@
 # define IPARSING_HPP
 
 # include "webserv.hpp"
+#include "ServerStructure.hpp"
 
 # include <unistd.h>
 # include <dirent.h>
 
 # include <sstream>
 # include <fstream>
-
-class LocationConfig;
 
 class UtilParsing
 {
@@ -56,7 +55,7 @@ class UtilParsing
 		static DIR				*openDirectory(const std::string &dirPath);
 		static size_t			safeMultiply(size_t value, size_t factor);
 		static size_t			convertBodySize(const std::string &);
-		static const LocationConfig	*findLocationConfig(const std::set<LocationConfig> &, const std::string &);
+		static const t_location	*findLocation(const std::set<t_location> &, const std::string &);
 
 		static std::vector<std::string>	cleanVector(const std::vector<std::string> vec);
         static std::vector<std::string>	cleanVectorClose(const std::vector<std::string> vec);

@@ -174,73 +174,31 @@ void	Cluster::runCluster()
 */
 Client * Cluster::addClient(const Request &req, const int fdClient) throw (ErrGenerator)
 {
-	if (req.getHeader().requestType == EMPTY)
-	{
-		this->
-	}
-
-
-
-	Server *server = NULL;
-	try {
-		server = &getServersByPort().at(req.gethostport());
-	}
-	catch(const std::exception& e) {
-		Client client = Client(req);
-		throw ErrorHandler(client, ERR_403, req.gethostport() + " is an invalid host.");
-	}
-
-	Client *currentClient = NULL;
-	try {
-		currentClient = &server->getClientList().at(fdClient);
-	}
-	catch(const std::exception& e) {
-		std::cout	<< "New Client in server [" <<  req.gethostport() << "]" << std::endl;
-	}
+	Client	*current = NULL;
+	Server	*server = NULL;
 	
-	if ( ! currentClient )
-	{
-		try {
-			currentClient = &server->getClientList().insert(std::pair<int, Client>(fdClient, Client(req))).first->second;
-		}
-		catch(const std::exception& e) {
-			Client client = Client(req);
-			throw ErrorHandler(client, ERR_500, RED "Error\nadding client to list\n" RESET);
-		}
+	try {
+		current = &_clientList.at(fdClient);
 	}
-	else
-		*currentClient = Client(req);
-
-	if (req.getcontentlength() > server->getMaxBodySize())
-		throw ErrorHandler(*currentClient, ERR_413, "The request content length exceed the server limit");
-
-	currentClient->clientServer = server;
-	return currentClient;
-}
-/*----------------------------------------------------------------------------*/
-
-/*	* Search for a client and return a pointer to it	
-    * If no client is found, return a null pointer
-	* Don't throw any exception
-*/
-Client *	Cluster::findClient(const int fdClient)
-{
-	std::map<std::string, Server>::iterator itServer = _serversByService.begin();
-	while (itServer != _serversByService.end())
-	{
-		try {
-			Client *client = &itServer->second.getClientList().at(fdClient);
-			if (client->request.gettype().empty())
-				throw std::runtime_error("");
-			client->clientServer = &itServer->second;
-			return client;
-		}
-		catch(const std::exception& e) {
-			;
-		}
-		itServer++;
+	catch(const std::exception& e) {
+		throw ErrGenerator(fdClient, ERR_500, "We didn't recovered the client");
 	}
-	return NULL;
+
+	current->request = req;
+	
+	try {
+		server = &getServersByPort().at(current->request.getHeader().hostPort);
+	}
+	catch(const std::exception& e) {
+		throw ErrGenerator(fdClient, ERR_500, "We didn't recovered the service");
+	}
+
+
+	if (current->request.getbody().contentLength > server->getParams().maxBodySize)
+		throw ErrGenerator(fdClient, ERR_413, "The content length of the request exceed the server limit");
+
+	current->clientServer = server;
+	return current;
 }
 /*----------------------------------------------------------------------------*/
 
@@ -303,20 +261,30 @@ void	Cluster::recvData(const struct epoll_event &event)
 	{
 		bytesReceived = safeRecv(event.data.fd, message);
 		checkByteReceived(event, bytesReceived);
-		currentClient->request.setBody(message, bytesReceived);
-		if (currentClient->request.getbody().size() > currentClient->clientServer->getMaxBodySize()) {
-			throw ErrorHandler(*currentClient, ERR_413, "Body size exceed ");
+		currentClient->request.updateRequest(message);
+	
+		if (currentClient->request.getbody().body.size() > \
+			currentClient->clientServer->getParams().maxBodySize) {
+			throw ErrGenerator(event.data.fd, ERR_413, "Max body size reached");
 		}
 	}
 
-	if (currentClient->request.getcontentlength() <= currentClient->request.getbody().size())
+	if (currentClient->request.getbody().body.size() == \
+		currentClient->request.getbody().contentLength)
 	{
-		currentClient->checkRequestValidity();
+		try {
+			currentClient->checkRequestValidity();
+		}
+		catch(const ErrorHandler& e)
+		{
+			std::cerr << e.what() << '\n';
+		}
+		
 		try {
 			changeEventMod(false, event.data.fd);
 		}
-		catch(const std::runtime_error& e) {
-			throw ErrorHandler(*currentClient, ERR_500, "in recvData()\n\n");
+		catch(const std::exception& e) {
+			throw ErrGenerator(event.data.fd, ERR_500, e.what());
 		}
 	}
 }
@@ -560,7 +528,6 @@ void	Cluster::acceptConnexion(const struct epoll_event &event)
 		perror("accept() in acceptConnexion()");
 		return;
 	}
-
 	if (fcntl(clientSocket, F_SETFL, O_NONBLOCK | FD_CLOEXEC) == -1)
 	{
 		perror("fcntl() in acceptConnexion()");
@@ -568,9 +535,10 @@ void	Cluster::acceptConnexion(const struct epoll_event &event)
 			perror("close in acceptConnexion()");
 		return ;
 	}
+
 	try {
 		addFdInEpoll(false, clientSocket);
-		_clientSockets.insert(clientSocket);
+		_clientList.insert(std::make_pair(clientSocket, Client()));
 	}
 	catch(const std::exception& e)
 	{

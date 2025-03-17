@@ -4,41 +4,36 @@
 # define CLIENT_HPP
 
 # include "webserv.hpp"
+# include "ServerStructure.hpp"
 
 # include "Request.hpp"
 # include "Response.hpp"
 
-class Server;
 class LocationConfig;
 
 class Client
 {
 	public:
-		Client(const Request &);
+		Client();
 		Client(const Client &);
 		~Client();
 		Client &operator=(const Client &);
 		bool	operator<(const Client &);
-		
-		const int		fd;
-		const Server	*clientServer;
-		
+
+		Server	*clientServer;
+
 		Request		request;
 		Response	response;
 
-		void	checkRequestValidity();
+		void	checkRequestValidity() throw (ErrorHandler);
+
 		void	buildResponse();
-
 		void	clearData();
-		
+
 	private:
-		void					buildHeader();
-		void					checkMethodAuthor(const LocationConfig *current)	const;
-		const LocationConfig *	buildCompleteUri();
+		void				checkAutorisation(const t_location *) const;
+		const t_location	* Client::buildCompleteUri();
 
-
-		void	initMimeMap();
-		static std::map<std::string, std::string>	_mimeMap;
 };
 
 std::ostream & operator<<(std::ostream &, const Client &);

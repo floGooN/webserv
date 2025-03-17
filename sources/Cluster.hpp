@@ -45,10 +45,10 @@ class Cluster
 		std::map<std::string, Server>	& getServersByPort() const;
 
 	private:
-		int				_epollFd;
 		HttpConfig		_config;
+		
+		int				_epollFd;
 		std::set<int>	_serverSockets;
-		std::set<int>	_clientSockets;
 
 		void	setEpollFd();
 		void	setServersByPort();
@@ -57,17 +57,17 @@ class Cluster
 		void	createAndLinkSocketServer(const struct addrinfo &, const std::string &, int *);
 
 
-		std::map<std::string, Server >		_serversByService;
-		std::set<Client>					_clientList;
-		
+		std::map<const int, Client>			_clientList;
+		std::map<std::string, Server >	_serversByService;
+
 		void	acceptConnexion(const struct epoll_event &);
 		void	addFdInEpoll(const bool, const int)	const throw (std::runtime_error);
-		
-		
+
+
 		void	recvData(const struct epoll_event &);
 		ssize_t	safeRecv(const int, std::string &);
 		void	checkByteReceived(const struct epoll_event &event, ssize_t bytes) throw (ErrGenerator);
-		
+
 		Client	*addClient(const Request &req, const int) throw (ErrGenerator);
 
 		

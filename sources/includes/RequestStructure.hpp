@@ -5,8 +5,8 @@
 
 # include "webserv.hpp"
 
-typedef struct  s_header    t_header;
-typedef struct  s_body      t_body;
+typedef struct  s_header        t_header;
+typedef struct  s_body          t_body;
 
 /*	* 3 types value possible :
 	*
@@ -71,10 +71,10 @@ struct s_header
     }
 
     bool            keepAlive;
-	std::string	    uri;
-	std::string	    hostName;
+	std::string     uri;
+	std::string     hostName;
 	std::string     hostPort;
-	e_requestType	requestType;
+	e_requestType   requestType;
 };
 
 struct s_body

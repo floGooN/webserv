@@ -12,6 +12,7 @@ class Cluster;
 class Request
 {
 	public:
+		Request();
 		Request(const std::string &) throw(ErrorHandler);
 		Request(const Request &);
 		~Request();

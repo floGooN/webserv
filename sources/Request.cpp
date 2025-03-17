@@ -31,8 +31,12 @@
 				/*### CONSTRUCTORS - DESTRUCTOR - OVERLOAD OP ###*/
 /*============================================================================*/
 
+Request::Request()
+:	totalBytessended(0) 
+{	}
+
 Request::Request(const std::string &content) throw (ErrorHandler)
-  :	totalBytessended(0) {
+:	totalBytessended(0) {
 	updateRequest(content);
 }
 /*----------------------------------------------------------------------------*/

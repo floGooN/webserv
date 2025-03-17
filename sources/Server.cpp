@@ -136,7 +136,6 @@ void	Server::setNameList(const std::vector<std::string> &names, t_params &params
 }
 /*----------------------------------------------------------------------------*/
 
-
 std::set<t_location> Server::setLocations(const std::vector<LocationConfig> &config)
 {
 	t_location				newLoc;
