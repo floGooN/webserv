@@ -12,7 +12,11 @@ class ErrorHandler
 {
     public:
     ErrorHandler(const std::string &errNum, const std::string &errLog = "")
-    : errorNumber(errNum), errorLog(errLog)
+    :   errorNumber(errNum), errorLog(errLog)
+    {   }
+
+    ErrorHandler(const ErrorHandler& ref)
+    :   errorNumber(ref.errorNumber), errorLog(ref.errorLog)
     {   }
 
     const std::string errorNumber;

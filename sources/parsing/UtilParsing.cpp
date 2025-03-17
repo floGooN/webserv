@@ -10,7 +10,8 @@
 #include <cstring>
 #include <limits>
 
-size_t	UtilParsing::safeMultiply(size_t value, size_t factor) {
+size_t	UtilParsing::safeMultiply(size_t value, size_t factor)
+{
 	if (value > std::numeric_limits<size_t>::max() / factor) {
 		throw std::overflow_error("Multiplication overflow");
 	}

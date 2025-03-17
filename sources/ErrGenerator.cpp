@@ -19,33 +19,18 @@
 			/*### CONSTRUCTORS - DESTRUCTOR _ OVERLOAD OPERATORS ###*/
 /*============================================================================*/
 
-ErrGenerator::ErrGenerator(Client &client, std::string errorKey, std::string errlog = "")
-  :	_client(client), _errorLog(errlog)
-{
-	_errorKey = errorKey;
-	if (errorKey.empty() == true)
-		_errorKey = ERR_520;
-}
+ErrGenerator::ErrGenerator(const int client, const std::string &errCode = ERR_520, const std::string & errlog = "")
+:	_fdClient(client), _errorCode(errCode), _errorLog(errlog)
+{	}
 /*----------------------------------------------------------------------------*/
 
 ErrGenerator::ErrGenerator(const ErrGenerator &ref)
-  : _client(ref._client), _errorKey(ref._errorKey), _errorLog(ref._errorLog)
+:	_fdClient(ref._fdClient), _errorCode(ref._errorCode), _errorLog(ref._errorLog)
 {	}
 /*----------------------------------------------------------------------------*/
 
 ErrGenerator::~ErrGenerator() throw()
 {	}
-/*----------------------------------------------------------------------------*/
-
-ErrGenerator &	ErrGenerator::operator=(const ErrGenerator &ref) {
-	if (this != &ref)
-	{
-		_client = ref._client;
-		_errorKey = ref._errorKey;
-		_errorLog = ref._errorLog;
-	}
-	return *this;
-}
 /*----------------------------------------------------------------------------*/
 
 /*============================================================================*/

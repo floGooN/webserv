@@ -8,7 +8,7 @@
 #include "Request.hpp"
 #include "ConfigParser.hpp"
 
-#include "ErrorHandler.hpp"
+#include "ErrGenerator.hpp"
 
 #include <sys/epoll.h>
 #include <fcntl.h>
@@ -108,7 +108,7 @@ const HttpConfig & Cluster::getConfig() const {
 }
 /*----------------------------------------------------------------------------*/
 
-/*	* server main loop
+/*	* main loop server
 */
 void	Cluster::runCluster()
 {
@@ -172,8 +172,15 @@ void	Cluster::runCluster()
 	* init the client with the parsed request
 	* assign a pointer to the server associated with the request
 */
-Client * Cluster::addClient(const Request &req, const int fdClient)
+Client * Cluster::addClient(const Request &req, const int fdClient) throw (ErrGenerator)
 {
+	if (req.getHeader().requestType == EMPTY)
+	{
+		this->
+	}
+
+
+
 	Server *server = NULL;
 	try {
 		server = &getServersByPort().at(req.gethostport());
@@ -261,16 +268,14 @@ ssize_t	Cluster::safeRecv(const int clientFd, std::string &message)
 }
 /*----------------------------------------------------------------------------*/
 
-void	Cluster::checkByteReceived(const struct epoll_event &event, ssize_t bytes)
+void	Cluster::checkByteReceived(const struct epoll_event &event, ssize_t bytes) throw (ErrGenerator)
 {
 	if ( ! bytes ) {
-		Client *clientErr = addClient(Request(*this), event.data.fd);
-		throw ErrorHandler(*clientErr, ERR_499, "Client closed connexion");
+		throw ErrGenerator(event.data.fd, ERR_499, "Client closed connexion");
 	}
 	if ( bytes == -1 ) {
 		perror("recvData()");
-		Client *clientErr = addClient(Request(*this), event.data.fd);
-		throw ErrorHandler(*clientErr, ERR_500, "");
+		throw ErrGenerator(event.data.fd, ERR_500, "");
 	}
 }
 /*----------------------------------------------------------------------------*/
@@ -292,13 +297,7 @@ void	Cluster::recvData(const struct epoll_event &event)
 	
 	bytesReceived = safeRecv(event.data.fd, message);
 	checkByteReceived(event, bytesReceived);
-	try {
-		currentClient = addClient(Request(message), event.data.fd);
-	}
-	catch(const Request::RequestException& e) {
-		Client *errClient = addClient(Request(*this), event.data.fd);
-		throw ErrorHandler(*errClient, e.errNumber, e.what());
-	}
+	currentClient = addClient(Request(message), event.data.fd);
 
 	while (bytesReceived == STATIC_BUFFSIZE)
 	{
@@ -371,6 +370,24 @@ void	Cluster::sendData(const struct epoll_event &event)
 }
 /*----------------------------------------------------------------------------*/
 
+/*	* init epoll events for servers & new client socket and add the fd in epoll set
+*/
+void	Cluster::addFdInEpoll(const bool isServerSocket, const int fd) const throw (std::runtime_error)
+{
+	struct epoll_event	ev;
+	memset(&ev, 0, sizeof(ev));
+
+	ev.data.fd = fd;
+	ev.events = EPOLLIN | EPOLLRDHUP;
+	
+	if (isServerSocket == false)
+		ev.events |= EPOLLET;
+
+	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, fd, &ev) == -1)
+		throw std::runtime_error("addFdInEpoll : error epoll_ctl()");
+}
+/*----------------------------------------------------------------------------*/
+
 /*	* init servers from _serverconfig
 */
 void Cluster::setServersByPort()
@@ -387,7 +404,7 @@ void Cluster::setServersByPort()
 			if (!result.second)
 			{
 				std::cerr << YELLOW "Port [" << *itServiceList << "] still required by server "
-						  << *(result.first->second.getNameList().begin())
+						  << *(result.first->second.getParams().nameList.begin())
 						  << RESET << std::endl;
 			}
 			itServiceList++;
@@ -557,7 +574,7 @@ void	Cluster::acceptConnexion(const struct epoll_event &event)
 	}
 	catch(const std::exception& e)
 	{
-		perror("epoll_ctl() in acceptConnexion()");
+		std::cerr << e.what() << std::endl;
 		if (close(clientSocket) == -1)
 			perror("close in acceptConnexion()");
 		return ;
@@ -590,23 +607,6 @@ void	Cluster::closeConnexion(const struct epoll_event &event)
 }
 /*----------------------------------------------------------------------------*/
 
-/*	* init epoll events for servers & new client socket and add the fd in epoll set
-*/
-void	Cluster::addFdInEpoll(const bool isServerSocket, const int fd) const
-{
-	struct epoll_event	ev;
-	memset(&ev, 0, sizeof(ev));
-
-	ev.data.fd = fd;
-	ev.events = EPOLLIN | EPOLLRDHUP;
-	
-	if (isServerSocket == false)
-		ev.events |= EPOLLET;
-
-	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, fd, &ev) == -1)
-		throw std::runtime_error("addFdInEpoll : error epoll_ctl()");
-}
-/*----------------------------------------------------------------------------*/
 
 /*	* switch events mode between EPOLLOUT and EPOLLIN
 */
@@ -645,15 +645,6 @@ void	Cluster::InitException::setSockExcept() const throw() {
 	if (retAddr != 0)
 		std::cerr << RED << gai_strerror(retAddr) << ": ";
 	
-	std::cerr	<< YELLOW "at file [" << _file << "] line [" << _line << "]"
-				<< RESET << std::endl;
-}
-/*----------------------------------------------------------------------------*/
-
-void	Cluster::RunException::runExcept() const throw() {
-	std::cerr << RED "Error" << std::endl;
-	if (errno != 0)
-		std::cerr << strerror(errno) << ": ";
 	std::cerr	<< YELLOW "at file [" << _file << "] line [" << _line << "]"
 				<< RESET << std::endl;
 }

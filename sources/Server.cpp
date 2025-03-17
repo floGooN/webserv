@@ -15,15 +15,13 @@
 
 Server::Server(ServerConfig & config, const std::string &service)
   : _params(setParams(config, service)),
-	_locationSet(setLocation(config.locationConfig)),
-	_errorPathList(setErrorPath())
+	_locationSet(setLocations(config.locationConfig))
 {	}
 /*----------------------------------------------------------------------------*/
 
 Server::Server(const Server &ref)
   : _params(ref._params),
-	_locationSet(ref._locationSet),
-	_errorPathList(ref._errorPathList)
+	_locationSet(ref._locationSet)
 {	}
 /*----------------------------------------------------------------------------*/
 
@@ -31,12 +29,7 @@ Server::~Server()
 {	}
 /*----------------------------------------------------------------------------*/
 
-Server  & Server::operator=(const Server &ref)
-{
-	if (this != &ref) {
-		_errorPathList = ref._errorPathList;
-	}
-
+Server  & Server::operator=(const Server &ref) {
 	return *this;
 }
 /*----------------------------------------------------------------------------*/
@@ -56,7 +49,7 @@ std::ostream & operator<<(std::ostream & o, const Server &ref)
 		o << "no specific path\n";
 	else
 	{
-		std::set<s_location>::iterator it = ref.getLocationSet().begin();
+		std::set<t_location>::iterator it = ref.getLocationSet().begin();
 		for (; it != ref.getLocationSet().end(); it++) {
 			o << *it << std::endl;
 		}
@@ -70,12 +63,12 @@ std::ostream & operator<<(std::ostream & o, const Server &ref)
 						/*### PUBLIC METHODS ###*/
 /*============================================================================*/
 
-const s_params	Server::getParams() const {
+const t_params	Server::getParams() const {
 	return _params;
 }
 /*----------------------------------------------------------------------------*/
 
-const std::set<s_location>	Server::getLocationSet() const {
+const std::set<t_location>	Server::getLocationSet() const {
 	return _locationSet;
 }
 /*----------------------------------------------------------------------------*/
@@ -83,50 +76,133 @@ const std::set<s_location>	Server::getLocationSet() const {
 /*============================================================================*/
 						/*### PRIVATE METHODS ###*/
 /*============================================================================*/
-s_params Server::setParams(const ServerConfig &config, const std::string &service)
+
+t_params Server::setParams(const ServerConfig &config, const std::string &service)
 {
-	this->_params.maxBodySize;
-	this->_params.nameList;
-	this->_params.service;
+	t_params params;
 
-	config.clientMaxBodySize;
-	config.indexFile;
-	config.listenPort;
-	config.methodAccept;
-	config.pageErrorPath;
-	config.rootPath;
-	config.serverName;
-	config.uploadPath;
-
+	setBodySize(config.clientMaxBodySize, params);
+	setService(service, params);
+	setRootPath(config.rootPath, params);
+	setErrorPath(config.pageErrorPath, params);
+	setIndexFile(config.indexFile, params);
+	setMethod(config.methodAccept, params);
+	setErrorPath(config.pageErrorPath, params);
+	setRootPath(config.rootPath, params);
+	setNameList(config.serverName, params);
+	setUploadPath(config.uploadPath, params);
+	
+	return params;
 }
 /*----------------------------------------------------------------------------*/
 
-std::set<s_location> Server::setLocations(const std::vector<LocationConfig> &config)
-{
-	setAutoindex();
-	setCgiPath();
-	setIndex();
-	setMethods();
-	setUrl();
-	setRootPath();
-
-	config.begin()->autoindex;
-	config.begin()->cgipath;
-	config.begin()->index;
-	config.begin()->methods;
-	config.begin()->path;
-	config.begin()->root;
+void	Server::setBodySize(const std::string &bodySize, t_params &params) {
+	params.maxBodySize = UtilParsing::convertBodySize(bodySize);
 }
 /*----------------------------------------------------------------------------*/
 
-std::set<std::pair<int, std::string> >	Server::setErrorPath()
+void	Server::setService(const std::string &service, t_params &params) {
+	params.service = service;
+}
+/*----------------------------------------------------------------------------*/
+
+void	Server::setRootPath(const std::string &rootPath, t_params &params) {
+	params.rootPath = rootPath;
+}
+/*----------------------------------------------------------------------------*/
+
+void	Server::setErrorPath(const std::string &errPath, t_params &params) {
+	params.errorPath = errPath;
+}
+/*----------------------------------------------------------------------------*/
+
+void	Server::setIndexFile(const std::string &indexFile, t_params &params) {
+	params.indexFile = indexFile;
+}
+/*----------------------------------------------------------------------------*/
+
+void	Server::setUploadPath(const std::string &uploadPath, t_params &params) {
+	params.uploadPath = uploadPath;
+}
+/*----------------------------------------------------------------------------*/
+
+void	Server::setMethod(const std::vector<std::string> &methods, t_params &params) {
+	UtilParsing::convertVectorToSet(params.methods, methods);
+}
+/*----------------------------------------------------------------------------*/
+
+void	Server::setNameList(const std::vector<std::string> &names, t_params &params) {
+	UtilParsing::convertVectorToSet(params.nameList, names);
+}
+/*----------------------------------------------------------------------------*/
+
+
+std::set<t_location> Server::setLocations(const std::vector<LocationConfig> &config)
 {
-	try {
-		_errorPathList.insert(std::make_pair(0, "_config._errorPath"));
+	t_location				newLoc;
+	std::set<t_location>	result;
+	std::vector<LocationConfig>::const_iterator it = config.begin();
+
+	while (it != config.end())
+	{
+		newLoc.clear();
+		setAutoindex(it->autoindex, newLoc);
+		setCgiPath(it->cgipath, newLoc);
+		setIndex(it->index, newLoc);
+		setMethods(it->methods, newLoc);
+		setPath(it->path, newLoc);
+		setRoot(it->root, newLoc);
+		result.insert(newLoc);
+		it++;
 	}
-	catch(const std::exception& e) {
-		std::cerr << e.what() << "\n" __FILE__ " at : " << __LINE__;
+
+	return result;
+}
+/*----------------------------------------------------------------------------*/
+
+void	Server::setAutoindex(const std::string &conf, t_location &loc)
+{
+	if (conf.compare("off") == 0)
+		loc.autoindex = false;
+	else if (conf.compare("on") == 0)
+		loc.autoindex = true;
+	else
+		throw std::invalid_argument(conf + " is not a valid parameter: (autoindex -> on/off)");
+}
+/*----------------------------------------------------------------------------*/
+
+void	Server::setCgiPath(const std::string &conf, t_location &loc) {
+	loc.cgipath = conf;
+}
+/*----------------------------------------------------------------------------*/
+
+void	Server::setIndex(const std::string &conf, t_location &loc) {
+	loc.index = conf;
+}
+/*----------------------------------------------------------------------------*/
+
+void	Server::setMethods(const std::vector<std::string> &conf, t_location &loc)
+{
+	std::vector<std::string>::const_iterator it = conf.begin();
+
+	while (it != conf.end())
+	{
+		if (it->compare("GET") != 0 && \
+			it->compare("POST") != 0 && \
+			it->compare("DELETE") != 0)
+			throw std::invalid_argument(*it + " is not a valid method in this server \\
+												(methods -> GET POST DELETE)");
+		loc.methods.insert(*it);
 	}
-	return _errorPathList;
+}
+/*----------------------------------------------------------------------------*/
+
+void	Server::setPath(const std::string &conf, t_location &loc) {
+	loc.path = conf;
+}
+/*----------------------------------------------------------------------------*/
+
+void	Server::setRoot(const std::string &conf, t_location &loc) {
+	loc.root = conf;
 }
 /*----------------------------------------------------------------------------*/

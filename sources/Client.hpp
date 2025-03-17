@@ -18,22 +18,24 @@ class Client
 		Client(const Client &);
 		~Client();
 		Client &operator=(const Client &);
+		bool	operator<(const Client &);
 		
-		Server		*clientServer;
+		const int		fd;
+		const Server	*clientServer;
+		
 		Request		request;
-		
 		Response	response;
 
 		void	checkRequestValidity();
 		void	buildResponse();
-		
+
 		void	clearData();
 		
 	private:
-
 		void					buildHeader();
 		void					checkMethodAuthor(const LocationConfig *current)	const;
 		const LocationConfig *	buildCompleteUri();
+
 
 		void	initMimeMap();
 		static std::map<std::string, std::string>	_mimeMap;

@@ -37,14 +37,6 @@ Request::Request(const std::string &content) throw (ErrorHandler)
 }
 /*----------------------------------------------------------------------------*/
 
-// /*	* this constructor make a "fake request" to handle an error
-// 	* doesn't throwing an error
-// */
-// Request::Request(const Cluster &cluster) {
-
-// }
-// /*----------------------------------------------------------------------------*/
-
 Request::Request(const Request &ref) {
 	*this = ref;
 }
@@ -58,8 +50,8 @@ Request & Request::operator=(const Request &ref)
 {
 	if (this != &ref)
 	{
-		this->keepAlive = ref.keepAlive;
-		this->totalBytessended = ref.totalBytessended;
+		keepAlive = ref.keepAlive;
+		totalBytessended = ref.totalBytessended;
 
 		_args = ref._args;
 		_header = ref._header;
@@ -85,12 +77,12 @@ std::ostream & operator<<(std::ostream & o, Request &ref)
 						/*### PUBLIC METHODS ###*/
 /*============================================================================*/
 
-const s_header & Request::getHeader() const {
+const t_header & Request::getHeader() const {
 	return _header;
 }
 /*----------------------------------------------------------------------------*/
 
-const s_body & Request::getbody() const {
+const t_body & Request::getbody() const {
 	return _body;
 }
 /*----------------------------------------------------------------------------*/
@@ -254,7 +246,6 @@ void Request::checkProtocole(const std::string &line) throw(ErrorHandler) {
 /*----------------------------------------------------------------------------*/
 
 /*	* extract the entire uri (path + args)
-	*
 */
 void Request::setUri(const std::string &line) throw(ErrorHandler)
 {
@@ -289,9 +280,14 @@ void Request::setHost(const std::string &line) throw(ErrorHandler)
 	catch (std::exception &e) {
 		throw ErrorHandler(ERR_500, "In setHost(): " + std::string(e.what()));
 	}
-	if (_header.hostName.empty() || _header.hostPort.empty()) {
-		std::string errlog = _header.hostName.empty() ? "No hostname " : "No hostport ";
-		throw ErrorHandler(ERR_400, errlog + "detected in the query");
+	if (_header.hostName.empty() || _header.hostPort.empty())
+	{
+		std::string errlog("");
+		if ( ! _header.hostName.empty() )
+			errlog = "No hostname\n";
+		if ( ! _header.hostPort.empty() )
+			errlog += "No hostport\n";
+		throw ErrorHandler(ERR_400, errlog + "Invalid request");
 	}
 }
 /*----------------------------------------------------------------------------*/

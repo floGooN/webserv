@@ -21,17 +21,11 @@ std::map<std::string, std::string> Client::_mimeMap;
 /*============================================================================*/
 #include <cstdlib>
 
-Client::Client(const Request &req)
-  :	request(req)
-{
-	request = req;
-	clientServer = NULL ;
-	initMimeMap();
+Client::Client(const Request &req) {
 }
 /*----------------------------------------------------------------------------*/
 
-Client::Client(const Client &ref)
-  : request(ref.request) {
+Client::Client(const Client &ref) {
 	*this = ref;
 }
 /*----------------------------------------------------------------------------*/

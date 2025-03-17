@@ -5,8 +5,8 @@
 
 # include "webserv.hpp"
 
-typedef struct  t_header    s_header;
-typedef struct  t_body      s_body;
+typedef struct  s_header    t_header;
+typedef struct  s_body      t_body;
 
 /*	* 3 types value possible :
 	*
@@ -31,22 +31,24 @@ enum e_contentType
 
 enum e_requestType
 {
+    ERROR = -1,
     GET,
     POST,
-    DELETE
+    DELETE,
+    EMPTY
 };
 
-struct t_header
+struct s_header
 {
-    t_header() {
+    s_header() {
         this->clear();
     }
 
-    t_header(const t_header &ref) {
+    s_header(const s_header &ref) {
         *this = ref;
     }
 
-    t_header &  operator=(const t_header &ref)
+    s_header &  operator=(const s_header &ref)
     {
         if (this != &ref)
         {
@@ -65,7 +67,7 @@ struct t_header
         uri.clear();
         hostName.clear();
         hostPort.clear();
-        requestType = GET;        
+        requestType = EMPTY;        
     }
 
     bool            keepAlive;
@@ -75,17 +77,17 @@ struct t_header
 	e_requestType	requestType;
 };
 
-struct t_body
+struct s_body
 {
-	t_body() {
+	s_body() {
         this->clear();
 	}
 
-	t_body(const t_body &ref) {
+	s_body(const s_body &ref) {
 		*this = ref;
 	}
 
-	t_body	&operator=(const t_body &ref)
+	s_body	&operator=(const s_body &ref)
     {
 		if (this != &ref)
         {
@@ -105,10 +107,10 @@ struct t_body
         contentType = APP;
     }
 
-	std::string     bound;
     std::string	    body;
-    size_t  		contentLength;
+	std::string     bound;
     e_contentType   contentType;
+    size_t  		contentLength;
 
 };
 

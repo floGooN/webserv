@@ -11,12 +11,11 @@ class Client;
 /*
 	CLIENT &, ERR_KEY, ERR_LOG
 */
-class ErrGenerator : std::exception
+class ErrGenerator : virtual public std::exception
 {
 	public:
-		ErrGenerator(Client &, std::string, std::string err);
+		ErrGenerator(const int, const std::string &, const std::string &);
 		ErrGenerator(const ErrGenerator &);
-		ErrGenerator &operator=(const ErrGenerator &);
 		~ErrGenerator() throw();
 		
 		const char *	what() const throw() {
@@ -29,9 +28,9 @@ class ErrGenerator : std::exception
 		std::string generateContent() const;
 		std::string generateHeader() const;
 
-		Client		&_client;
-		std::string	_errorKey;
-		std::string	_errorLog;
+		const int			_fdClient;
+		const std::string	_errorCode;
+		const std::string	_errorLog;
 
 };
 

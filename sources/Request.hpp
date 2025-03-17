@@ -28,9 +28,9 @@ class Request
 		bool	keepAlive;
 
 	private:
+		t_body		_body;
+		t_header	_header;	
 		std::string	_args;
-		s_header	_header;	
-		s_body		_body;
 
 		void	setArgs()				 				throw(ErrorHandler);
 		void 	setUri(const std::string &)		 		throw(ErrorHandler);

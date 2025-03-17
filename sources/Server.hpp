@@ -17,21 +17,30 @@ class Server
 		Server	&operator=(const Server &);
 		bool 	operator<(const Server &other) const;
 		
-		const s_params				getParams() 		const;
+		const t_params				getParams() 		const;
 		const std::set<s_location>	getLocationSet()	const;
 
 	private:
-		const s_params				_params;
-		const std::set<s_location>	_locationSet;
+		const t_params				_params;
+		const std::set<t_location>	_locationSet;
 
-		s_params				setParams(const ServerConfig &, const std::string &);
-		
-		std::set<s_location>	setLocations(const std::vector<LocationConfig> &);
-		
+		t_params	setParams(const ServerConfig &, const std::string &);
+		void	setNameList(const std::vector<std::string> &, t_params &);
+		void	setMethod(const std::vector<std::string> &, t_params &);
+		void	setUploadPath(const std::string &, t_params &);
+		void	setErrorPath(const std::string &, t_params &);
+		void	setIndexFile(const std::string &, t_params &);
+		void	setBodySize(const std::string &, t_params &);
+		void	setRootPath(const std::string &, t_params &);
+		void	setService(const std::string &, t_params &);
 
-		std::set<std::pair<int, std::string> >	_errorPathList;
-		std::set<std::pair<int, std::string> >	setErrorPath();
-
+		std::set<t_location>	setLocations(const std::vector<LocationConfig> &);
+		void	setMethods(const std::vector<std::string> &, t_location &);
+		void	setAutoindex(const std::string &, t_location &);
+		void	setCgiPath(const std::string &, t_location &);
+		void	setIndex(const std::string &, t_location &);
+		void	setPath(const std::string &, t_location &);
+		void	setRoot(const std::string &, t_location &);
 };
 
 std::ostream	& operator<<(std::ostream &, const Server &);
