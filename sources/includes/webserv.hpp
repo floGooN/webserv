@@ -90,4 +90,18 @@
 # define	STATIC_BUFFSIZE	4096
 # define	PROTOCOL_VERION	"HTTP/1.1"
 
+/* -------------------------------------- */
+/* ---		  STRUCT - ENUM   	   	  --- */
+/* -------------------------------------- */
+
+enum e_methods
+{
+    ERROR = -1,
+    GET,
+    POST,
+    DELETE,
+    EMPTY
+};
+
+
 #endif

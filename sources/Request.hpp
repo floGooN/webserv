@@ -25,8 +25,9 @@ class Request
 		void	clearRequest();
 		void	updateRequest(const std::string &) throw(ErrorHandler);
 
-		size_t	totalBytessended;
-		bool	keepAlive;
+		bool		keepAlive;
+		size_t		totalBytessended;
+		std::string	completeUri;
 
 	private:
 		t_body		_body;

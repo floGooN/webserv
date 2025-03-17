@@ -189,7 +189,7 @@ Client * Cluster::addClient(const Request &req, const int fdClient) throw (ErrGe
 
 
 	if (current->request.getbody().contentLength > server->getParams().maxBodySize)
-		throw ErrGenerator(fdClient, ERR_413, "The content length of the request exceed the server limit");
+		throw ErrGenerator(fdClient, ERR_413, "The content length of the request exceed the limit allowed by the server");
 
 	current->clientServer = server;
 	return current;
@@ -292,7 +292,8 @@ void	Cluster::sendData(const struct epoll_event &event)
 #endif
 
 	Client	&client = _clientList.at(event.data.fd);
-
+	
+	
 	if (client->response.finalMessage.empty() == true)
 		client->buildResponse();
 

@@ -127,6 +127,7 @@ void Request::updateRequest(const std::string &content) throw(ErrorHandler)
 void Request::clearRequest()
 {
 	totalBytessended = 0;
+	completeUri.clear();
 	keepAlive = false;
 
 	_args.clear();

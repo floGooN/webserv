@@ -29,15 +29,6 @@ enum e_contentType
     MULTIPART
 };
 
-enum e_requestType
-{
-    ERROR = -1,
-    GET,
-    POST,
-    DELETE,
-    EMPTY
-};
-
 struct s_header
 {
     s_header() {
@@ -70,11 +61,11 @@ struct s_header
         requestType = EMPTY;        
     }
 
-    bool            keepAlive;
-	std::string     uri;
-	std::string     hostName;
-	std::string     hostPort;
-	e_requestType   requestType;
+    bool        keepAlive;
+	std::string uri;
+	std::string hostName;
+	std::string hostPort;
+	e_methods   requestType;
 };
 
 struct s_body

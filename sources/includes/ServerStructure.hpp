@@ -8,15 +8,6 @@
 typedef struct s_location	t_location;
 typedef struct s_params		t_params;
 
-enum e_methods
-{
-    ERROR = -1,
-    GET,
-    POST,
-    DELETE,
-    EMPTY
-};
-
 struct s_location
 {
 	s_location() {

@@ -16,15 +16,13 @@ class Client
 		Client(const Client &);
 		~Client();
 		Client &operator=(const Client &);
-		bool	operator<(const Client &);
+		// bool	operator<(const Client &);
 
-		Server	*clientServer;
-
+		Server		*clientServer;
 		Request		request;
 		Response	response;
 
 		void	checkRequestValidity() throw (ErrorHandler);
-
 		void	buildResponse();
 		void	clearData();
 
