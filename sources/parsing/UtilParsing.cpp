@@ -133,7 +133,7 @@ bool	UtilParsing::isOnlySpace(const std::string & str)
 void UtilParsing::checkAccessRessource(const std::string &ressourcePath, int type)
 {
 	if (access(ressourcePath.c_str(), type)) {
-		throw std::invalid_argument("access() at \"" + ressourcePath + "\"" + std::string(strerror(errno)));
+		throw std::invalid_argument("access() at \"" + ressourcePath + "\": " + std::string(strerror(errno)));
 	}
 }
 

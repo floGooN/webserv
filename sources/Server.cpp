@@ -13,7 +13,7 @@
 			/*### CONSTRUCTORS - DESTRUCTOR _ OVERLOAD OPERATORS ###*/
 /*============================================================================*/
 
-Server::Server(ServerConfig & config, const std::string &service)
+Server::Server(const ServerConfig & config, const std::string &service)
   : _params(setParams(config, service)),
 	_locationSet(setLocations(config.locationConfig))
 {	}

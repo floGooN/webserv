@@ -9,8 +9,6 @@
 # include "Request.hpp"
 # include "Response.hpp"
 
-class LocationConfig;
-
 class Client
 {
 	public:

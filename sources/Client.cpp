@@ -55,7 +55,25 @@ std::ostream & operator<<(std::ostream &o, const Client &ref)
 /*============================================================================*/
 						/*### PUBLIC METHODS ###*/
 /*============================================================================*/
+void	Client::checkRequestValidity() throw (ErrorHandler)
+{
+	const t_location *currentLocation = buildCompleteUri();
 
+	try {
+		checkAutorisation(currentLocation);
+	}
+	catch(const ErrorHandler& e) {
+		throw ErrorHandler(e.errorNumber, e.errorLog);
+	}
+	UtilParsing::checkAccessRessource(response.completeUri.c_str(), R_OK);
+
+// 	* security check :
+// 		-> uri doesn't include ".." ()
+// 		-> only allow Chars (RFC 3986 section 2.2)
+// 		-> don't care about uri longest
+
+}
+/*----------------------------------------------------------------------------*/
 
 /*============================================================================*/
 						/*### PRIVATE METHODS ###*/
@@ -68,12 +86,13 @@ const t_location * Client::buildCompleteUri()
 	std::string			RootPart;
 	const t_location	*result = UtilParsing::findLocation(clientServer->getLocationSet(), request.getHeader().uri);
 	
-	if (result && !result->root.empty() )
+	if (result && ! result->root.empty() )
 		RootPart = result->root;
 	else
 		RootPart = clientServer->getParams().rootPath;
 
 	response.completeUri = RootPart + request.getHeader().uri;
+
 	return result;
 }
 /*----------------------------------------------------------------------------*/
@@ -99,34 +118,8 @@ void Client::checkAutorisation(const t_location *current) const throw (ErrorHand
 		itStart++;
 	}
 	if (itStart == itEnd)
-		ErrorHandler(ERR_405, "Method " + request.getHeader().requestType + std::string(" not allowedin this service"))
-}
-/*----------------------------------------------------------------------------*/
-
-/*	*
-	* 
-*/
-void	Client::checkRequestValidity() throw (ErrorHandler)
-{
-	const t_location *currentLocation = buildCompleteUri();
-	
-#ifdef TEST
-	std::cout	<< "complete uriPath: [" << response.completeUri << "]\n";
-#endif
-
-	try {
-		checkAutorisation(currentLocation);
-	}
-	catch(const ErrorHandler& e) {
-		throw ErrorHandler(ERR_403, e.what());
-	}
-	UtilParsing::checkAccessRessource(response.completeUri.c_str(), R_OK);
-
-// 	* security check :
-// 		-> uri doesn't include ".." ()
-// 		-> only allow Chars (RFC 3986 section 2.2)
-// 		-> don't care about uri longest
-
+		ErrorHandler(ERR_405, "Method " + request.getHeader().requestType + \
+									std::string(" not allowedin this service"));
 }
 /*----------------------------------------------------------------------------*/
 
@@ -137,4 +130,3 @@ void	Client::clearData()
 	clientServer = NULL;
 }
 /*----------------------------------------------------------------------------*/
-

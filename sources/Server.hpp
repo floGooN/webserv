@@ -11,7 +11,7 @@ class ServerConfig;
 class Server
 {
 	public:
-		Server(ServerConfig &, const std::string&);
+		Server(const ServerConfig &, const std::string&);
 		Server(const Server &);
 		~Server();
 		Server	&operator=(const Server &);

@@ -41,43 +41,33 @@ class Cluster
 
 		void	runCluster();
 		
-		const HttpConfig				& getConfig() const;
 		std::map<std::string, Server>	& getServersByPort() const;
 
 	private:
-		HttpConfig		_config;
-		
-		int				_epollFd;
-		std::set<int>	_serverSockets;
+		int								_epollFd;
+		std::set<int>					_serverSockets;
+		std::map<const int, Client>		_clientList;
+		std::map<std::string, Server >	_serversByService;
 
 		void	setEpollFd();
-		void	setServersByPort();
 		void	setServerSockets();
+		void	setServersByPort(const HttpConfig &);
 		void	safeGetAddr(const char *, struct addrinfo **) const;
 		void	createAndLinkSocketServer(const struct addrinfo &, const std::string &, int *);
 
-
-		std::map<const int, Client>			_clientList;
-		std::map<std::string, Server >	_serversByService;
-
 		void	acceptConnexion(const struct epoll_event &);
 		void	addFdInEpoll(const bool, const int)	const throw (std::runtime_error);
-
-
+		
 		void	recvData(const struct epoll_event &);
+		void	sendData(const struct epoll_event &);
+
 		ssize_t	safeRecv(const int, std::string &);
+		Client	*addClient(const Request &req, const int) throw (ErrGenerator);
+		void	changeEventMod(const bool, const int) const throw (ErrGenerator);
 		void	checkByteReceived(const struct epoll_event &event, ssize_t bytes) throw (ErrGenerator);
 
-		Client	*addClient(const Request &req, const int) throw (ErrGenerator);
-
-		
-		
 		void	closeConnexion(const struct epoll_event &event);
 		void	closeFdSet() const;
-		void	changeEventMod(const bool, const int) const;
-		
-		void	sendData(const struct epoll_event &);
-		Client	*findClient(const int fdClient);
 };
 
 std::ostream	& operator<<(std::ostream &, const Cluster &);

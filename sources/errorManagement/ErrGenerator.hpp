@@ -19,7 +19,7 @@ class ErrGenerator : virtual public std::exception
 		~ErrGenerator() throw();
 		
 		const char *	what() const throw() {
-			return _errorLog.c_str();
+			return NULL;
 		};
 		void	generateErrorPage();
 

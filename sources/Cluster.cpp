@@ -34,9 +34,8 @@ void hand(int, siginfo_t *, void *) {
 /*============================================================================*/
 
 Cluster::Cluster(const std::string &filepath)
-  : _config(ConfigParser().parse(filepath))
 {
-	setServersByPort();
+	setServersByPort(ConfigParser().parse(filepath));
 	try {
 		_serverSockets.clear();
 		setServerSockets();
@@ -88,8 +87,10 @@ std::ostream	& operator<<(std::ostream & o, const Cluster &ref)
 	o	<< BOLD "CLUSTER:" RESET << std::endl
 		<< "_serversByService:\n";
 	for (std::map<std::string, Server >::const_iterator it = ref.getServersByPort().begin();
-		it != ref.getServersByPort().end(); it++)
+		it != ref.getServersByPort().end(); it++) {
 			o	<< it->second << std::endl;
+		}
+	
 	return o << RESET;
 }
 /*----------------------------------------------------------------------------*/
@@ -99,12 +100,7 @@ std::ostream	& operator<<(std::ostream & o, const Cluster &ref)
 /*============================================================================*/
 
 std::map<std::string, Server> & Cluster::getServersByPort() const {
-	return const_cast<std::map<std::string, Server> & >( _serversByService);
-}
-/*----------------------------------------------------------------------------*/
-
-const HttpConfig & Cluster::getConfig() const {
-	return _config;
+	return const_cast<std::map<std::string, Server> & >(_serversByService);
 }
 /*----------------------------------------------------------------------------*/
 
@@ -144,15 +140,13 @@ void	Cluster::runCluster()
 							std::cerr << "have to print EPOLLERR" << std::endl;
 					}
 				}
-				catch(ErrorHandler &e) {
-					std::cout << BRIGHT_YELLOW << "IN RUN except" << std::endl;
-					std::cerr << e.what() << RESET << std::endl;
-					e.generateErrorPage();
-					try {
-						changeEventMod(false, events[i].data.fd);
+				catch(ErrGenerator &e)
+				{
+					if (e.what() != NULL) {
+						std::cerr << e.what() << RESET << std::endl;
 					}
-					catch(const std::exception& err) {
-						std::cerr << err.what() << '\n';
+					else {
+						e.generateErrorPage();
 					}
 				}
 			}
@@ -213,7 +207,11 @@ ssize_t	Cluster::safeRecv(const int clientFd, std::string &message)
 	ssize_t	bytesReceived = recv(clientFd, buffer, STATIC_BUFFSIZE, 0);
 	
 	if ( ! bytesReceived || bytesReceived == -1 )
+	{
+		if ( bytesReceived )
+			perror("recv()");
 		return bytesReceived;
+	}
 	try {
 		message.clear();
 		message.assign(buffer, bytesReceived);
@@ -232,7 +230,6 @@ void	Cluster::checkByteReceived(const struct epoll_event &event, ssize_t bytes) 
 		throw ErrGenerator(event.data.fd, ERR_499, "Client closed connexion");
 	}
 	if ( bytes == -1 ) {
-		perror("recvData()");
 		throw ErrGenerator(event.data.fd, ERR_500, "");
 	}
 }
@@ -274,17 +271,10 @@ void	Cluster::recvData(const struct epoll_event &event)
 	{
 		try {
 			currentClient->checkRequestValidity();
-		}
-		catch(const ErrorHandler& e)
-		{
-			std::cerr << e.what() << '\n';
-		}
-		
-		try {
 			changeEventMod(false, event.data.fd);
 		}
-		catch(const std::exception& e) {
-			throw ErrGenerator(event.data.fd, ERR_500, e.what());
+		catch(const ErrorHandler& e) {
+			throw ErrGenerator(event.data.fd, e.errorNumber, e.errorLog);
 		}
 	}
 }
@@ -301,9 +291,7 @@ void	Cluster::sendData(const struct epoll_event &event)
 				<< std::endl;
 #endif
 
-	Client	*client = findClient(event.data.fd);
-	if (!client)
-		throw std::runtime_error("Error 500, client not found in sendData()");
+	Client	&client = _clientList.at(event.data.fd);
 
 	if (client->response.finalMessage.empty() == true)
 		client->buildResponse();
@@ -358,14 +346,14 @@ void	Cluster::addFdInEpoll(const bool isServerSocket, const int fd) const throw 
 
 /*	* init servers from _serverconfig
 */
-void Cluster::setServersByPort()
+void Cluster::setServersByPort(const HttpConfig &config)
 {
-	std::vector<ServerConfig>::iterator	itConfigServer = _config.serversConfig.begin();
-	std::pair<std::map<std::string, Server>::iterator, bool>	result;
+	std::vector<ServerConfig>::const_iterator	itConfigServer = config.serversConfig.begin();
+	std::pair<std::map<std::string, Server>::const_iterator, bool>	result;
 
-	while (itConfigServer != _config.serversConfig.end())
+	while (itConfigServer != config.serversConfig.end())
 	{
-		std::vector<std::string>::iterator	itServiceList = itConfigServer->listenPort.begin();
+		std::vector<std::string>::const_iterator	itServiceList = itConfigServer->listenPort.begin();
 		while (itServiceList != itConfigServer->listenPort.end())
 		{
 			result = _serversByService.insert(std::make_pair(*itServiceList, Server(*itConfigServer, *itServiceList)));
@@ -550,6 +538,21 @@ void	Cluster::acceptConnexion(const struct epoll_event &event)
 }
 /*----------------------------------------------------------------------------*/
 
+/*	* switch events mode between EPOLLOUT and EPOLLIN
+*/
+void	Cluster::changeEventMod(const bool changeForRead, const int fd) const throw (ErrGenerator)
+{
+	struct epoll_event	ev;
+	memset(&ev, 0, sizeof(ev));
+	
+	ev.data.fd = fd;
+	ev.events = EPOLLET | EPOLLRDHUP | (changeForRead ? EPOLLIN : EPOLLOUT);
+	
+	if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, fd, &ev) == -1)
+		throw ErrGenerator(fd, ERR_500, "changeEventMod(): " + std::string(strerror(errno)));
+}
+/*----------------------------------------------------------------------------*/
+
 /*	* close a client connexion
 */
 void	Cluster::closeConnexion(const struct epoll_event &event)
@@ -575,29 +578,14 @@ void	Cluster::closeConnexion(const struct epoll_event &event)
 }
 /*----------------------------------------------------------------------------*/
 
-
-/*	* switch events mode between EPOLLOUT and EPOLLIN
-*/
-void	Cluster::changeEventMod(const bool changeForRead, const int fd) const
-{
-	struct epoll_event	ev;
-	memset(&ev, 0, sizeof(ev));
-	
-	ev.data.fd = fd;
-	ev.events = EPOLLET | EPOLLRDHUP | (changeForRead ? EPOLLIN : EPOLLOUT);
-	
-	if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, fd, &ev) == -1)
-		throw std::runtime_error("changeEventMod(): " + std::string(strerror(errno)));
-}
-/*----------------------------------------------------------------------------*/
-
-/*	* close all server sockets
+/*	* close all server & client sockets
 */
 void	Cluster::closeFdSet() const
 {
 	for (std::set<int>::iterator it = _serverSockets.begin(); it != _serverSockets.end(); it++)
 		if (*it > 0 && close(*it) != 0)
 			perror("close()");
+
 	for (std::set<int>::iterator it = _clientSockets.begin(); it != _clientSockets.end(); it++)
 		if (*it > 0 && close(*it) != 0)
 			perror("close()");
