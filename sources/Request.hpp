@@ -1,63 +1,50 @@
 
 
 
-
-
-
 #ifndef REQUEST_HPP
 # define REQUEST_HPP
 
 # include "webserv.hpp"
+# include "RequestStructure.hpp"
 
-# define	BODY_SEPARATOR	"\r\n\r\n"
-# define	PROTOCOL_VERION	"HTTP/1.1"
+class Cluster;
 
 class Request
 {
 	public:
-		Request(const std::string &);
+		Request();
+		Request(const std::string &) throw(ErrorHandler);
 		Request(const Request &);
 		~Request();
-		Request() {};
 		Request & operator=(const Request &);
 		
-		bool		getkeepalive() 		const;
-		size_t		getcontentlength()	const;
-		std::string			&getbody();
-		const std::string	&geturi()			const;
-		const std::string	&gettype()			const;
-		const std::string	&getbody()			const;
-		const std::string	&getbound()			const;
-		const std::string	&gethostport()		const;
-		const std::string	&gethostname()		const;
-		const std::string	&getcontenttype()	const;
+		const std::string	&getArgs()		const;
+		const s_header		&getHeader()	const;
+		const s_body		&getbody()		const;
 		
-		void	setBody(const std::string &, ssize_t);
-		void	checkRequestValidity();
 		void	clearRequest();
+		void	updateRequest(const std::string &) throw(ErrorHandler);
 
-		size_t	totalBytesReceived;
-		size_t	totalBytessended;
+		bool		keepAlive;
+		size_t		totalBytessended;
+		std::string	completeUri;
 
-	private:		
-		bool		_keepAlive;
-		size_t		_contentLength;
-		std::string	_uri;
-		std::string	_hostName;
-		std::string	_hostPort;
-		std::string	_requestType;
-		
-		std::string	_body;
-		std::string	_bound;
-		std::string	_contentType;
+	private:
+		t_body		_body;
+		t_header	_header;	
+		std::string	_args;
 
-
-		void	initRequestLine(const std::string &);
-		void	initHost(std::vector<std::string>::const_iterator &, std::vector<std::string>::const_iterator);
-		void	initContentLength(const std::string &);
-		void	initContentType(const std::string &);
-		void	extractBound(const std::string &);
-		size_t	skipHeader(const std::string &);
+		void	setArgs()				 				throw(ErrorHandler);
+		void 	setUri(const std::string &)		 		throw(ErrorHandler);
+		void	setBody(const std::string &)			throw(ErrorHandler);
+		void 	setHost(const std::string &) 			throw(ErrorHandler);
+		void 	setKeepAlive(const std::string &);
+		void 	setContentType(const std::string &) 	throw(ErrorHandler);
+		void	checkProtocole(const std::string &) 	throw(ErrorHandler);
+		void 	setRequestType(const std::string &) 	throw(ErrorHandler);
+		void	setHeader(const std::string &header)	throw(ErrorHandler);
+		void	setBoundLimiter(const std::string &)	throw(ErrorHandler);
+		void 	setContentLength(const std::string &)	throw(ErrorHandler);
 };
 
 std::ostream & operator<<(std::ostream &, Request &);

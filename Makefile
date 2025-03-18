@@ -18,7 +18,8 @@ MKD			= mkdir -p
 VALGRIND	= valgrind --leak-check=full 
 
 #-----------------------# ==== SOURCE CODE DIRECTORIES ==== #------------------#
-INCLUDES	=	./sources/includes ./sources ./sources/configBuilder ./sources/parsing
+INCLUDES	=	./sources/includes ./sources ./sources/configBuilder ./sources/parsing \
+				./sources/errorManagement
 SRC_PATH	= sources
 
 #---------------------# ==== TEMPORARY FILES DIRECTORIES ==== #----------------#
@@ -64,7 +65,7 @@ debug:
 
 test:
 	$(MAKE) MODE=debug
-	$(VALGRIND) ./$(NAME) 
+	$(VALGRIND) --track-fds=yes ./$(NAME) 
 #-------------------# ==== LINKING & BUILDING PROGRAM ==== #-------------------#
 $(NAME)	: $(OBJ)
 	@echo "$(GREEN)-- compilation completed --$(RESET)"

@@ -4,55 +4,47 @@
 #include "UtilParsing.hpp"
 #include <unistd.h>
 #include <sys/wait.h>
-
-class ErrorCGI : virtual public std::exception 
-{
-    public:
-        ErrorCGI(const std::string &message, int code) : _message(message), _code(code){}
-        virtual const char *	what() const throw() 
-        {
-            (void) _code;
-             return _message.c_str();
-        }
-        virtual ~ErrorCGI() throw() {};
-
-    private:
-        std::string _message;
-        int         _code;
-};
+#include "Server.hpp"
+#include "Client.hpp"
+#include "Request.hpp"
+#include "RequestStructure.hpp"
+#include <cstring>
+#include "CGI.hpp"
 
 
-// ici voir si il faut renvoyer une page error dans le catch
 void processCGI(const std::string &path, Server server, Request req)
 {
     std::string response;
-    try 
+    try
     {
         if (UtilParsing::fileExits(path) != 0)
-            throw ErrorCGI("Not found", 404);
+            throw ;
         if (access(path.c_str(), X_OK) != 0)
-            throw ErrorCGI("Not found", 404);
+            throw ;
         if (checkExtensionCGI(path, server) != 0)
-            throw ErrorCGI("Bad Gateway", 502);
+            throw ;
         if (moveToDirectoryScript(extractDirectory(path)) != 0)
-            throw ErrorCGI("Internal server error", 500);
+            throw ;
         response = executeCGI(path, server, req); // ici plus tard renvoyer directement dans la value response
         if (response.empty())
-            throw ErrorCGI("Bad Gateway", 502);
+            throw ;
     }
-    catch (const ErrorCGI& e)
+    catch ()
     {
-        std::cerr << e.what() << std::endl;
+         
     }
-        
 }
 // fonction pour check le type d'extension du script demander pour verifier si le server la supporte
 // pareil la recuperer dans le parsing le nom par server  le nom du script cgi pour verifier son extension
 bool checkExtensionCGI(const std::string &path, Server server)
 {
+    (void)server;
    std::string cgi_path = "support.pl";
+   std::string cgi_path_other = "support.py";
 
     if (UtilParsing::recoverExtension(path) == UtilParsing::recoverExtension(cgi_path))
+        return true;
+    else if (UtilParsing::recoverExtension(path) == UtilParsing::recoverExtension(cgi_path_other))
         return true;
     return false;
 }
@@ -76,106 +68,158 @@ bool moveToDirectoryScript(const std::string &directory)
     return true;
 }
 
-// ici recuperer les values de l'env avec les valeurs de la request/server
+
 std::string _method,  _params, _contentType, _http, _httpReferer, _remoteAddr, _remotePort, _scriptName, _pathInfo;
 char** initEnv(Request req, Server server)
 {
-      std::string environnement[] = {
-        "REQUEST_METHOD=" + req.gettype(),
-        "QUERY_STRING=" + (req.gettype().compare("GET") == 0) ? ParseUri(req.geturi())  : req.getbody(),
-        "CONTENT_TYPE=" + req.getcontenttype(),
-        "HTTP_HOST=" + req.gethostname(),
-        "SCRIPT_NAME=" + server.getService(),
-        "PATH_INFO=" + req.geturi(), // Ici pas sur car il faut tout le path donc a voir 
+      std::string environnement[] = 
+      {
+        "REQUEST_METHOD=" + req.getHeader().requestType,
+        "QUERY_STRING=" + ((req.getHeader().requestType.compare("GET") == 0) ? ParseUri(req.getHeader().uri)  : " "), // si c'est une get je mets rien apres a voir si on met une valeur ou pas
+        "CONTENT_TYPE=" + req.getbody().contentType, // content-type request
+        "HTTP_HOST=" + req.getHeader().hostName,
+        "SCRIPT_NAME=" + server.getParams().service, // ici le nom du script je pense pas que ce soit bon
+        "PATH_INFO=" + req.getHeader().uri, // tout url 
     };
     int  environSize = sizeof(environnement) / sizeof(environnement[0]);
-    char** environ = new char*[environSize + 1]; 
-
+    char** envCGI = new char*[environSize + 1]; 
     for (int i = 0; i < environSize; i++) 
     {
-        environ[i] = new char[environnement[i].size() + 1];
-        strcpy(environ[i], environnement[i].c_str());
+        envCGI[i] = new char[environnement[i].size() + 1];
+        strcpy(envCGI[i], environnement[i].c_str());
     }
-    environ[environSize] = NULL;
+    envCGI[environSize] = NULL;
 
-    return environ;
+    return envCGI;
 }
 
 
-// route pour effectuer le pipe + fork neccessaire pour l'execution 
-// si erreur on renvoie juste un string vide car le controle se fait plus haut
-std::string playCGI(const std::string path, char** env)
-{
-    std::string output;
-    int pipfd[2];
 
-    if (pipe(pipfd) == -1)
-        return "";
-    pid_t pid = fork();
-    if (pid < 0)
+std::string playCgi(const std::string &path, Request req, char **env) 
+{
+    int pipe_in[2];
+    int pipe_out[2];
+    pid_t pid;
+    std::string newBody;
+
+    if (pipe(pipe_in) == -1 || pipe(pipe_out) == -1) 
+        return "Status: 500\r\n\r\n";
+    pid = fork();
+    if (pid == -1) 
     {
-        close(pipfd[0]);
-        close(pipfd[1]);
-        return "";
+        closePipe(pipe_in, pipe_out);
+        return "Status: 500\r\n\r\n";
     }
-    else if (pid == 0) 
-        childProcess(path, env, pipfd); // ici des exit avant mais aucune utiliter
-    else 
-        output = parentProcess(pid, pipfd);
-
-    return output;
-}
-
-// process du child du fork avec la recuperation du fichier a ouvrir etc 
-// a voir si ici il est possible d'avoir une autre facon juste le nom du fichier au lieu de le decouper ici
-// pour eviter les probleme ici
-int childProcess(const std::string path, char**env, int *pipfd)
-{
-    const char *filename;
-    close(pipfd[0]);
-    dup2(pipfd[1], STDOUT_FILENO); 
-    close(pipfd[1]);
-    std::string::size_type start = path.find_last_of("/");
-    if (start != std::string::npos)
-        filename = path.substr(start + 1).c_str();
-    else
-        filename = path.c_str();
-    const char *args[] = {"/usr/bin/perl", filename, NULL};
-    if (execve(args[0],(char* const*)args , env) == -1)
-        return 1;
-    return 0;
-}
-// le process parent qui va ecrire dans output le retour du script qui dans l'idee 
-// s'occupe de creer un body html
-std::string parentProcess(pid_t pid, int *pipfd)
-{
-    std::string output;
-    char buffer[128];
-    ssize_t bytesRead;
-    close(pipfd[1]);
-    while ((bytesRead = read(pipfd[0], buffer, sizeof(buffer) - 1)) > 0)
+    if (pid == 0)
     {
-        buffer[bytesRead] = '\0';
-        output.append(buffer);
+        if (UtilParsing::recoverExtension(path) == ".pl")
+            childProcessCgi(env, pipe_in, pipe_out);
+        else
+            childProcessCgiPy(env, pipe_in, pipe_out);
     }
-    close(pipfd[0]);
-    int status;
-    waitpid(pid, &status, 0);
-    if (WIFEXITED(status))
-        return output;
     else 
-        return "";
+        return parentProcessCgi(req, pid, pipe_in, pipe_out);
+
+    return "Error";
+}
+
+
+void closePipe(int *pipe_in, int *pipe_out)
+{
+    close(pipe_in[0]); 
+    close(pipe_in[1]);
+    close(pipe_out[0]); 
+    close(pipe_out[1]);
 }
 
 std::string executeCGI(const std::string &path, Server server, Request req)
 {
     char **env;
     std::string body;
+    if (controlContentBodyReq(req) == -1)
+        throw ;
     env = initEnv(req, server);
-    body = playCGI(path, env);
+    body = playCgi(path, req, env);
     if (env)
         freeEnv(env);
     return body;
+}
+
+int controlContentBodyReq(Request req)
+{
+    if (req.getHeader().requestType == POST) // a verifier mais je crois que c'est bon
+        if (req.getbody().body.empty())
+            return -1;
+    return 0;
+}
+
+// rajouter le nom du script a appele de facon modulable
+void childProcessCgi(char**env, int *pipe_in, int *pipe_out)
+{
+    close(pipe_in[1]);
+    close(pipe_out[0]);
+    dup2(pipe_in[0], STDIN_FILENO);
+    close(pipe_in[0]);
+    dup2(pipe_out[1], STDOUT_FILENO);
+    close(pipe_out[1]);
+    const char *args[] = {"/usr/bin/perl", "./cgi-bin/script.pl", NULL}; // utiliser uri ou une var script name sans doute la meme qui est utiliser pour voir l'extension plus haut
+    execve(args[0], (char *const *)args, env);
+    _exit(1); // ici gestion d'erreur 
+}
+
+
+// rajouter le nom du script a appele de facon modulable
+void childProcessCgiPy(char**env, int *pipe_in, int *pipe_out)
+{
+    close(pipe_in[1]);
+    close(pipe_out[0]);
+    dup2(pipe_in[0], STDIN_FILENO);
+    close(pipe_in[0]);
+    dup2(pipe_out[1], STDOUT_FILENO);
+    close(pipe_out[1]);
+    const char *args[] = {"/usr/bin/python3", "./cgi-bin/script.py", NULL}; // utiliser uri ou une var script name sans doute la meme qui est utiliser pour voir l'extension plus haut
+    execve(args[0], (char *const *)args, env);
+    _exit(1); // ici gestion d'erreur 
+}
+
+
+
+std::string parentProcessCgi(Request req, pid_t pid, int *pipe_in, int *pipe_out)
+{
+    std::string newBody;
+
+    close(pipe_in[0]);
+    close(pipe_out[1]);
+    write(pipe_in[1], req.getbody().body.c_str(), req.getbody().contentLength); // avant check si le body envoyer a un content sinon renvoyer error 204 No content
+    close(pipe_in[1]);
+    newBody = createBody(pipe_out);
+    close(pipe_out[0]);
+    int status;
+    waitpid(pid, &status, 0);
+    if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
+        return "Status: 500\r\n\r\n";
+    return newBody;
+}
+
+std::string createBody(int *pipe_out)
+{
+    std::string newBody;
+    char buffer[4096];
+    ssize_t bytes_read;   
+    while ((bytes_read = read(pipe_out[0], buffer, sizeof(buffer) - 1)) > 0) 
+    {
+        buffer[bytes_read] = '\0';
+        newBody.append(buffer);
+    }
+    return newBody;
+}
+
+std::string ParseUri(std::string uri) // ici donner args
+{
+    std::string::size_type start = uri.find('?');
+    if (start == std::string::npos)
+        return "";
+    return UtilParsing::convertHexaToString(uri.substr(start + 1));
 }
 
 void freeEnv(char** tab)
@@ -187,11 +231,4 @@ void freeEnv(char** tab)
         i++;
     }
     delete[] tab;
-}
-std::string ParseUri(std::string uri)
-{
-    std::string::size_type start = uri.find('?');
-    if (start == std::string::npos)
-        return "";
-    return UtilParsing::convertHexaToString(uri.substr(start + 1));
 }

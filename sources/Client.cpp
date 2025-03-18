@@ -8,19 +8,18 @@
 /*============================================================================*/
 
 #include "Client.hpp"
+#include "Server.hpp"
+#include "UtilParsing.hpp"
+#include "ErrGenerator.hpp"
+
 #include <cstring>
-std::map<std::string, std::string> Client::_mimeMap;
 
 /*============================================================================*/
 				/*### CONSTRUCTORS - DESTRUCTOR - OVERLOAD OP ###*/
 /*============================================================================*/
 
-Client::Client(const Request &req)
-{
-	request = req;
-	clientServer = NULL;
-	initMimeMap();
-}
+Client::Client()
+{	}
 /*----------------------------------------------------------------------------*/
 
 Client::Client(const Client &ref) {
@@ -36,8 +35,9 @@ Client &Client::operator=(const Client &ref)
 {
 	if (this != &ref)
 	{
-		request = Request(ref.request);
 		clientServer = ref.clientServer;
+		request = ref.request;
+		response = ref.response;
 	}
 	return *this;
 }
@@ -55,61 +55,130 @@ std::ostream & operator<<(std::ostream &o, const Client &ref)
 /*============================================================================*/
 						/*### PUBLIC METHODS ###*/
 /*============================================================================*/
+void	Client::checkRequestValidity() throw (ErrorHandler)
+{
+	const t_location *currentLocation = buildCompleteUri();
 
+	try {
+		checkAutorisation(currentLocation);
+	}
+	catch(const ErrorHandler& e) {
+		throw ErrorHandler(e.errorNumber, e.errorLog);
+	}
+	UtilParsing::checkAccessRessource(response.completeUri.c_str(), R_OK);
+
+// 	* security check :
+// 		-> uri doesn't include ".." ()
+// 		-> only allow Chars (RFC 3986 section 2.2)
+// 		-> don't care about uri longest
+
+}
+/*----------------------------------------------------------------------------*/
+
+void	Client::buildResponse()
+{
+	// verifier que le requete ne pointe pas sur un directory
+	// si c'est le cas, faire pointer le requete sur l'index de la location ou sur l'index serveur ou renvoyer bad request
+	std::cout	<< "Client::buildResponse()\n" << std::endl;
+
+	switch (request.getHeader().requestType)
+	{
+		case GET:
+			response.getRequest(request);
+			break;
+		case POST:
+			response.postRequest(request);
+			break;
+		case DELETE:
+			response.deleteRequest(request);
+			break;
+		default:
+			throw ErrorHandler(ERR_405, "");
+	}
+
+	if (UtilParsing::isDirectory(response.completeUri) == true)
+	{
+		const t_location *current = UtilParsing::findLocation(clientServer->getLocationSet() , request.getHeader().uri);
+		if ( current && ! current->index.empty()) {
+			response.completeUri.append(current->index);
+		}
+		else if ( ! clientServer->getConfig().indexFile.empty()) {
+			response.completeUri.append(clientServer->getConfig().indexFile);
+		}
+		else {
+			//si l'autoindex est autorise envoyer l'arborescence ?
+			throw ErrorHandler(*this, ERR_404, ("[" + request.geturi() + "] request didn't succeed"));
+		}
+	}
+
+	std::cout	<< YELLOW "completeUri: [" << response.completeUri << "]" RESET << std::endl;
+
+	UtilParsing::checkAccessRessource(response.completeUri.c_str(), R_OK);
+
+	response.finalMessage = UtilParsing::readFile(response.completeUri);
+
+	// set la page une fois qu'on est sur le l'avoir
+	buildHeader();
+}
 /*----------------------------------------------------------------------------*/
 
 /*============================================================================*/
 						/*### PRIVATE METHODS ###*/
 /*============================================================================*/
 
-void	Client::clearData()
+/*	* build the complete uri and return the location associated with the path requested by client
+*/
+const t_location * Client::buildCompleteUri()
 {
-	// memset(&request, 0, sizeof(request));
-	request.clearRequest();
-	memset(&response, 0, sizeof(response));
+	std::string			RootPart;
+	const t_location	*result = UtilParsing::findLocation(clientServer->getLocationSet(), request.getHeader().uri);
+	
+	if (result && ! result->root.empty() )
+		RootPart = result->root;
+	else
+		RootPart = clientServer->getParams().rootPath;
+
+	request.completeUri = RootPart + request.getHeader().uri;
+
+	return result;
 }
 /*----------------------------------------------------------------------------*/
 
-void Client::initMimeMap()
+/*	* check if the method is allowed in the required location
+*/
+void Client::checkAutorisation(const t_location *current) const throw (ErrorHandler)
 {
-	if (!_mimeMap.empty())
-		return;
+	std::set<e_methods>::const_iterator itEnd;
+	std::set<e_methods>::const_iterator itStart;
 
-	_mimeMap.insert(std::make_pair(".aac", "audio/acc"));
-	_mimeMap.insert(std::make_pair(".abw", "application/x-abiword"));
-	_mimeMap.insert(std::make_pair(".apng", "image/apng"));
-	_mimeMap.insert(std::make_pair(".arc", "application/x-freearc"));
-	_mimeMap.insert(std::make_pair(".avif", "image/avif"));
-	_mimeMap.insert(std::make_pair(".avi", "video/x-msvideo"));
-	_mimeMap.insert(std::make_pair(".csh", "application/x-csh"));
-	_mimeMap.insert(std::make_pair(".css", "text/css"));
-	_mimeMap.insert(std::make_pair(".csv", "text/csv"));
-	_mimeMap.insert(std::make_pair(".gif", "image/gif"));
-	_mimeMap.insert(std::make_pair(".html", "text/html"));
-	_mimeMap.insert(std::make_pair(".htm", "text/html"));
-	_mimeMap.insert(std::make_pair(".ico", "image/vnd.microsoft.icon"));
-	_mimeMap.insert(std::make_pair(".jpeg", "image/jpeg"));
-	_mimeMap.insert(std::make_pair(".jpg", "image/jpeg"));
-	_mimeMap.insert(std::make_pair(".js", "text/javascript"));
-	_mimeMap.insert(std::make_pair(".json", "application/json"));
-	_mimeMap.insert(std::make_pair(".jsonld", "application/ld+json"));
-	_mimeMap.insert(std::make_pair(".mjs", "text/javascript"));
-	_mimeMap.insert(std::make_pair(".mp3", "audio/mpeg"));
-	_mimeMap.insert(std::make_pair(".mp4", "video/mp4"));
-	_mimeMap.insert(std::make_pair(".png", "image/png"));
-	_mimeMap.insert(std::make_pair(".pdf", "application/pdf"));
-	_mimeMap.insert(std::make_pair(".php", "application/x-httpd-php"));
-	_mimeMap.insert(std::make_pair(".sh", "application/x-sh"));
-	_mimeMap.insert(std::make_pair(".svg", "image/svg+xml"));
-	_mimeMap.insert(std::make_pair(".tar", "application/x-tar"));
-	_mimeMap.insert(std::make_pair(".txt", "text/plain"));
-    _mimeMap.insert(std::make_pair(".webp", "image/webp"));
-    _mimeMap.insert(std::make_pair(".xhtml", "application/xhtml+xml"));
-    _mimeMap.insert(std::make_pair(".xml", "application/xml"));
-    _mimeMap.insert(std::make_pair(".zip", "application/zip"));
-    _mimeMap.insert(std::make_pair(".xul", "application/vnd.mozilla.xul+xml"));
-    _mimeMap.insert(std::make_pair(".3gp", "video/3gpp"));
-    _mimeMap.insert(std::make_pair(".7z", "application/x-7z-compressed"));
-    _mimeMap.insert(std::make_pair(".bin", "application/octet-stream"));
+	if (current != NULL && ! current->methods.empty()) {
+		itStart = current->methods.begin() ;
+		itEnd = current->methods.end();
+	}
+	else {
+		itStart = clientServer->getParams().methods.begin();
+		itEnd = clientServer->getParams().methods.end();
+	}
+
+	while (itStart != itEnd)
+	{
+		if (*itStart == request.getHeader().requestType)
+			break;
+		itStart++;
+	}
+	if (itStart == itEnd)
+		ErrorHandler(ERR_405, "Method " + request.getHeader().requestType + \
+									std::string(" not allowed in this service"));
+}
+/*----------------------------------------------------------------------------*/
+
+
+
+
+void	Client::clearData()
+{
+	request.clearRequest();
+	response.clearResponse();
+	clientServer = NULL;
 }
 /*----------------------------------------------------------------------------*/

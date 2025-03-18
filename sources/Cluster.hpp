@@ -8,10 +8,9 @@
 
 #include "webserv.hpp"
 #include "HttpConfig.hpp"
+
 #include "Client.hpp"
 #include "Server.hpp"
-
-// timeout client ne fonctionne pas correctement
 
 class Cluster
 {
@@ -24,7 +23,7 @@ class Cluster
 			virtual ~InitException() throw() {}
 			virtual const char *	what() const throw() {
 				return _msg.c_str();
-			};
+			}
 			void			setSockExcept() const throw();
 			const int 		retAddr;
 
@@ -32,23 +31,6 @@ class Cluster
 			const char *_file;
 			const int 	_line;
 			std::string	_msg;
-	};
-
-	class   RunException : virtual public std::exception
-	{
-		public:
-			RunException(const char *file, int line, const char *msg)
-				: _file(file), _line(line), _msg(msg)
-			{	}
-			const char *	what() const throw() {
-				return _msg;
-			};
-			void			runExcept() const throw();
-
-		private:
-			const char *	_file;
-			const int 		_line;
-			const char *	_msg;
 	};
 
 	public:
@@ -59,34 +41,33 @@ class Cluster
 
 		void	runCluster();
 		
-		const HttpConfig				& getConfig() const;
 		std::map<std::string, Server>	& getServersByPort() const;
 
 	private:
-		int				_epollFd;		// fd vers structure epoll
-		HttpConfig		_config;
-		std::set<int>	_serverSockets;	// ensemble des socket serveur (un par port)
+		int								_epollFd;
+		std::set<int>					_serverSockets;
+		std::map<const int, Client>		_clientList;
 		std::map<std::string, Server >	_serversByService;
 
-		Client	*addClient(const Request &req, const int);
-		Client	*findClient(int fdClient);
-
 		void	setEpollFd();
-		void	setServersByPort();
 		void	setServerSockets();
-		
-		void	closeFdSet() const;
+		void	setServersByPort(const HttpConfig &);
 		void	safeGetAddr(const char *, struct addrinfo **) const;
 		void	createAndLinkSocketServer(const struct addrinfo &, const std::string &, int *);
 
-		void	addFdInEpoll(const bool, const int)	const;
-		void	changeEventMod(const bool, const int) const;
-		void	acceptConnexion(const struct epoll_event &) const;
-		void	closeConnexion(const struct epoll_event &event) const;
-
-		void	sendData(const struct epoll_event &);
+		void	acceptConnexion(const struct epoll_event &);
+		void	addFdInEpoll(const bool, const int)	const throw (std::runtime_error);
+		
 		void	recvData(const struct epoll_event &);
+		void	sendData(const struct epoll_event &);
+
 		ssize_t	safeRecv(const int, std::string &);
+		Client	*addClient(const Request &req, const int) throw (ErrGenerator);
+		void	changeEventMod(const bool, const int) const throw (ErrGenerator);
+		void	checkByteReceived(const struct epoll_event &event, ssize_t bytes) throw (ErrGenerator);
+
+		void	closeConnexion(const struct epoll_event &event);
+		void	closeFdSet() const;
 };
 
 std::ostream	& operator<<(std::ostream &, const Cluster &);

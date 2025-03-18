@@ -27,23 +27,20 @@ HttpConfig ConfigParser::parse(const std::string& filepath)
 void    ConfigParser::checkAllBlocks(HttpConfig &httpConfig)
 {
     httpConfig.controlDefaultHttpConf();
-    if (httpConfig.serversConfig.empty() == false)
+    std::vector<ServerConfig>::iterator itServerConf = httpConfig.serversConfig.begin();
+    while (itServerConf != httpConfig.serversConfig.end())
     {
-        std::vector<ServerConfig>::iterator itServerConf = httpConfig.serversConfig.begin();
-        while (itServerConf != httpConfig.serversConfig.end())
+        itServerConf->controlDefaultServerConf();
+        if (itServerConf->locationConfig.empty() == false)
         {
-            itServerConf->controlDefaultServerConf();
-            if (itServerConf->locationConfig.empty() == false)
+            std::vector<LocationConfig>::iterator itLoconfig = itServerConf->locationConfig.begin();
+            while (itLoconfig != itServerConf->locationConfig.end())
             {
-                std::vector<LocationConfig>::iterator itLoconfig = itServerConf->locationConfig.begin();
-                while (itLoconfig != itServerConf->locationConfig.end())
-                {
-                    itLoconfig->controlDefaultLocationConf();
-                    itLoconfig++;
-                }
+                itLoconfig->controlDefaultLocationConf();
+                itLoconfig++;
             }
-            itServerConf++;
         }
+        itServerConf++;
     }
 }
 
@@ -98,7 +95,7 @@ void ConfigParser::parseServerBlock(std::ifstream& file, ServerConfig& serverCon
         else if (line.find("}") != std::string::npos)
         {
             if (serverConfig.pageErrorPath.empty())
-                serverConfig.pageErrorPath = std::string("none");
+                serverConfig.pageErrorPath = std::string("");
             break;
         }
     }
@@ -123,7 +120,7 @@ void ConfigParser::parseLocationBlock(std::ifstream& file, LocationConfig& locat
         {
 
             if (locationConfig.cgipath.empty())
-                locationConfig.cgipath = std::string("none");
+                locationConfig.cgipath = std::string("");
             break;
         }  
     }
