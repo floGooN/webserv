@@ -23,13 +23,16 @@ class Client
 		Response	response;
 
 		void	checkRequestValidity() throw (ErrorHandler);
-		void	buildResponse();
+		void	buildResponse() throw (ErrorHandler);
 		void	clearData();
 
 	private:
-		void				checkAutorisation(const t_location *) const;
-		const t_location	* Client::buildCompleteUri();
+		const t_location *buildCompleteUri();
 
+		bool	isAutoindex() throw (ErrorHandler);
+		void	validTheUriPath() const throw (ErrorHandler);
+		void	checkUriContent() const throw (ErrorHandler);
+		void	checkAutorisation(const t_location *) const throw (ErrorHandler);
 };
 
 std::ostream & operator<<(std::ostream &, const Client &);

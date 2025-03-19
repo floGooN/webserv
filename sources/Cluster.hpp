@@ -67,7 +67,7 @@ class Cluster
 		void	checkByteReceived(const struct epoll_event &event, ssize_t bytes) throw (ErrGenerator);
 
 		void	closeConnexion(const struct epoll_event &event);
-		void	closeFdSet() const;
+		void	closeAllSockets() const;
 };
 
 std::ostream	& operator<<(std::ostream &, const Cluster &);

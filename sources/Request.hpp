@@ -26,7 +26,6 @@ class Request
 		void	updateRequest(const std::string &) throw(ErrorHandler);
 
 		bool		keepAlive;
-		size_t		totalBytessended;
 		std::string	completeUri;
 
 	private:
@@ -47,6 +46,6 @@ class Request
 		void 	setContentLength(const std::string &)	throw(ErrorHandler);
 };
 
-std::ostream & operator<<(std::ostream &, Request &);
+std::ostream & operator<<(std::ostream &, const Request &);
 
 #endif

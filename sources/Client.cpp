@@ -46,7 +46,9 @@ Client &Client::operator=(const Client &ref)
 std::ostream & operator<<(std::ostream &o, const Client &ref)
 {
 	o   << "CLIENT:" << std::endl
-		<< *ref.clientServer << std::endl;
+		<< *ref.clientServer << std::endl
+		<< ref.request << std::endl
+		<< ref.response;
 
 	return o;
 }
@@ -59,66 +61,48 @@ void	Client::checkRequestValidity() throw (ErrorHandler)
 {
 	const t_location *currentLocation = buildCompleteUri();
 
+	checkAutorisation(currentLocation);
+	
 	try {
-		checkAutorisation(currentLocation);
+		UtilParsing::checkAccessRessource(request.completeUri, R_OK);
 	}
-	catch(const ErrorHandler& e) {
-		throw ErrorHandler(e.errorNumber, e.errorLog);
+	catch(const std::exception& e) {
+		throw ErrorHandler(ERR_403, e.what());
 	}
-	UtilParsing::checkAccessRessource(response.completeUri.c_str(), R_OK);
 
-// 	* security check :
-// 		-> uri doesn't include ".." ()
-// 		-> only allow Chars (RFC 3986 section 2.2)
-// 		-> don't care about uri longest
+	checkUriContent();
 
+	validTheUriPath();
 }
 /*----------------------------------------------------------------------------*/
 
-void	Client::buildResponse()
+/*
+*/
+void	Client::buildResponse() throw (ErrorHandler)
 {
-	// verifier que le requete ne pointe pas sur un directory
-	// si c'est le cas, faire pointer le requete sur l'index de la location ou sur l'index serveur ou renvoyer bad request
-	std::cout	<< "Client::buildResponse()\n" << std::endl;
+	// verifier si la reponse est deja construite
 
-	switch (request.getHeader().requestType)
-	{
-		case GET:
-			response.getRequest(request);
-			break;
-		case POST:
-			response.postRequest(request);
-			break;
-		case DELETE:
-			response.deleteRequest(request);
-			break;
-		default:
-			throw ErrorHandler(ERR_405, "");
+	if (isAutoindex() == true) {
+		std::cout << "It's Autoindex\n"; // here play autoindex generator
+		throw ErrorHandler(ERR_404, "Autoindex"); // provisoirement
 	}
-
-	if (UtilParsing::isDirectory(response.completeUri) == true)
+	else
 	{
-		const t_location *current = UtilParsing::findLocation(clientServer->getLocationSet() , request.getHeader().uri);
-		if ( current && ! current->index.empty()) {
-			response.completeUri.append(current->index);
-		}
-		else if ( ! clientServer->getConfig().indexFile.empty()) {
-			response.completeUri.append(clientServer->getConfig().indexFile);
-		}
-		else {
-			//si l'autoindex est autorise envoyer l'arborescence ?
-			throw ErrorHandler(*this, ERR_404, ("[" + request.geturi() + "] request didn't succeed"));
+		switch (request.getHeader().requestType)
+		{
+			case GET:
+				response.getQuery(request);
+				break;
+			case POST:
+				response.postQuery(request);
+				break;
+			case DELETE:
+				response.deleteQuery(request);
+				break;
+			default:
+				throw ErrorHandler(ERR_400, "Unknow the request type");
 		}
 	}
-
-	std::cout	<< YELLOW "completeUri: [" << response.completeUri << "]" RESET << std::endl;
-
-	UtilParsing::checkAccessRessource(response.completeUri.c_str(), R_OK);
-
-	response.finalMessage = UtilParsing::readFile(response.completeUri);
-
-	// set la page une fois qu'on est sur le l'avoir
-	buildHeader();
 }
 /*----------------------------------------------------------------------------*/
 
@@ -126,19 +110,45 @@ void	Client::buildResponse()
 						/*### PRIVATE METHODS ###*/
 /*============================================================================*/
 
+/*	* Returns true if auto-indexing is enabled for the requested directory.
+	* Generates an ERR_403 error if auto-indexing is not allowed.
+*/
+bool	Client::isAutoindex() throw (ErrorHandler)
+{
+	if (UtilParsing::isDirectory(request.completeUri) == false)
+		return false;
+
+	const t_location *current = UtilParsing::findLocation(clientServer->getLocationSet(), request.getHeader().uri);
+
+	if (current != NULL && !current->index.empty()) {
+		request.completeUri.append(current->index);
+		return false;
+	}
+	else if (current != NULL && current->autoindex == true )
+		return true;
+	else
+		throw ErrorHandler(ERR_403, ("[" + request.getHeader().uri + "] is forbidden"));
+}
+/*----------------------------------------------------------------------------*/
+
 /*	* build the complete uri and return the location associated with the path requested by client
 */
 const t_location * Client::buildCompleteUri()
 {
-	std::string			RootPart;
+	std::string			rootPart;
 	const t_location	*result = UtilParsing::findLocation(clientServer->getLocationSet(), request.getHeader().uri);
 	
 	if (result && ! result->root.empty() )
-		RootPart = result->root;
+		rootPart = result->root;
 	else
-		RootPart = clientServer->getParams().rootPath;
+		rootPart = clientServer->getParams().rootPath;
 
-	request.completeUri = RootPart + request.getHeader().uri;
+	if (*request.getHeader().uri.begin() == '/' && *rootPart.end() == '/')
+		rootPart.erase(rootPart.end());
+	else if (*request.getHeader().uri.begin() != '/' && *rootPart.end() != '/')
+		rootPart += "/";
+
+	request.completeUri = rootPart + request.getHeader().uri;
 
 	return result;
 }
@@ -172,8 +182,56 @@ void Client::checkAutorisation(const t_location *current) const throw (ErrorHand
 }
 /*----------------------------------------------------------------------------*/
 
+/*	* check the characters contained in the uri
+		-> only allow Chars define in the RFC 3986 section 2.2
+*/
+void Client::checkUriContent() const throw (ErrorHandler)
+{
+	if (request.getHeader().uri.find_first_not_of(HTTP_ALLOW_CHARS) != request.getHeader().uri.npos)
+		throw ErrorHandler(ERR_400, "an invalid charater is detected in the uri");
+}
+/*----------------------------------------------------------------------------*/
 
+/*	* check if the URI does not go outside the authorized path
+	*
+	* some URI exemple:	
+		/cgi-bin/form/script.sh			-> ok		(client is in /form)
+		/cgi-bin/form/../script.sh		-> ok 		(client is in /cgi-bin)
 
+		/cgi-bin/form/../../script.sh	-> not ok	(client is in the root directory)
+		/../							-> not ok	(client is a directory above root directory)
+*/
+void Client::validTheUriPath() const throw (ErrorHandler)
+{
+	std::vector<std::string>					token;
+	std::vector<std::string>::const_iterator	it;
+
+	try {
+		token = UtilParsing::split(request.getHeader().uri, "/");
+		it = token.begin(); 
+	}
+	catch(const std::exception& e) {
+		throw ErrorHandler(ERR_500, e.what());
+	}
+
+	while (it != token.end() && it->compare("/") == 0)
+		it++;
+
+	int	dirCounter = 0;
+	while (it != token.end())
+	{
+		if (it->compare("..") == 0)
+			dirCounter--;
+		else if (it->compare(".") == 0)
+			;
+		else if (it->compare("/") != 0)
+			dirCounter++;
+		if (dirCounter <= 0)
+			throw ErrorHandler(ERR_403, request.getHeader().uri + std::string(" is an invalid uri"));
+		it++;
+	}
+}
+/*----------------------------------------------------------------------------*/
 
 void	Client::clearData()
 {
