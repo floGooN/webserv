@@ -93,7 +93,7 @@ std::string	Response::setHeader(const Request &req) throw (ErrorHandler)
 		"Server: Rob&Flo V0.9" + "\r\n" \
 		"Content-Type: " + findMimeType(req.completeUri) + "; charset=UTF-8\r\n" \
 		"Content-Length: " + oss.str() + "\r\n" \
-		"Connection: " + (req.getHeader().keepAlive == true ? "keep-alive" : "close") + "\r\n" \
+		"Connection: " + (req.keepAlive == true ? "keep-alive" : "close") + "\r\n" \
 		"\r\n";
 
 	return header;	
@@ -114,8 +114,8 @@ void	Response::getQuery(const Client &client)
 		// std::cout	<< "in getQuery:\n"
 		// 			<< client.request << std::endl
 		// 			<< client.response << std::endl;
-		// UtilParsing::readFile(client.request.completeUri, message);
-		// setHeader(client.request);
+		UtilParsing::readFile(client.request.completeUri, message);
+		setHeader(client.request);
 		
 		try {
 			message.insert(0, setHeader(client.request));

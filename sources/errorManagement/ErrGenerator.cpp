@@ -41,8 +41,9 @@ void	Cluster::ErrGenerator::generateErrorPage()
 	try
 	{
 		generateContent(_client.response.message);
-		if (_client.response.message.empty())
+		if (_client.response.message.empty()) {
 			_client.response.message = DFLT_ERRORPAGE;
+		}
 		_client.response.message.insert(0, generateHeader());
 		_client.request.keepAlive = false;
 	}
@@ -82,8 +83,9 @@ std::string	Cluster::ErrGenerator::findErrorFile(DIR *current, const std::string
 	}
 
 	UtilParsing::safeCloseDirectory(current);
-	if ( result.empty() && errno )
+	if ( result.empty() && errno ) {
 		perror("readdir()");
+	}
 
 	return result ;
 }
@@ -95,6 +97,7 @@ void Cluster::ErrGenerator::generateContent(std::string &message) const
 	{
 		std::string filename("");
 		std::string	dirErrorPath = _client.clientServer->getParams().errorPath;
+
 		filename = findErrorFile(UtilParsing::openDirectory(dirErrorPath), _errorCode);
 		if (filename.empty())
 		{
@@ -109,7 +112,7 @@ void Cluster::ErrGenerator::generateContent(std::string &message) const
 			filename.erase(0, 1);
 		}
 		filename.insert(0, dirErrorPath);
-		UtilParsing::readFile(filename, message);
+		UtilParsing::readErrorFile(filename, message);
 	}
 	catch(const std::exception& e)
 	{
@@ -139,7 +142,7 @@ void Cluster::ErrGenerator::generateContent(std::string &message) const
 std::string	Cluster::ErrGenerator::generateHeader() const
 {
 	std::string length = UtilParsing::intToString(static_cast<int>( _client.response.message.length() ));
-	std::string final =	PROTOCOL_VERION + _errorCode + HTTP_SEPARATOR \
+	std::string final =	PROTOCOL_VERION " " + _errorCode + HTTP_SEPARATOR \
 						"Date: TODAY" HTTP_SEPARATOR \
 						"Server: Rob_&_Flo__WEBSERV42__/0.5" HTTP_SEPARATOR \
 						"Content-Type: text/html; charset=UTF-8" HTTP_SEPARATOR \

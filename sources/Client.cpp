@@ -236,6 +236,6 @@ void	Client::clearData()
 {
 	request.clearRequest();
 	response.clearResponse();
-	clientServer = NULL;
+	// clientServer = NULL;
 }
 /*----------------------------------------------------------------------------*/

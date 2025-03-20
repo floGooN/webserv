@@ -43,6 +43,7 @@ class UtilParsing
 		static void	safeCloseDirectory(DIR *);
 		static void	displayVector(std::vector<std::string> vec);
 		static void	checkAccessRessource(const std::string &, int);
+		static void	readErrorFile(const std::string &filepath, std::string &buffer);
 		static void	readFile(const std::string &filepath, std::string &buffer) throw (ErrorHandler);
 		static void	printMapVector(const std::map<int, std::map<std::string, std::vector<std::string> > >& allMapRoads);
 		static void	manageControlMapLocation(std::map<int, std::map<std::string, std::vector<std::string> > > allMapRoads);

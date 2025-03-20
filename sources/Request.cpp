@@ -82,8 +82,7 @@ std::ostream & operator<<(std::ostream &o, const t_header &ref)
         << "URI: " << ref.uri << std::endl
         << "Request type: " << ref.requestType << std::endl
         << "HostPort: " << ref.hostPort << std::endl
-        << "HostName: " << ref.hostName << std::endl
-        << "Keep-alive: " << ref.keepAlive;
+        << "HostName: " << ref.hostName << std::endl;
 
     return o << RESET << std::endl;
 }
@@ -122,14 +121,14 @@ const std::string &	Request::getArgs() const {
 void Request::updateRequest(const std::string &content) throw(ErrorHandler)
 {
 	size_t idxSeparator = content.find(BODY_SEPARATOR);
-	if (idxSeparator == content.npos)
-	{
-		if ( content.empty() )
-			throw ErrorHandler(ERR_400, "the request is empty");
-		setBody(content);
-	}
-	else
-	{
+	// if (idxSeparator == content.npos)
+	// {
+	// 	if ( content.empty() )
+	// 		throw ErrorHandler(ERR_400, "the request is empty");
+	// 	setBody(content);
+	// }
+	// else
+	// {
 		try
 		{
 			setHeader(content.substr(0, idxSeparator));
@@ -143,7 +142,7 @@ void Request::updateRequest(const std::string &content) throw(ErrorHandler)
 			std::string log = RED "in updateRequest(): " + std::string(e.what()) + RESET;
 			throw ErrorHandler(ERR_500, log);
 		}
-	}
+	// }
 }
 /*----------------------------------------------------------------------------*/
 
@@ -201,12 +200,6 @@ void Request::setArgs() throw(ErrorHandler)
 */
 void Request::setHeader(const std::string &header) throw(ErrorHandler)
 {
-#ifdef TEST
-	std::cout	<< ITAL BLUE "setHeader():" << std::endl
-				<< "brut header:\n" << header
-				<< RESET << std::endl;
-#endif
-
 	std::vector<std::string> token;
 	try {
 		token = UtilParsing::split(header, "\r\n");
@@ -231,11 +224,6 @@ void Request::setHeader(const std::string &header) throw(ErrorHandler)
 		else if (_header.requestType == POST && it->find("Content-Type") != it->npos)
 			setContentType(*it);
 	}
-#ifdef TEST
-	std::cout	<< ITAL BLUE "Parsed header:\n"
-				<< _header
-				<< RESET << std::endl;
-#endif
 }
 /*----------------------------------------------------------------------------*/
 
@@ -322,7 +310,7 @@ void Request::setHost(const std::string &line) throw(ErrorHandler)
 /*	* set keep-alive at true if its ask in the header
 */
 void Request::setKeepAlive(const std::string &line) {
-	_header.keepAlive = (line.find("close") == line.npos ? true : false);
+	keepAlive = (line.find("close") == line.npos ? true : false);
 }
 /*----------------------------------------------------------------------------*/
 

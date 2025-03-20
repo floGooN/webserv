@@ -43,7 +43,6 @@ struct s_header
     {
         if (this != &ref)
         {
-            keepAlive = ref.keepAlive;
             uri = ref.uri;
             hostName = ref.hostName;
             hostPort = ref.hostPort;
@@ -54,14 +53,12 @@ struct s_header
 
     void    clear()
     {
-        keepAlive = false;
         uri.clear();
         hostName.clear();
         hostPort.clear();
         requestType = EMPTY;        
     }
 
-    bool        keepAlive;
 	std::string uri;
 	std::string hostName;
 	std::string hostPort;

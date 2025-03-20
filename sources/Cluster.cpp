@@ -141,10 +141,12 @@ void	Cluster::runCluster()
 					}
 				}
 				catch(ErrGenerator &e) {
+					if (e.what() != NULL)
+						std::cerr << e.what() << RESET << std::endl;
+					else {
 						e.generateErrorPage();
-				}
-				catch(std::exception &e) {
-					std::cerr << e.what() << RESET << std::endl;
+						changeEventMod(false, events[i].data.fd);
+					}
 				}
 			}
 		}
@@ -161,9 +163,11 @@ void	Cluster::runCluster()
 Client & Cluster::findClient(const int fd) throw (std::runtime_error)
 {
 	try {
-		return _clientList.at(fd);
+		return  _clientList.at(fd);
 	}
-	catch(const std::exception& e) {
+	catch(const std::exception& e)
+	{
+		std::cout << "IN Cluster::findClient(): fdClient: " << fd << std::endl;
 		throw std::runtime_error("no matching client");
 	}
 }
