@@ -5,8 +5,8 @@
 						/*### HEADERS & STATIC FIELD ###*/
 /*============================================================================*/
 
-#include "Response.hpp"
 #include "Client.hpp"
+#include "Response.hpp"
 #include "UtilParsing.hpp"
 #include "upCGI.hpp"
 #include "CGI.hpp"
@@ -35,8 +35,7 @@ Response &Response::operator=(const Response &ref)
 {
 	if (this != &ref)
 	{
-		_header = ref._header;
-		_message = ref._message;
+		message = ref.message;
 		totalBytesSended = ref.totalBytesSended;
 	}
 	return *this;
@@ -46,12 +45,7 @@ Response &Response::operator=(const Response &ref)
 std::ostream & operator<<(std::ostream &o, const Response &ref)
 {
 	o	<< "Response:\n"
-		<< BOLD "Total bytes sended: " << ref.totalBytesSended << std::endl
-		<< BOLD "header:" << std::endl;
-
-	for (std::map<std::string, std::string>::const_iterator it = ref.getHeader().begin();
-		it != ref.getHeader().end(); it++)
-		o	<< it->first << " : " << it->second << std::endl;
+		<< BOLD "Total bytes sended: " << ref.totalBytesSended << std::endl;
 
 	return o;
 }
@@ -61,95 +55,81 @@ std::ostream & operator<<(std::ostream &o, const Response &ref)
 						/*### PUBLIC METHODS ###*/
 /*============================================================================*/
 
-const std::string &Response::getMessage() const {
-	return _message;
-}
-/*----------------------------------------------------------------------------*/
-
-const std::map<std::string, std::string> &Response::getHeader() const {
-	return _header;
-}
-/*----------------------------------------------------------------------------*/
-
-/*
-	HTTP/1.1 404 Not Found
-	Date: Tue, 04 Mar 2025 12:34:56 GMT
-	Server: MyMinimalWebServer/1.0
-	Content-Type: text/html; charset=UTF-8
-	Content-Length: 123
-	Connection: close
-*/
-
-/*
-	1️⃣ Réponse 200 - OK (Page HTML servie avec succès)
-	👉 Cette réponse est envoyée lorsque la requête a été traitée avec succès et que le contenu demandé est retourné.
-
-	2️⃣ Réponse 201 - Created (Fichier créé sur le serveur)
-	👉 Utilisé lorsqu'une ressource a été créée avec succès (ex: upload d'un fichier via POST).
-
-	3️⃣ Réponse 204 - No Content (Aucune donnée retournée)
-	👉 Utilisé quand une action a réussi mais qu'il n'y a rien à retourner (ex: suppression d'un fichier avec DELETE).
-
-	4️⃣ Réponse 301 - Moved Permanently (Redirection permanente)
-	👉 Utilisé lorsqu'une ressource a été déplacée de façon permanente vers une autre URL.
-*/
-void	Response::setHeader(const Request &req)
-{
-	std::string statusLine = PROTOCOL_VERION " " + (_message.empty() ? std::string(COD_204) : std::string(COD_200) );
-	std::pair<std::string, std::string> mime = findMimeType(req.completeUri);
-	std::string header =	statusLine + "\r\n" \
-							"Server: Rob&Flo V0.9\r\n" \
-							"Content-Type: " + mime + "; charset=UTF-8\r\n" \
-							"Content-Length: " + std::to_string(_message.length()) + "\r\n" \
-							"Connection: " + (req.getHeader().keepAlive == true ? "keep-alive" : "close") + "\r\n" \
-							"\r\n";
-	_message.insert(0, header);
-}
-/*----------------------------------------------------------------------------*/
-
 /*============================================================================*/
 						/*### PRIVATE METHODS ###*/
 /*============================================================================*/
 
 std::string	&Response::findMimeType(const std::string &uri)
 {
-	size_t i = uri.find_last_of('.');
-
-	if (i == uri.npos)
-		return _mimeMap.at(".bin") ;
-	
+	try {
+		return _mimeMap.at(UtilParsing::recoverExtension(uri));
+	}
+	catch(const std::exception& e) {
+		return _mimeMap.at(".bin");
+	}
 }
 /*----------------------------------------------------------------------------*/
 
-void	Response::getQuery(const Request &req)
+/*
+	HTTP/1.1 404 Not Found
+
+	Date: Tue, 04 Mar 2025 12:34:56 GMT
+
+	Server: MyMinimalWebServer/1.0
+	Content-Type: text/html; charset=UTF-8
+	Content-Length: 123
+	Connection: close
+*/
+std::string	Response::setHeader(const Request &req) throw (ErrorHandler)
+{
+	std::ostringstream oss;
+	oss << message.length();
+
+	if (oss.fail())
+		throw ErrorHandler(ERR_500, "In Response::setHeader()\nconversion of the length message faild");
+
+	std::string header = \
+		PROTOCOL_VERION " " + (message.empty() ? std::string(COD_204) : std::string(COD_200) ) + "\r\n" \
+		"Server: Rob&Flo V0.9" + "\r\n" \
+		"Content-Type: " + findMimeType(req.completeUri) + "; charset=UTF-8\r\n" \
+		"Content-Length: " + oss.str() + "\r\n" \
+		"Connection: " + (req.getHeader().keepAlive == true ? "keep-alive" : "close") + "\r\n" \
+		"\r\n";
+
+	return header;	
+}
+/*----------------------------------------------------------------------------*/
+
+void	Response::getQuery(const Client &client)
 {
 	std::cout << BRIGHT_GREEN "GET QUERY" RESET << std::endl;
 
-	if (isCGI(req.completeUri) == true) {
+	if (isCGI(client.request.completeUri) == true) {
+
 		std::cout << "It's CGI\n"; // here play CGI
 		processCGI(client);
 		throw ErrorHandler(ERR_404, "CGI"); // provisoirement
 	}
 	else
 	{
-		try
-		{
-			UtilParsing::readFile(req.completeUri, _message);
-			setHeader(req.getHeader().uri);
+		UtilParsing::readFile(client.request.completeUri, message);
+		setHeader(client.request);
+		
+		try {
+			message.insert(0, setHeader(client.request));
 		}
 		catch(const std::exception& e) {
-
-			std::cerr << e.what() << '\n';
+			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
 		}
 	}
 }
 /*----------------------------------------------------------------------------*/
 
-void	Response::postQuery(const Request &req)
+void	Response::postQuery(const Client &client)
 {
 	std::cout	<< BRIGHT_YELLOW "POST QUERY" RESET << std::endl;
 
-	if (isCGI(req.completeUri) == true) {
+	if (isCGI(client.request.completeUri) == true) {
 		std::cout << "It's CGI\n"; // here play CGI
 		processCGI(client);
 		throw ErrorHandler(ERR_404, "CGI"); // provisoirement
@@ -208,14 +188,14 @@ bool	Response::isCGI(const Request &req) throw (ErrorHandler)
 
 	if (idx == req.completeUri.npos)
 		return false;
-
+	
+	return false;
 }
 /*----------------------------------------------------------------------------*/
 
 void	Response::clearResponse()
 {
-	_header.clear();
-	_message.clear();
+	message.clear();
 	totalBytesSended = 0;
 }
 /*----------------------------------------------------------------------------*/

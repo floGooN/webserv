@@ -8,8 +8,11 @@
 # define RESPONSE_HPP
 
 # include "webserv.hpp"
+# include "ErrorHandler.hpp"
+
 
 class Request;
+class Client;
 
 class Response
 {
@@ -22,22 +25,19 @@ class Response
 		size_t		totalBytesSended;
 
 		void	clearResponse();
-		void	getQuery(const Request &);
-		void	postQuery(const Request &);
-		void	deleteQuery(const Request &);
+		void	getQuery(const Client &);
+		void	postQuery(const Client &);
+		void	deleteQuery(const Client &);
 
-		const std::string							&getMessage()	const;
-		const std::map<std::string, std::string>	&getHeader()	const;
+		std::string	message;
 
 	private:
-		std::string							_message;
-		std::map<std::string, std::string>	_header;
 		std::map<std::string, std::string>	_mimeMap;
 
 		void		initMimeMap();
-		bool		isCGI(const Request &);
-		void		setHeader(const Request &);
+		bool		isCGI(const Request &) throw (ErrorHandler);
 		std::string	&findMimeType(const std::string &uri);
+		std::string	setHeader(const Request &) throw (ErrorHandler);
 };
 
 std::ostream & operator<<(std::ostream &, const Response &);

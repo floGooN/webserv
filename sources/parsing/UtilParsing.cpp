@@ -1,8 +1,8 @@
 
 
 #include "UtilParsing.hpp"
-#include <fcntl.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 
 #include <sstream>
 #include <cstring>
@@ -231,7 +231,7 @@ void	UtilParsing::readFile(const std::string &filepath, std::string &buffer) thr
 {
 	try {
 
-		std::ifstream file(filepath, std::ios::binary);
+		std::ifstream file(filepath.c_str(), std::ios::binary);
 		if ( ! file.is_open() )
 			throw ErrorHandler(ERR_404, "readFile(): Ressource unavailable");
 		
@@ -285,10 +285,8 @@ std::string UtilParsing::intToString(int value)
 
 std::string UtilParsing::recoverExtension(const std::string &filename)
 {
-	std::size_t start = filename.find_last_of(".");
-	if (start == std::string::npos)
-		return ""; // car a chaque on check avec une valeur defeni avant donc possible de check comme ca
-	return filename.substr(start);
+	std::size_t pos = filename.find_last_of('.');
+    return (pos == filename.npos) ? "" : filename.substr(pos);
 }
 
 /*	* returns an open directory or throws invalid_argument if dir is not found

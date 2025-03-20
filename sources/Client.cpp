@@ -10,7 +10,6 @@
 #include "Client.hpp"
 #include "Server.hpp"
 #include "UtilParsing.hpp"
-#include "ErrGenerator.hpp"
 
 #include <cstring>
 
@@ -18,8 +17,9 @@
 				/*### CONSTRUCTORS - DESTRUCTOR - OVERLOAD OP ###*/
 /*============================================================================*/
 
-Client::Client()
-{	}
+Client::Client(){
+	clientServer = NULL;
+}
 /*----------------------------------------------------------------------------*/
 
 Client::Client(const Client &ref) {
@@ -76,11 +76,11 @@ void	Client::checkRequestValidity() throw (ErrorHandler)
 }
 /*----------------------------------------------------------------------------*/
 
-/*
-*/
 void	Client::buildResponse() throw (ErrorHandler)
 {
 	// verifier si la reponse est deja construite
+	if ( ! response.message.empty() )
+		return;
 
 	if (isAutoindex() == true) {
 		std::cout << "It's Autoindex\n"; // here play autoindex generator
@@ -91,13 +91,13 @@ void	Client::buildResponse() throw (ErrorHandler)
 		switch (request.getHeader().requestType)
 		{
 			case GET:
-				response.getQuery(request);
+				response.getQuery(*this);
 				break;
 			case POST:
-				response.postQuery(request);
+				response.postQuery(*this);
 				break;
 			case DELETE:
-				response.deleteQuery(request);
+				response.deleteQuery(*this);
 				break;
 			default:
 				throw ErrorHandler(ERR_400, "Unknow the request type");
@@ -177,8 +177,7 @@ void Client::checkAutorisation(const t_location *current) const throw (ErrorHand
 		itStart++;
 	}
 	if (itStart == itEnd)
-		ErrorHandler(ERR_405, "Method " + request.getHeader().requestType + \
-									std::string(" not allowed in this service"));
+		ErrorHandler(ERR_405, "Method not allowed in this service");
 }
 /*----------------------------------------------------------------------------*/
 

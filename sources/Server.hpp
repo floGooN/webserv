@@ -7,6 +7,7 @@
 
 class Client;
 class ServerConfig;
+class LocationConfig;
 
 class Server
 {
@@ -17,8 +18,8 @@ class Server
 		Server	&operator=(const Server &);
 		bool 	operator<(const Server &other) const;
 		
-		const t_params				getParams() 		const;
-		const std::set<t_location>	getLocationSet()	const;
+		const t_params				&getParams() 		const;
+		const std::set<t_location>	&getLocationSet()	const;
 
 	private:
 		const t_params				_params;

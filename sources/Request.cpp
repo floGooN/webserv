@@ -27,6 +27,7 @@
 #include "Request.hpp"
 #include "UtilParsing.hpp"
 
+
 /*============================================================================*/
 				/*### CONSTRUCTORS - DESTRUCTOR - OVERLOAD OP ###*/
 /*============================================================================*/
@@ -71,6 +72,30 @@ std::ostream & operator<<(std::ostream & o, const Request &ref)
 		<< BOLD "body_content:\n" << ref.getbody().body;
 
 	return o << RESET << std::endl;
+}
+/*----------------------------------------------------------------------------*/
+
+std::ostream & operator<<(std::ostream &o, const t_header &ref)
+{
+    o   << ITAL BLUE "t_header:\n"
+        << "URI: " << ref.uri
+        << "Request type: " << ref.requestType
+        << "HostPort: " << ref.hostPort
+        << "HostName: " << ref.hostName
+        << "Keep-alive: " << ref.keepAlive;
+
+    return o << RESET << std::endl;
+}
+/*----------------------------------------------------------------------------*/
+
+std::ostream & operator<<(std::ostream &o, const t_body &ref)
+{
+    o   << ITAL BRIGHT_BLUE "t_header:\n"
+        << "Content type: " << ref.contentType
+        << "Content length: " << ref.contentLength
+        << "Boundary: " << ref.bound;
+
+    return o << RESET << std::endl;
 }
 /*----------------------------------------------------------------------------*/
 

@@ -6,30 +6,28 @@
 /*============================================================================*/
 							/*### HEADER FILES ###*/
 /*============================================================================*/
-
-#include "ErrGenerator.hpp"
-#include "UtilParsing.hpp"
-
-
-
+#include "Cluster.hpp"
 #include "Client.hpp"
 #include "Server.hpp"
+#include "UtilParsing.hpp"
+
+#include "ErrGenerator.hpp"
 
 /*============================================================================*/
 			/*### CONSTRUCTORS - DESTRUCTOR _ OVERLOAD OPERATORS ###*/
 /*============================================================================*/
 
-ErrGenerator::ErrGenerator(const int client, const std::string &errCode = ERR_520, const std::string & errlog = "")
-:	_fdClient(client), _errorCode(errCode), _errorLog(errlog)
+Cluster::ErrGenerator::ErrGenerator(Client& client, const std::string &errCode = ERR_520, const std::string & errlog = "")
+:	_client(client), _errorCode(errCode), _errorLog(errlog)
 {	}
 /*----------------------------------------------------------------------------*/
 
-ErrGenerator::ErrGenerator(const ErrGenerator &ref)
-:	_fdClient(ref._fdClient), _errorCode(ref._errorCode), _errorLog(ref._errorLog)
+Cluster::ErrGenerator::ErrGenerator(const ErrGenerator &ref)
+:	_client(ref._client), _errorCode(ref._errorCode), _errorLog(ref._errorLog)
 {	}
 /*----------------------------------------------------------------------------*/
 
-ErrGenerator::~ErrGenerator() throw()
+Cluster::ErrGenerator::~ErrGenerator() throw()
 {	}
 /*----------------------------------------------------------------------------*/
 
@@ -37,6 +35,24 @@ ErrGenerator::~ErrGenerator() throw()
 						/*### PUBLIC METHODS ###*/
 /*============================================================================*/
 
+void	Cluster::ErrGenerator::generateErrorPage()
+{
+	// tout est dans un try catch pour que le serveur ne crash pas
+	try
+	{
+		generateContent(_client.response.message);
+		if (_client.response.message.empty())
+			_client.response.message = DFLT_ERRORPAGE;
+		_client.response.message.insert(0, generateHeader());
+		_client.request.keepAlive = false;
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+		_client.response.message = generateHeader() + DFLT_ERRORPAGE;
+	}
+
+}
 /*----------------------------------------------------------------------------*/
 
 /*============================================================================*/
@@ -45,10 +61,11 @@ ErrGenerator::~ErrGenerator() throw()
 
 /*	* return the complete and correct file name or an empty str if nothing is found
 */
-std::string	ErrGenerator::findErrorFile(DIR *current, const std::string &errorKey) const
+std::string	Cluster::ErrGenerator::findErrorFile(DIR *current, const std::string &errorKey) const
 {
-	std::string result = "";
+	std::string result("");
 	std::string codeNumber = errorKey.substr(0, errorKey.find_first_of(" "));
+
 	while (current)
 	{
 		struct dirent *dirp = readdir(current);
@@ -63,25 +80,27 @@ std::string	ErrGenerator::findErrorFile(DIR *current, const std::string &errorKe
 		else
 			break ;
 	}
+
 	UtilParsing::safeCloseDirectory(current);
 	if ( result.empty() && errno )
 		perror("readdir()");
+
 	return result ;
 }
 /*----------------------------------------------------------------------------*/
 
-std::string ErrGenerator::generateContent() const
+void Cluster::ErrGenerator::generateContent(std::string &message) const
 {
 	try
 	{
 		std::string filename("");
-		std::string	dirErrorPath = _client.clientServer->getConfig().pageErrorPath;
-		filename = findErrorFile(UtilParsing::openDirectory(dirErrorPath), _errorKey);
+		std::string	dirErrorPath = _client.clientServer->getParams().errorPath;
+		filename = findErrorFile(UtilParsing::openDirectory(dirErrorPath), _errorCode);
 		if (filename.empty())
 		{
-			filename = findErrorFile(UtilParsing::openDirectory(PATH_ERRPAGE), _errorKey);
+			filename = findErrorFile(UtilParsing::openDirectory(PATH_ERRPAGE), _errorCode);
 			if (filename.empty())
-				return std::string(DFLT_ERRORPAGE);
+				message = DFLT_ERRORPAGE;
 		}
 		if (filename[0] != '/' && dirErrorPath[dirErrorPath.size() - 1] != '/') {
 			filename.insert(0, "/");
@@ -90,17 +109,12 @@ std::string ErrGenerator::generateContent() const
 			filename.erase(0, 1);
 		}
 		filename.insert(0, dirErrorPath);
-#ifdef TEST
-		// std::cout	<< BRIGHT_YELLOW "IN " __FILE__ " AT LINE : " << __LINE__ << std::endl
-		// 			<< "comple path to the error page : [" << filename 
-		// 			<< "]" RESET << std::endl;
-#endif
-		return UtilParsing::readFile(filename);
+		UtilParsing::readFile(filename, message);
 	}
 	catch(const std::exception& e)
 	{
 		std::cerr << e.what() << '\n';
-		return std::string(DFLT_ERRORPAGE);
+		message = DFLT_ERRORPAGE;
 	}
 }
 /*----------------------------------------------------------------------------*/
@@ -122,10 +136,10 @@ std::string ErrGenerator::generateContent() const
 	Server: MyMinimalWebServer/1.0
 	Connection: close
 	*/
-std::string	ErrGenerator::generateHeader() const
+std::string	Cluster::ErrGenerator::generateHeader() const
 {
-	std::string length = UtilParsing::intToString(static_cast<int>( _client.response.finalMessage.length() ));
-	std::string final =	PROTOCOL_VERION + _errorKey + HTTP_SEPARATOR \
+	std::string length = UtilParsing::intToString(static_cast<int>( _client.response.message.length() ));
+	std::string final =	PROTOCOL_VERION + _errorCode + HTTP_SEPARATOR \
 						"Date: TODAY" HTTP_SEPARATOR \
 						"Server: Rob_&_Flo__WEBSERV42__/0.5" HTTP_SEPARATOR \
 						"Content-Type: text/html; charset=UTF-8" HTTP_SEPARATOR \
@@ -136,26 +150,3 @@ std::string	ErrGenerator::generateHeader() const
 	return final;
 }
 /*----------------------------------------------------------------------------*/
-
-void	ErrGenerator::generateErrorPage()
-{
-	// tout est dans un try catch pour que le serveur ne crash pas
-	try
-	{
-		_client.response.finalMessage = generateContent();
-		if (_client.response.finalMessage.empty())
-			_client.response.finalMessage = DFLT_ERRORPAGE;
-		_client.response.finalMessage.insert(0, generateHeader());
-		_client.request.keepAlive = false;
-	}
-	catch(const std::exception& e)
-	{
-		std::cerr << e.what() << '\n';
-		_client.response.finalMessage = generateHeader() + DFLT_ERRORPAGE;
-	}
-}
-/*----------------------------------------------------------------------------*/
-
-
-
-

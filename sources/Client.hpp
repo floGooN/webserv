@@ -6,8 +6,12 @@
 # include "webserv.hpp"
 # include "ServerStructure.hpp"
 
+# include "ErrorHandler.hpp"
+
 # include "Request.hpp"
 # include "Response.hpp"
+
+class Server;
 
 class Client
 {
