@@ -9,16 +9,7 @@
 
 # include "webserv.hpp"
 
-/*
-	HTTP/1.1 404 Not Found
-	Date: Tue, 04 Mar 2025 12:34:56 GMT
-	Server: MyMinimalWebServer/1.0
-	Content-Type: text/html; charset=UTF-8
-	Content-Length: 123
-	Connection: close
-*/
-
-
+class Request;
 
 class Response
 {
@@ -28,17 +19,25 @@ class Response
 		~Response();
 		Response &operator=(const Response &);
 
-		void	clearResponse();
-		void	getRequest(const Request &);
-		void	postRequest(const Request &);
-		void	deleteRequest(const Request &);
+		size_t		totalBytesSended;
 
-		std::string	body;
-		std::string header;
-		std::string	statusLine;
+		void	clearResponse();
+		void	getQuery(const Request &);
+		void	postQuery(const Request &);
+		void	deleteQuery(const Request &);
+
+		const std::string							&getMessage()	const;
+		const std::map<std::string, std::string>	&getHeader()	const;
 
 	private:
-		// theses functions check 
+		std::string							_message;
+		std::map<std::string, std::string>	_header;
+		std::map<std::string, std::string>	_mimeMap;
+
+		void		initMimeMap();
+		bool		isCGI(const Request &);
+		void		setHeader(const Request &);
+		std::string	&findMimeType(const std::string &uri);
 };
 
 std::ostream & operator<<(std::ostream &, const Response &);

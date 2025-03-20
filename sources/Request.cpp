@@ -32,11 +32,9 @@
 /*============================================================================*/
 
 Request::Request()
-:	totalBytessended(0) 
 {	}
 
-Request::Request(const std::string &content) throw (ErrorHandler)
-:	totalBytessended(0) {
+Request::Request(const std::string &content) throw (ErrorHandler) {
 	updateRequest(content);
 }
 /*----------------------------------------------------------------------------*/
@@ -55,7 +53,6 @@ Request & Request::operator=(const Request &ref)
 	if (this != &ref)
 	{
 		keepAlive = ref.keepAlive;
-		totalBytessended = ref.totalBytessended;
 
 		_args = ref._args;
 		_header = ref._header;
@@ -65,7 +62,7 @@ Request & Request::operator=(const Request &ref)
 }
 /*----------------------------------------------------------------------------*/
 
-std::ostream & operator<<(std::ostream & o, Request &ref)
+std::ostream & operator<<(std::ostream & o, const Request &ref)
 {
 	o	<< BOLD "Request:\n"
 		<< BOLD "Header:\n" << ref.getHeader() << std::endl
@@ -126,7 +123,6 @@ void Request::updateRequest(const std::string &content) throw(ErrorHandler)
 
 void Request::clearRequest()
 {
-	totalBytessended = 0;
 	completeUri.clear();
 	keepAlive = false;
 

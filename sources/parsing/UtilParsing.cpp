@@ -107,11 +107,16 @@ std::vector<std::string>	UtilParsing::cleanVectorClose(std::vector<std::string> 
 	return vec;
 }
 
-bool	UtilParsing::isDirectory(const std::string & path)
+bool	UtilParsing::isDirectory(const std::string & path) throw (ErrorHandler)
 {
 	struct stat info;
     if (stat(path.c_str(), &info) != 0)
-        throw std::runtime_error("403 Forbidden isDirectory");
+	{
+		if (errno == EACCES)
+			ErrorHandler(ERR_403, "[" + path +"] access refused");
+		else
+			ErrorHandler(ERR_500, "UtilParsing::isDirectory(): " + std::string(std::strerror(errno)));
+	}
     return S_ISDIR(info.st_mode);
 }
 
@@ -132,9 +137,8 @@ bool	UtilParsing::isOnlySpace(const std::string & str)
 */
 void UtilParsing::checkAccessRessource(const std::string &ressourcePath, int type)
 {
-	if (access(ressourcePath.c_str(), type)) {
+	if (access(ressourcePath.c_str(), type))
 		throw std::invalid_argument("access() at \"" + ressourcePath + "\": " + std::string(strerror(errno)));
-	}
 }
 
 /*	* throws a runtime exception if closedir fail 
@@ -221,38 +225,24 @@ std::string	UtilParsing::trim(const std::string& str)
 	return str.substr(first, last - first + 1);
 }
 
-/*	* return the content of the file or throw std::runtime_error
+/*	* fill the buffer with the content of the file or throw ErrorHandler
 */
-std::string	UtilParsing::readFile(const std::string &filepath)
+void	UtilParsing::readFile(const std::string &filepath, std::string &buffer) throw (ErrorHandler)
 {
-	int fd = open(filepath.c_str(), O_RDONLY);
-	if (fd == -1) {
-		perror("open()");
-		throw std::runtime_error("In ErrorHandler (generateContent())");
-	}
+	try {
 
-	std::string	result("");
-	char		buff[STATIC_BUFFSIZE] = {'\0'};
-	ssize_t		bytesReaded = read(fd, buff, STATIC_BUFFSIZE);
+		std::ifstream file(filepath, std::ios::binary);
+		if ( ! file.is_open() )
+			throw ErrorHandler(ERR_404, "readFile(): Ressource unavailable");
+		
+		std::ostringstream stream;
+		stream << file.rdbuf();
+		buffer = stream.str();
 
-	if (bytesReaded == -1) {
-		perror("read()");
-		throw std::runtime_error("In ErrorHandler (generateContent())");
 	}
-	result = buff;
-
-	while (bytesReaded == STATIC_BUFFSIZE)
-	{
-		bytesReaded = read(fd, buff, STATIC_BUFFSIZE);		
-		if (bytesReaded == -1) {
-			perror("read()");
-			throw std::runtime_error("In ErrorHandler (generateContent())");
-		}
-		result.append(buff, bytesReaded);
-	}
-	if (close(fd) == -1)
-		perror("close() in UtilsParsing::readFile()");
-	return result;
+	catch(const std::exception& e) {
+		throw ErrorHandler(ERR_500, "readFile():" + std::string(e.what()));
+	}	
 }
 
 std::string	UtilParsing::trimSemicolon(const std::string& str) 
@@ -295,7 +285,6 @@ std::string UtilParsing::intToString(int value)
 
 std::string UtilParsing::recoverExtension(const std::string &filename)
 {
-	std::cout << filename << std::endl;
 	std::size_t start = filename.find_last_of(".");
 	if (start == std::string::npos)
 		return ""; // car a chaque on check avec une valeur defeni avant donc possible de check comme ca
@@ -310,13 +299,6 @@ DIR* UtilParsing::openDirectory(const std::string &dirPath)
 	if (!dirp)
 		throw std::invalid_argument("[" + dirPath + "] doesn't found\n");
 	return dirp;
-}
-
-/*	*
-*/
-std::string	UtilParsing::findFile(std::string &filePath)
-{
-	return "";
 }
 
 const t_location * UtilParsing::findLocation(const std::set<t_location> &allLocation, const std::string &locationPath)

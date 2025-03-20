@@ -41,7 +41,7 @@ Cluster::Cluster(const std::string &filepath)
 		setServerSockets();
 	}
 	catch(const std::exception& e) {
-		closeFdSet();
+		closeAllSockets();
 		throw;
 	}
 
@@ -54,7 +54,7 @@ Cluster::Cluster(const std::string &filepath)
 	}
 	catch(const InitException& e) {
 		e.setSockExcept();
-		closeFdSet();
+		closeAllSockets();
 		throw;
 	}
 #ifdef TEST
@@ -73,7 +73,7 @@ Cluster::~Cluster()
 {
 	if (_epollFd > 0 && close(_epollFd) == -1)
 		perror("close() in Cluster destuctor");
-	closeFdSet();
+	closeAllSockets();
 }
 /*----------------------------------------------------------------------------*/
 
@@ -140,14 +140,11 @@ void	Cluster::runCluster()
 							std::cerr << "have to print EPOLLERR" << std::endl;
 					}
 				}
-				catch(ErrGenerator &e)
-				{
-					if (e.what() != NULL) {
-						std::cerr << e.what() << RESET << std::endl;
-					}
-					else {
+				catch(ErrGenerator &e) {
 						e.generateErrorPage();
-					}
+				}
+				catch(std::exception &e) {
+					std::cerr << e.what() << RESET << std::endl;
 				}
 			}
 		}
@@ -187,6 +184,8 @@ Client * Cluster::addClient(const Request &req, const int fdClient) throw (ErrGe
 		throw ErrGenerator(fdClient, ERR_500, "We didn't recovered the service");
 	}
 
+	if (current->request.getHeader().uri.size() > DFLT_URISIZE)
+		throw ErrGenerator(fdClient, ERR_414, "URI exceed the limit of the server");
 
 	if (current->request.getbody().contentLength > server->getParams().maxBodySize)
 		throw ErrGenerator(fdClient, ERR_413, "The content length of the request exceed the limit allowed by the server");
@@ -259,7 +258,10 @@ void	Cluster::recvData(const struct epoll_event &event)
 		bytesReceived = safeRecv(event.data.fd, message);
 		checkByteReceived(event, bytesReceived);
 		currentClient->request.updateRequest(message);
-	
+
+		if (currentClient->request.getHeader().uri.size() > DFLT_URISIZE)
+			throw ErrGenerator(event.data.fd, ERR_414, "URI exceed the limit of the server");
+
 		if (currentClient->request.getbody().body.size() > \
 			currentClient->clientServer->getParams().maxBodySize) {
 			throw ErrGenerator(event.data.fd, ERR_413, "Max body size reached");
@@ -293,31 +295,32 @@ void	Cluster::sendData(const struct epoll_event &event)
 
 	Client	&client = _clientList.at(event.data.fd);
 	
+	client.buildResponse();
 	
-	if (client->response.finalMessage.empty() == true)
-		client->buildResponse();
-
-	while (client->request.totalBytessended != client->response.finalMessage.size())
+	while (client.response.totalBytesSended != client.response.getMessage().size())
 	{
-		ssize_t ret = send(event.data.fd, client->response.finalMessage.c_str(), \
-										client->response.finalMessage.length(), 0);
-		if (ret <= 0) {
-			// throw ErrorHandler(*client, ERR_??, "0 - 1"); 
-			break;
+		ssize_t ret = send(event.data.fd, client.response.getMessage().c_str(), \
+										client.response.getMessage().length(), 0);
+		if (ret <= 0)
+		{
+			if (ret == -1)
+				throw ErrGenerator(event.data.fd, ERR_500, "send(): an error occured");
+			std::cout << "send() returned 0" << std::endl;			 
 		}
-		client->request.totalBytessended += ret;
+		client.response.totalBytesSended += ret;
 	}
 
-	if (client->response.finalMessage.length() == client->request.totalBytessended && \
-		client->request.keepAlive == true)
+	if (client.response.getMessage().length() == client.response.totalBytesSended && \
+		client.request.keepAlive == true)
 	{
-		client->clearData();
-		try {
+		try
+		{
+			client.clearData();
 			changeEventMod(true, event.data.fd);
-			std::cout << "sended with success" << std::endl;
+			std::cout << "sended with success to client" << std::endl;
 		}
 		catch(const std::exception& e) {
-			throw ErrorHandler(*client, ERR_500, e.what());
+			throw ErrGenerator(event.data.fd, ERR_500, e.what());
 		}
 	}
 	else {
@@ -564,31 +567,32 @@ void	Cluster::closeConnexion(const struct epoll_event &event)
 				<< BOLD BRIGHT_PURPLE "]" RESET
 				<< std::endl;
 #endif
-	std::map<std::string, Server>::iterator it = _serversByService.begin();
-	for (; it != _serversByService.end(); it++) {
-		it->second.getClientList().erase(event.data.fd);
+
+	try {
+		_clientList.erase(event.data.fd);
+	}
+	catch (const std::exception &e) {
+		std::cerr << "Error\ncloseConnexion(): " << e.what() << std::endl;
 	}
 
-	_clientSockets.erase(event.data.fd);
-
-	if (epoll_ctl(_epollFd, EPOLL_CTL_DEL, event.data.fd, NULL) == -1)
-		perror("epoll_ctl() in closeConnexion()");
+	if (event.data.fd > 0 && epoll_ctl(_epollFd, EPOLL_CTL_DEL, event.data.fd, NULL) == -1)
+		perror("Error\nepoll_ctl() in closeConnexion()");
 
 	if (event.data.fd > 0 && close(event.data.fd) == -1)
-		perror("close() in closeConnexion()");
+		perror("Error\nclose() in closeConnexion()");
 }
 /*----------------------------------------------------------------------------*/
 
 /*	* close all server & client sockets
 */
-void	Cluster::closeFdSet() const
+void	Cluster::closeAllSockets() const
 {
 	for (std::set<int>::iterator it = _serverSockets.begin(); it != _serverSockets.end(); it++)
 		if (*it > 0 && close(*it) != 0)
 			perror("close()");
 
-	for (std::set<int>::iterator it = _clientSockets.begin(); it != _clientSockets.end(); it++)
-		if (*it > 0 && close(*it) != 0)
+	for (std::map<int, Client>::const_iterator it = _clientList.begin(); it != _clientList.end(); it++)
+		if (it->first > 0 && close(it->first) != 0)
 			perror("close()");
 }
 /*----------------------------------------------------------------------------*/

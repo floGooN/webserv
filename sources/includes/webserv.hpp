@@ -37,6 +37,7 @@
 # define DFLT_WORKCONNEX	"1024"
 # define DFLT_BACKLOG		20
 # define DFLT_BODYSIZE		1000
+# define DFLT_URISIZE		2000
 # define DFLT_METHOD		"GET POST DELETE"
 # define DFLT_HOSTNAME		"localhost"
 # define DFLT_MIME_TYPE		"application/octet-stream"
@@ -67,8 +68,12 @@
 # define	BODY_SEPARATOR	"\r\n\r\n"
 
 /* -------------------------------------- */
-/* ---    DEFINE ALL ERRORS KEYS      --- */
+/* ---    DEFINE ALL HTTP CODES	      --- */
 /* -------------------------------------- */
+
+# define	COD_200	"200 Ok"
+# define	COD_201	"21 Created"
+# define	COD_204	"204 No Content"
 
 # define	ERR_400	"400 Bad Request"
 # define	ERR_403	"403 Forbidden"
@@ -76,8 +81,10 @@
 # define	ERR_405	"405 Method Not Allowed"
 # define	ERR_408	"408 Request Time-out"
 # define	ERR_413	"413 Request Entity Too Large"
+# define	ERR_414	"Request-URI Too Long"
 # define	ERR_444	"444 No Response"
 # define	ERR_499	"499 Client Closed Request"
+
 # define	ERR_500	"500 Internal Server Error"
 # define	ERR_501	"501 Not Implemented"
 # define	ERR_502 "502 Bad Gateway"

@@ -34,12 +34,13 @@ class UtilParsing
 				dest.push_back(*it);
 		}
 
-		static bool	isDirectory(const std::string &);
 		static bool	isOnlySpace(const std::string & str);
+		static bool	isDirectory(const std::string &) throw (ErrorHandler);
 
 		static void	safeCloseDirectory(DIR *);
 		static void	displayVector(std::vector<std::string> vec);
 		static void	checkAccessRessource(const std::string &, int);
+		static void	readFile(const std::string &filepath, std::string &buffer) throw (ErrorHandler);
 		static void	printMapVector(const std::map<int, std::map<std::string, std::vector<std::string> > >& allMapRoads);
 		static void	manageControlMapLocation(std::map<int, std::map<std::string, std::vector<std::string> > > allMapRoads);
 		static void	controlMapLocation(std::map<int, std::map<std::string, std::vector<std::string> > > allMapRoads, std::string keyValue);
@@ -47,7 +48,6 @@ class UtilParsing
 		static std::string	intToString(int value);
 		static std::string	findFile(std::string &);
 		static std::string	trim(const std::string& str);
-		static std::string	readFile(const std::string &filepath);
 		static std::string	trimSemicolon(const std::string& str);
 		static std::string	recoverExtension(const std::string &filename);
 		static std::string	recoverValue(std::string line, std::string key);
