@@ -44,7 +44,8 @@ Response &Response::operator=(const Response &ref)
 std::ostream & operator<<(std::ostream &o, const Response &ref)
 {
 	o	<< "Response:\n"
-		<< BOLD "Total bytes sended: " << ref.totalBytesSended << std::endl;
+		<< BOLD "Total bytes sended: " << ref.totalBytesSended << std::endl
+		<< "File + Header: " << ref.message;
 
 	return o;
 }
@@ -103,15 +104,18 @@ void	Response::getQuery(const Client &client)
 {
 	std::cout << BRIGHT_GREEN "GET QUERY" RESET << std::endl;
 
-	if (isCGI(client.request.completeUri) == true) {
+	if (isCGI(client.request) == true) {
 
 		std::cout << "It's CGI\n"; // here play CGI
 		throw ErrorHandler(ERR_404, "CGI"); // provisoirement
 	}
 	else
 	{
-		UtilParsing::readFile(client.request.completeUri, message);
-		setHeader(client.request);
+		// std::cout	<< "in getQuery:\n"
+		// 			<< client.request << std::endl
+		// 			<< client.response << std::endl;
+		// UtilParsing::readFile(client.request.completeUri, message);
+		// setHeader(client.request);
 		
 		try {
 			message.insert(0, setHeader(client.request));
@@ -119,6 +123,10 @@ void	Response::getQuery(const Client &client)
 		catch(const std::exception& e) {
 			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
 		}
+		// std::cout	<< std::endl << "in getQuery after:\n"
+		// 			<< client.request
+		// 			<< client.response;
+
 	}
 }
 /*----------------------------------------------------------------------------*/
@@ -127,7 +135,7 @@ void	Response::postQuery(const Client &client)
 {
 	std::cout	<< BRIGHT_YELLOW "POST QUERY" RESET << std::endl;
 
-	if (isCGI(client.request.completeUri) == true) {
+	if (isCGI(client.request) == true) {
 		std::cout << "It's CGI\n"; // here play CGI
 		throw ErrorHandler(ERR_404, "CGI"); // provisoirement
 	}
@@ -145,6 +153,7 @@ void	Response::deleteQuery(const Client &)
 */
 bool	Response::isCGI(const Request &req) throw (ErrorHandler)
 {
+	return false;
 	if (UtilParsing::isDirectory(req.completeUri) == true)
 		return false;
 

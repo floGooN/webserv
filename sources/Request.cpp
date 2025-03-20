@@ -32,8 +32,9 @@
 				/*### CONSTRUCTORS - DESTRUCTOR - OVERLOAD OP ###*/
 /*============================================================================*/
 
-Request::Request()
-{	}
+Request::Request(){
+	clearRequest();
+}
 
 Request::Request(const std::string &content) throw (ErrorHandler) {
 	updateRequest(content);
@@ -78,10 +79,10 @@ std::ostream & operator<<(std::ostream & o, const Request &ref)
 std::ostream & operator<<(std::ostream &o, const t_header &ref)
 {
     o   << ITAL BLUE "t_header:\n"
-        << "URI: " << ref.uri
-        << "Request type: " << ref.requestType
-        << "HostPort: " << ref.hostPort
-        << "HostName: " << ref.hostName
+        << "URI: " << ref.uri << std::endl
+        << "Request type: " << ref.requestType << std::endl
+        << "HostPort: " << ref.hostPort << std::endl
+        << "HostName: " << ref.hostName << std::endl
         << "Keep-alive: " << ref.keepAlive;
 
     return o << RESET << std::endl;
@@ -91,8 +92,8 @@ std::ostream & operator<<(std::ostream &o, const t_header &ref)
 std::ostream & operator<<(std::ostream &o, const t_body &ref)
 {
     o   << ITAL BRIGHT_BLUE "t_header:\n"
-        << "Content type: " << ref.contentType
-        << "Content length: " << ref.contentLength
+        << "Content type: " << ref.contentType << std::endl
+        << "Content length: " << ref.contentLength << std::endl
         << "Boundary: " << ref.bound;
 
     return o << RESET << std::endl;

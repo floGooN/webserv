@@ -137,6 +137,9 @@ bool	UtilParsing::isOnlySpace(const std::string & str)
 */
 void UtilParsing::checkAccessRessource(const std::string &ressourcePath, int type)
 {
+	std::cout	<< "UtilParsing::checkAccessRessource()\n"
+				<< "ressourcePath: [" << ressourcePath << "]" << std::endl;
+
 	if (access(ressourcePath.c_str(), type))
 		throw std::invalid_argument("access() at \"" + ressourcePath + "\": " + std::string(strerror(errno)));
 }
@@ -230,7 +233,7 @@ std::string	UtilParsing::trim(const std::string& str)
 void	UtilParsing::readFile(const std::string &filepath, std::string &buffer) throw (ErrorHandler)
 {
 	try {
-
+		std::cout << "[" << filepath << "]" << std::endl;
 		std::ifstream file(filepath.c_str(), std::ios::binary);
 		if ( ! file.is_open() )
 			throw ErrorHandler(ERR_404, "readFile(): Ressource unavailable");
