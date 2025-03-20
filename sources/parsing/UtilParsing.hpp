@@ -2,13 +2,16 @@
 # define IPARSING_HPP
 
 # include "webserv.hpp"
-#include "ServerStructure.hpp"
+# include "ServerStructure.hpp"
+
+# include "ErrorHandler.hpp"
 
 # include <unistd.h>
 # include <dirent.h>
 
 # include <sstream>
 # include <fstream>
+
 
 class UtilParsing
 {

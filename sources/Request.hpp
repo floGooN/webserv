@@ -7,6 +7,9 @@
 # include "webserv.hpp"
 # include "RequestStructure.hpp"
 
+# include "ErrorHandler.hpp"
+
+
 class Cluster;
 
 class Request

@@ -32,6 +32,10 @@ struct s_location
 		return *this;
 	}
 
+	bool operator<(const s_location &ref) const {
+		return this->path < ref.path;
+	}
+
 	void clear()
 	{
 		autoindex = false;
@@ -100,37 +104,7 @@ struct s_params
 
 };
 
-std::ostream & operator<<(std::ostream &o, const t_params &ref)
-{
-    o   << ITAL CYAN "params:\n"
-        << "Max body size: " << ref.maxBodySize << std::endl
-        << "Service: " << ref.service << std::endl
-        << "Name list: ";
-    
-	std::set<std::string>::iterator it = ref.nameList.begin();
-    for (; it != ref.nameList.end(); it++) {
-        o   << *it << " ";
-    }
-
-    return o << RESET << std::endl;
-}
-
-std::ostream & operator<<(std::ostream &o, const t_location &ref)
-{
-    o   << ITAL BRIGHT_CYAN "Location:\n"
-		<< "autoindex: " << ref.autoindex << std::endl
-		<< "cgipath: " << ref.cgipath << std::endl
-		<< "index: " << ref.index << std::endl
-		<< "path: " << ref.path << std::endl
-		<< "root: " << ref.root << std::endl
-		<< "methods: ";
-		
-		std::set<e_methods>::iterator it = ref.methods.begin();
-		for (; it != ref.methods.end(); it++) {
-			o << *it << " ";
-		}
-
-	return o << RESET << std::endl;
-}
+std::ostream & operator<<(std::ostream &o, const t_params &ref);
+std::ostream & operator<<(std::ostream &o, const t_location &ref);
 
 #endif

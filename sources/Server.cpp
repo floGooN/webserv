@@ -29,7 +29,7 @@ Server::~Server()
 {	}
 /*----------------------------------------------------------------------------*/
 
-Server  & Server::operator=(const Server &ref) {
+Server  & Server::operator=(const Server &) {
 	return *this;
 }
 /*----------------------------------------------------------------------------*/
@@ -49,8 +49,8 @@ std::ostream & operator<<(std::ostream & o, const Server &ref)
 		o << "no specific path\n";
 	else
 	{
-		std::set<t_location>::iterator it = ref.getLocationSet().begin();
-		for (; it != ref.getLocationSet().end(); it++) {
+		for (std::set<t_location>::const_iterator it = ref.getLocationSet().begin(); \
+			it != ref.getLocationSet().end(); it++) {
 			o << *it << std::endl;
 		}
 	}
@@ -59,16 +59,51 @@ std::ostream & operator<<(std::ostream & o, const Server &ref)
 }
 /*----------------------------------------------------------------------------*/
 
+std::ostream & operator<<(std::ostream &o, const t_params &ref)
+{
+    o   << ITAL CYAN "params:\n"
+        << "Max body size: " << ref.maxBodySize << std::endl
+        << "Service: " << ref.service << std::endl
+        << "Name list: ";
+    
+	std::set<std::string>::iterator it = ref.nameList.begin();
+    for (; it != ref.nameList.end(); it++) {
+        o   << *it << " ";
+    }
+
+    return o << RESET << std::endl;
+}
+/*----------------------------------------------------------------------------*/
+
+std::ostream & operator<<(std::ostream &o, const t_location &ref)
+{
+    o   << ITAL BRIGHT_CYAN "Location:\n"
+		<< "autoindex: " << ref.autoindex << std::endl
+		<< "cgipath: " << ref.cgipath << std::endl
+		<< "index: " << ref.index << std::endl
+		<< "path: " << ref.path << std::endl
+		<< "root: " << ref.root << std::endl
+		<< "methods: ";
+		
+		std::set<e_methods>::iterator it = ref.methods.begin();
+		for (; it != ref.methods.end(); it++) {
+			o << *it << " ";
+		}
+
+	return o << RESET << std::endl;
+}
+/*----------------------------------------------------------------------------*/
+
 /*============================================================================*/
 						/*### PUBLIC METHODS ###*/
 /*============================================================================*/
 
-const t_params	Server::getParams() const {
+const t_params	&Server::getParams() const {
 	return _params;
 }
 /*----------------------------------------------------------------------------*/
 
-const std::set<t_location>	Server::getLocationSet() const {
+const std::set<t_location>	&Server::getLocationSet() const {
 	return _locationSet;
 }
 /*----------------------------------------------------------------------------*/
@@ -126,8 +161,21 @@ void	Server::setUploadPath(const std::string &uploadPath, t_params &params) {
 }
 /*----------------------------------------------------------------------------*/
 
-void	Server::setMethod(const std::vector<std::string> &methods, t_params &params) {
-	UtilParsing::convertVectorToSet(params.methods, methods);
+void	Server::setMethod(const std::vector<std::string> &conf, t_params &params) {
+	std::vector<std::string>::const_iterator it = conf.begin();
+
+	while (it != conf.end())
+	{
+		if (it->compare("GET") == 0)
+			params.methods.insert(GET);
+		else if (it->compare("POST") == 0)
+			params.methods.insert(POST);
+		else if (it->compare("DELETE") == 0)
+			params.methods.insert(DELETE);
+		else
+			throw std::invalid_argument(*it + " is not a valid method in this server (methods accepted -> GET POST DELETE)");
+		it++;
+	}
 }
 /*----------------------------------------------------------------------------*/
 
@@ -186,12 +234,15 @@ void	Server::setMethods(const std::vector<std::string> &conf, t_location &loc)
 
 	while (it != conf.end())
 	{
-		if (it->compare("GET") != 0 && \
-			it->compare("POST") != 0 && \
-			it->compare("DELETE") != 0)
-			throw std::invalid_argument(*it + " is not a valid method in this server \\
-												(methods -> GET POST DELETE)");
-		loc.methods.insert(*it);
+		if (it->compare("GET") == 0)
+			loc.methods.insert(GET);
+		else if (it->compare("POST") == 0)
+			loc.methods.insert(POST);
+		else if (it->compare("DELETE") == 0)
+			loc.methods.insert(DELETE);
+		else
+			throw std::invalid_argument(*it + " is not a valid method in this server (methods -> GET POST DELETE)");
+		it++;
 	}
 }
 /*----------------------------------------------------------------------------*/

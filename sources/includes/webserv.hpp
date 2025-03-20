@@ -4,8 +4,6 @@
 
 # include "colors"
 
-# include "ErrorHandler.hpp"
-
 # include <iostream>
 # include <string>
 # include <vector>
