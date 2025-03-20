@@ -36,8 +36,6 @@ std::string processAutoIndex(Server server, std::string path) // path ici c'est 
     std::string header;
     std::string response;
 
-    // if (controlAutoIndex(server, path) == -1)
-    //     throw ErrorHandler(ERR_403, "Not Found"); // return error 403 index listing forbidden
     if ((dir = opendir(path.c_str())) == NULL)
         throw ErrorHandler(ERR_404, "Not Found");
     body = buildBodyAutoIndex(dir, path);

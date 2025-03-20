@@ -78,7 +78,7 @@ char** initEnv(Request req, Server server)
         "QUERY_STRING=" + ((req.getHeader().requestType == GET) ? ParseUri(req.getHeader().uri)  : " "), // si c'est une get je mets rien apres a voir si on met une valeur ou pas
         "CONTENT_TYPE=" + req.getbody().contentType, // content-type request
         "HTTP_HOST=" + req.getHeader().hostName,
-        "SCRIPT_NAME=" + server.getParams().service, // ici le nom du script je pense pas que ce soit bon
+        buildScriptName(server), // ici le nom du script je pense pas que ce soit bon
         "PATH_INFO=" + req.getHeader().uri, // tout url 
     };
     int  environSize = sizeof(environnement) / sizeof(environnement[0]);
@@ -91,6 +91,20 @@ char** initEnv(Request req, Server server)
     envCGI[environSize] = NULL;
 
     return envCGI;
+}
+
+std::string buildScriptName(Server server)
+{
+    std::string scriptName = "SCRIPT_NAME=";
+    for (std::set<std::string>::iterator it = server.getParams().nameList.begin(); it != server.getParams().nameList.end(); ++it) 
+    {
+    if (it != server.getParams().nameList.begin()) 
+    {
+        scriptName += ",";
+    }
+    scriptName += *it;
+    }
+    return scriptName;
 }
 
 

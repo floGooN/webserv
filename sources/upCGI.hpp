@@ -1,11 +1,11 @@
-#ifndef CGI_HPP
-# define CGI_HPP
+#ifndef UPCGI_HPP
+# define UPCGI_HPP
 
 #include "Client.hpp"
 #include <cstring>
 #include <stdlib.h>
 
-void processCGI(const std::string &path, Server server, Request req);
+std::string processCGI(const Client &client);
 bool checkExtensionCGI(const std::string &path, Server server);
 std::string extractDirectory(const std::string &path);
 bool moveToDirectoryScript(const std::string &directory);
@@ -19,7 +19,6 @@ std::string createBody(int *pipe_out);
 std::string ParseUri(std::string uri);
 void freeEnv(char** tab);
 std::string buildScriptName(Server server);
-std::string processAutoIndex(Server server, std::string path);
 
 //------------------PARTIE TEST EN DUR-------------------------
 

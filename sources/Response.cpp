@@ -8,7 +8,8 @@
 #include "Response.hpp"
 #include "Client.hpp"
 #include "UtilParsing.hpp"
-
+#include "upCGI.hpp"
+#include "CGI.hpp"
 /*============================================================================*/
 				/*### CONSTRUCTORS - DESTRUCTOR - OVERLOAD OP ###*/
 /*============================================================================*/
@@ -126,6 +127,7 @@ void	Response::getQuery(const Request &req)
 
 	if (isCGI(req.completeUri) == true) {
 		std::cout << "It's CGI\n"; // here play CGI
+		processCGI(client);
 		throw ErrorHandler(ERR_404, "CGI"); // provisoirement
 	}
 	else
@@ -149,10 +151,19 @@ void	Response::postQuery(const Request &req)
 
 	if (isCGI(req.completeUri) == true) {
 		std::cout << "It's CGI\n"; // here play CGI
+		processCGI(client);
 		throw ErrorHandler(ERR_404, "CGI"); // provisoirement
 	}
 
 }
+/*----------------------------------------------------------------------------*/
+
+void	Response::autoIndexResponse(Client client)
+{
+	processAutoIndex(client.clientServer, client.request.completeUri);
+}
+
+
 /*----------------------------------------------------------------------------*/
 
 void	Response::deleteQuery(const Request &)
@@ -188,7 +199,9 @@ bool	Response::isCGI(const Request &req) throw (ErrorHandler)
 				throw ErrorHandler(ERR_400, e.what());
 		}
 	}
-
+	
+	if (checkExtensionCGI(client.request.completeUri, client.clientServer) != 0)
+            throw ErrorHandler(ERR_502, "Bad Gateway");
 	// a partir d'ici verifier l'extension du fichier et renvoyer true si elle correspond a un cgi executable
 	// a partir de la il n'y a plus d'erreur a gerer sur cette fonction, juste renvoyer true ou false
 	size_t idx = req.completeUri.find_last_of('.');
