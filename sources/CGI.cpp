@@ -10,28 +10,28 @@
 #include "RequestStructure.hpp"
 #include <cstring>
 #include "CGI.hpp"
+#include "ErrorHandler.hpp"
 
 
-void processCGI(const std::string &path, Server server, Request req)
+void processCGI(const std::string &path, Server server, Request req, Response res)
 {
-    std::string response;
     try
     {
         if (UtilParsing::fileExits(path) != 0)
-            throw ;
+            throw ErrorHandler(ERR_404, "Not Found");
         if (access(path.c_str(), X_OK) != 0)
-            throw ;
+            throw ErrorHandler(ERR_404, "Not Found");
         if (checkExtensionCGI(path, server) != 0)
-            throw ;
+            throw ErrorHandler(ERR_502, "Bad Gateway"); 
         if (moveToDirectoryScript(extractDirectory(path)) != 0)
-            throw ;
-        response = executeCGI(path, server, req); // ici plus tard renvoyer directement dans la value response
-        if (response.empty())
-            throw ;
+            throw ErrorHandler(ERR_500, "Internal server error");
+        res.body = executeCGI(path, server, req); // ici dans ce body header + body
+        if (res.body.empty())
+            throw ErrorHandler(ERR_502, "Bad Gateway");
     }
-    catch ()
+    catch (const ErrorHandler& e)
     {
-         
+        std::cerr << e.errorNumber << ":" << e.errorNumber << std::endl;
     }
 }
 // fonction pour check le type d'extension du script demander pour verifier si le server la supporte
@@ -75,7 +75,7 @@ char** initEnv(Request req, Server server)
       std::string environnement[] = 
       {
         "REQUEST_METHOD=" + req.getHeader().requestType,
-        "QUERY_STRING=" + ((req.getHeader().requestType.compare("GET") == 0) ? ParseUri(req.getHeader().uri)  : " "), // si c'est une get je mets rien apres a voir si on met une valeur ou pas
+        "QUERY_STRING=" + ((req.getHeader().requestType == GET) ? ParseUri(req.getHeader().uri)  : " "), // si c'est une get je mets rien apres a voir si on met une valeur ou pas
         "CONTENT_TYPE=" + req.getbody().contentType, // content-type request
         "HTTP_HOST=" + req.getHeader().hostName,
         "SCRIPT_NAME=" + server.getParams().service, // ici le nom du script je pense pas que ce soit bon
@@ -113,9 +113,9 @@ std::string playCgi(const std::string &path, Request req, char **env)
     if (pid == 0)
     {
         if (UtilParsing::recoverExtension(path) == ".pl")
-            childProcessCgi(env, pipe_in, pipe_out);
+            childProcessCgi(env, pipe_in, pipe_out, req);
         else
-            childProcessCgiPy(env, pipe_in, pipe_out);
+            childProcessCgiPy(env, pipe_in, pipe_out, req);
     }
     else 
         return parentProcessCgi(req, pid, pipe_in, pipe_out);
@@ -154,7 +154,7 @@ int controlContentBodyReq(Request req)
 }
 
 // rajouter le nom du script a appele de facon modulable
-void childProcessCgi(char**env, int *pipe_in, int *pipe_out)
+void childProcessCgi(char**env, int *pipe_in, int *pipe_out, Request req)
 {
     close(pipe_in[1]);
     close(pipe_out[0]);
@@ -162,14 +162,14 @@ void childProcessCgi(char**env, int *pipe_in, int *pipe_out)
     close(pipe_in[0]);
     dup2(pipe_out[1], STDOUT_FILENO);
     close(pipe_out[1]);
-    const char *args[] = {"/usr/bin/perl", "./cgi-bin/script.pl", NULL}; // utiliser uri ou une var script name sans doute la meme qui est utiliser pour voir l'extension plus haut
+    const char *args[] = {"/usr/bin/perl", req.getHeader().uri.c_str(), NULL}; // utiliser uri ou une var script name sans doute la meme qui est utiliser pour voir l'extension plus haut
     execve(args[0], (char *const *)args, env);
     _exit(1); // ici gestion d'erreur 
 }
 
 
 // rajouter le nom du script a appele de facon modulable
-void childProcessCgiPy(char**env, int *pipe_in, int *pipe_out)
+void childProcessCgiPy(char**env, int *pipe_in, int *pipe_out, Request req)
 {
     close(pipe_in[1]);
     close(pipe_out[0]);
@@ -177,7 +177,7 @@ void childProcessCgiPy(char**env, int *pipe_in, int *pipe_out)
     close(pipe_in[0]);
     dup2(pipe_out[1], STDOUT_FILENO);
     close(pipe_out[1]);
-    const char *args[] = {"/usr/bin/python3", "./cgi-bin/script.py", NULL}; // utiliser uri ou une var script name sans doute la meme qui est utiliser pour voir l'extension plus haut
+    const char *args[] = {"/usr/bin/python3", req.getHeader().uri.c_str(), NULL}; // utiliser uri ou une var script name sans doute la meme qui est utiliser pour voir l'extension plus haut
     execve(args[0], (char *const *)args, env);
     _exit(1); // ici gestion d'erreur 
 }

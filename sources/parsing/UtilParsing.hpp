@@ -63,6 +63,8 @@ class UtilParsing
 		static std::vector<std::string>	splitSpecialDeleteKey(const std::string & line, const std::string & set);
 		static std::string convertHexaToString(std::string value);
 		static int decryptHexa(std::string value);
+		static bool fileExits(const std::string &filename);
+		static std::string intToString(int value);
 	private:
 		UtilParsing() {};
 };

@@ -80,6 +80,7 @@
 # define	ERR_499	"499 Client Closed Request"
 # define	ERR_500	"500 Internal Server Error"
 # define	ERR_501	"501 Not Implemented"
+# define	ERR_502 "502 Bad Gateway"
 # define	ERR_505	"HTTP Version not supported"
 # define	ERR_520	"520 Unknown Error"
 

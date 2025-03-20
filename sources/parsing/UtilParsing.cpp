@@ -297,6 +297,8 @@ std::string UtilParsing::recoverExtension(const std::string &filename)
 {
 	std::cout << filename << std::endl;
 	std::size_t start = filename.find_last_of(".");
+	if (start == std::string::npos)
+		return ""; // car a chaque on check avec une valeur defeni avant donc possible de check comme ca
 	return filename.substr(start);
 }
 
@@ -358,3 +360,17 @@ int UtilParsing::decryptHexa(std::string value)
     ss >> x;
     return x;
 }
+bool UtilParsing::fileExits(const std::string &filename)
+{
+	std::ifstream file(filename.c_str());
+	return file.good();
+}
+
+std::string UtilParsing::intToString(int value)
+{
+    char buffer[20];
+    sprintf(buffer, "%d", value);
+    return std::string(buffer);
+}
+
+
