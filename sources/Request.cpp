@@ -148,8 +148,22 @@ void Request::updateRequest(const std::string &content) throw(ErrorHandler)
 
 void Request::updateRequest(const Request &req) throw(ErrorHandler)
 {
-	std::cout	<< "Request::updateRequest(const Request &req)" << std::endl
-				<< req;
+	if (_header.requestType == EMPTY) {
+		*this = req;
+		return;
+	}
+
+	std::map<std::string, std::string>::const_iterator it = req._header.otherFields.begin();
+
+	while (it != req._header.otherFields.end())
+	{
+		this->_header.otherFields[it->first] = it->second;
+		it++;
+	}
+	if (_body.body.empty())
+		_body.body = req._body.body;
+	else
+		_body.body.append(req._body.body);
 }
 /*----------------------------------------------------------------------------*/
 
@@ -217,14 +231,7 @@ void Request::setHeader(const std::string &header) throw(ErrorHandler)
 	}
 
 	std::vector<std::string>::iterator it = token.begin();
-
-	if (_header.requestType == POST)
-	{
-		std::cout << BRIGHT_YELLOW "HERE" RESET << std::endl;
-		
-
-	}
-	else
+	if (it->find(PROTOCOL_VERION) != it->npos)
 	{
 		setRequestType(*it);
 		checkProtocole(*it);
@@ -240,8 +247,9 @@ void Request::setHeader(const std::string &header) throw(ErrorHandler)
 			setContentLength(*it);
 		else if (_header.requestType == POST && it->find("Content-Type") != it->npos)
 			setContentType(*it);
+		else
+			addHeaderField(*it);
 	}
-	std::cout << "Request::setHeader()\n" << *this << std::endl;
 }
 /*----------------------------------------------------------------------------*/
 
@@ -349,16 +357,25 @@ void Request::setContentLength(const std::string &line) throw(ErrorHandler)
 		throw ErrorHandler(ERR_500, " in setContentLength(): " + std::string(e.what()));
 	}
 
-	std::cout << "Request::setContentLength\nlenAsStr: [" << lenAsStr << "]" << std::endl;
-	
-	std::istringstream iss(lenAsStr);
-    size_t result;
+    size_t				result;
+	std::istringstream	iss(lenAsStr);
     iss >> result;
 
     if (iss.fail())
 		throw ErrorHandler(ERR_500, "In Response::setHeader()\nconversion of the length message faild");
 
 	_body.contentLength = result;
+}
+/*----------------------------------------------------------------------------*/
+
+void Request::addHeaderField(const std::string &line)
+{
+	size_t i = line.find_first_of(' ');
+
+	if (i == line.npos)
+		return;
+
+	_header.otherFields[line.substr(0, i)] = line.substr((i + 1), line.length() - (i + 1));
 }
 /*----------------------------------------------------------------------------*/
 

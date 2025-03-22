@@ -47,6 +47,7 @@ struct s_header
             hostName = ref.hostName;
             hostPort = ref.hostPort;
             requestType = ref.requestType;
+            otherFields = ref.otherFields;
         }
         return *this;
     }
@@ -56,13 +57,15 @@ struct s_header
         uri.clear();
         hostName.clear();
         hostPort.clear();
-        requestType = EMPTY;        
+        requestType = EMPTY;   
+        otherFields.clear();     
     }
 
 	std::string uri;
 	std::string hostName;
 	std::string hostPort;
 	e_methods   requestType;
+    std::map<std::string, std::string>  otherFields;
 };
 
 struct s_body

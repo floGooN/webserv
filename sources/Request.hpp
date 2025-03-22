@@ -48,6 +48,7 @@ class Request
 		void	setHeader(const std::string &header)	throw(ErrorHandler);
 		void	setBoundLimiter(const std::string &)	throw(ErrorHandler);
 		void 	setContentLength(const std::string &)	throw(ErrorHandler);
+		void 	addHeaderField(const std::string &line);
 };
 
 std::ostream & operator<<(std::ostream &, const Request &);

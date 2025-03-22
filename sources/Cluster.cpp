@@ -200,10 +200,7 @@ Client * Cluster::addClient(const Request &req, const int fdClient) throw (ErrGe
 		current->clientServer = server;
 	}
 
-	if (current->request.getHeader().requestType == EMPTY)
-		current->request = req;
-	else
-		current->request.updateRequest(req);
+	current->request.updateRequest(req);
 
 	if (current->request.getHeader().uri.size() > DFLT_URISIZE)
 		throw ErrGenerator(findClient(fdClient), ERR_414, "URI exceed the limit of the server");
@@ -287,7 +284,6 @@ void	Cluster::recvData(const struct epoll_event &event)
 			throw ErrGenerator(findClient(event.data.fd), ERR_413, "Max body size reached");
 		}
 	}
-
 	if (currentClient->request.getbody().body.size() == \
 		currentClient->request.getbody().contentLength)
 	{

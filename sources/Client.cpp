@@ -63,6 +63,7 @@ void	Client::checkRequestValidity() throw (ErrorHandler)
 				<< RESET << std::endl;
 
 	const t_location *currentLocation = buildCompleteUri();
+	
 	std::cout	<< GREEN "URI: [" << request.getHeader().uri << "]" << std::endl
 				<< "complete URI: [" << request.completeUri << "]"
 				<< RESET << std::endl;
@@ -154,6 +155,7 @@ bool	Client::isAutoindex() throw (ErrorHandler)
 const t_location * Client::buildCompleteUri()
 {
 	std::string			rootPart;
+	std::string			uriPart;
 	const t_location	*result = UtilParsing::findLocation(clientServer->getLocationSet(), request.getHeader().uri);
 	
 	if (result && ! result->root.empty() )
@@ -161,12 +163,17 @@ const t_location * Client::buildCompleteUri()
 	else
 		rootPart = clientServer->getParams().rootPath;
 
-	if (*request.getHeader().uri.begin() == '/' && *rootPart.end() == '/')
+	if (result && ! result->index.empty())
+		uriPart = result->index;
+	else
+		uriPart = request.getHeader().uri;
+
+	if (*uriPart.begin() == '/' && *rootPart.end() == '/')
 		rootPart.erase(rootPart.end());
-	else if (*request.getHeader().uri.begin() != '/' && *rootPart.end() != '/')
+	else if (*uriPart.begin() != '/' && *rootPart.end() != '/')
 		rootPart += "/";
 
-	request.completeUri = rootPart + request.getHeader().uri;
+	request.completeUri = rootPart + uriPart;
 
 	return result;
 }
