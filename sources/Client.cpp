@@ -59,7 +59,13 @@ std::ostream & operator<<(std::ostream &o, const Client &ref)
 /*============================================================================*/
 void	Client::checkRequestValidity() throw (ErrorHandler)
 {
+	std::cout	<< GREEN "Client::checkRequestValidity():\n"
+				<< RESET << std::endl;
+
 	const t_location *currentLocation = buildCompleteUri();
+	std::cout	<< GREEN "URI: [" << request.getHeader().uri << "]" << std::endl
+				<< "complete URI: [" << request.completeUri << "]"
+				<< RESET << std::endl;
 
 	checkAutorisation(currentLocation);
 	
@@ -67,9 +73,21 @@ void	Client::checkRequestValidity() throw (ErrorHandler)
 		UtilParsing::checkAccessRessource(request.completeUri, R_OK);
 	}
 	catch(const std::exception& e) {
-		throw ErrorHandler(ERR_403, e.what());
+		switch (errno)
+		{
+			case ENOENT:
+			case ELOOP:
+				throw ErrorHandler(ERR_404, e.what());
+			
+			case EACCES:
+			case ENAMETOOLONG:
+			case ENOTDIR:
+				throw ErrorHandler(ERR_403, e.what());
+			
+			default:
+				throw ErrorHandler(ERR_400, e.what());
+		}
 	}
-
 	checkUriContent();
 
 	validTheUriPath();

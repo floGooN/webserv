@@ -142,7 +142,7 @@ void	Cluster::runCluster()
 				}
 				catch(ErrGenerator &e) {
 					if (e.what() != NULL)
-						std::cerr << e.what() << RESET << std::endl;
+						std::cerr << RED << e.what() << RESET << std::endl;
 					else {
 						e.generateErrorPage();
 						changeEventMod(false, events[i].data.fd);
@@ -189,22 +189,28 @@ Client * Cluster::addClient(const Request &req, const int fdClient) throw (ErrGe
 		throw ErrGenerator(findClient(fdClient), ERR_500, "We didn't recovered the client");
 	}
 
-	current->request = req;
-	
-	try {
-		server = &getServersByPort().at(current->request.getHeader().hostPort);
+	if (current->clientServer == NULL)
+	{
+		try {
+			server = &getServersByPort().at(req.getHeader().hostPort);
+		}
+		catch(const std::exception& e) {
+			throw ErrGenerator(findClient(fdClient), ERR_500, "We didn't recovered the service");
+		}
+		current->clientServer = server;
 	}
-	catch(const std::exception& e) {
-		throw ErrGenerator(findClient(fdClient), ERR_500, "We didn't recovered the service");
-	}
+
+	if (current->request.getHeader().requestType == EMPTY)
+		current->request = req;
+	else
+		current->request.updateRequest(req);
 
 	if (current->request.getHeader().uri.size() > DFLT_URISIZE)
 		throw ErrGenerator(findClient(fdClient), ERR_414, "URI exceed the limit of the server");
 
-	if (current->request.getbody().contentLength > server->getParams().maxBodySize)
+	if (current->request.getbody().contentLength > current->clientServer->getParams().maxBodySize)
 		throw ErrGenerator(findClient(fdClient), ERR_413, "The content length of the request exceed the limit allowed by the server");
 
-	current->clientServer = server;
 	return current;
 }
 /*----------------------------------------------------------------------------*/
@@ -315,7 +321,7 @@ void	Cluster::sendData(const struct epoll_event &event)
 	catch(const ErrorHandler& e) {
 		throw ErrGenerator(findClient(event.data.fd), e.errorNumber, e.errorLog);
 	}
-	
+
 	while (client.response.totalBytesSended != client.response.message.size())
 	{
 		ssize_t ret = send(event.data.fd, client.response.message.c_str(), \

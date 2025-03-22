@@ -67,9 +67,9 @@ Request & Request::operator=(const Request &ref)
 std::ostream & operator<<(std::ostream & o, const Request &ref)
 {
 	o	<< BOLD "Request:\n"
-		<< BOLD "Header:\n" << ref.getHeader() << std::endl
+		<< BOLD "Header:\n" << ref.getHeader()
 		<< BOLD "Args:\n" << ref.getArgs() << std::endl
-		<< BOLD "Body:\n" << ref.getbody() << std::endl
+		<< BOLD "Body:\n" << ref.getbody()
 		<< BOLD "body_content:\n" << ref.getbody().body;
 
 	return o << RESET << std::endl;
@@ -82,7 +82,7 @@ std::ostream & operator<<(std::ostream &o, const t_header &ref)
         << "URI: " << ref.uri << std::endl
         << "Request type: " << ref.requestType << std::endl
         << "HostPort: " << ref.hostPort << std::endl
-        << "HostName: " << ref.hostName << std::endl;
+        << "HostName: " << ref.hostName;
 
     return o << RESET << std::endl;
 }
@@ -121,14 +121,14 @@ const std::string &	Request::getArgs() const {
 void Request::updateRequest(const std::string &content) throw(ErrorHandler)
 {
 	size_t idxSeparator = content.find(BODY_SEPARATOR);
-	// if (idxSeparator == content.npos)
-	// {
-	// 	if ( content.empty() )
-	// 		throw ErrorHandler(ERR_400, "the request is empty");
-	// 	setBody(content);
-	// }
-	// else
-	// {
+	if (idxSeparator == content.npos)
+	{
+		if ( content.empty() )
+			throw ErrorHandler(ERR_400, "the request is empty");
+		setBody(content);
+	}
+	else
+	{
 		try
 		{
 			setHeader(content.substr(0, idxSeparator));
@@ -142,7 +142,14 @@ void Request::updateRequest(const std::string &content) throw(ErrorHandler)
 			std::string log = RED "in updateRequest(): " + std::string(e.what()) + RESET;
 			throw ErrorHandler(ERR_500, log);
 		}
-	// }
+	}
+}
+/*----------------------------------------------------------------------------*/
+
+void Request::updateRequest(const Request &req) throw(ErrorHandler)
+{
+	std::cout	<< "Request::updateRequest(const Request &req)" << std::endl
+				<< req;
 }
 /*----------------------------------------------------------------------------*/
 
@@ -201,6 +208,7 @@ void Request::setArgs() throw(ErrorHandler)
 void Request::setHeader(const std::string &header) throw(ErrorHandler)
 {
 	std::vector<std::string> token;
+
 	try {
 		token = UtilParsing::split(header, "\r\n");
 	}
@@ -209,10 +217,19 @@ void Request::setHeader(const std::string &header) throw(ErrorHandler)
 	}
 
 	std::vector<std::string>::iterator it = token.begin();
-	
-	setRequestType(*it);
-	checkProtocole(*it);
-	setUri(*it);
+
+	if (_header.requestType == POST)
+	{
+		std::cout << BRIGHT_YELLOW "HERE" RESET << std::endl;
+		
+
+	}
+	else
+	{
+		setRequestType(*it);
+		checkProtocole(*it);
+		setUri(*it);
+	}
 	while (++it != token.end())
 	{
 		if (it->find("Host: ") != it->npos)
@@ -224,6 +241,7 @@ void Request::setHeader(const std::string &header) throw(ErrorHandler)
 		else if (_header.requestType == POST && it->find("Content-Type") != it->npos)
 			setContentType(*it);
 	}
+	std::cout << "Request::setHeader()\n" << *this << std::endl;
 }
 /*----------------------------------------------------------------------------*/
 
@@ -321,14 +339,26 @@ void Request::setContentLength(const std::string &line) throw(ErrorHandler)
 		return ;
 	}
 
+	size_t		tokenSize = line.find_first_not_of("0123456789", idx) - idx;
+	std::string lenAsStr("");
+	
 	try {
-		size_t		tokenSize = line.find_first_not_of("0123456789", idx) - idx;
-		std::string lenAsStr = line.substr(idx, tokenSize);
-		_body.contentLength = UtilParsing::convertBodySize(lenAsStr);
+		lenAsStr = line.substr(idx, tokenSize);
 	}
 	catch(const std::exception& e) {
 		throw ErrorHandler(ERR_500, " in setContentLength(): " + std::string(e.what()));
 	}
+
+	std::cout << "Request::setContentLength\nlenAsStr: [" << lenAsStr << "]" << std::endl;
+	
+	std::istringstream iss(lenAsStr);
+    size_t result;
+    iss >> result;
+
+    if (iss.fail())
+		throw ErrorHandler(ERR_500, "In Response::setHeader()\nconversion of the length message faild");
+
+	_body.contentLength = result;
 }
 /*----------------------------------------------------------------------------*/
 

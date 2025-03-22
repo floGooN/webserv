@@ -101,7 +101,6 @@
 
 enum e_methods
 {
-    ERROR = -1,
     GET,
     POST,
     DELETE,

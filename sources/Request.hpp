@@ -27,7 +27,8 @@ class Request
 		
 		void	clearRequest();
 		void	updateRequest(const std::string &) throw(ErrorHandler);
-
+		void	updateRequest(const Request &req) throw(ErrorHandler);
+	
 		bool		keepAlive;
 		std::string	completeUri;
 
