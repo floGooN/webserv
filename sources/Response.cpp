@@ -54,10 +54,87 @@ std::ostream & operator<<(std::ostream &o, const Response &ref)
 /*============================================================================*/
 						/*### PUBLIC METHODS ###*/
 /*============================================================================*/
+void	Response::getQuery(const Client &client)
+{
+	std::cout << BRIGHT_GREEN "GET QUERY" RESET << std::endl;
+
+	if (isCGI(client.request) == true) {
+
+		std::cout << "It's CGI\n"; // here play CGI
+		throw ErrorHandler(ERR_404, "CGI"); // provisoirement
+	}
+	else
+	{
+		UtilParsing::readFile(client.request.completeUri, message);
+
+		try {
+			message.insert(0, setHeader(client.request, (message.empty() ? COD_204 : COD_200 )));
+		}
+		catch(const std::exception& e) {
+			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
+		}
+	}
+}
+/*----------------------------------------------------------------------------*/
+
+void	Response::postQuery(Client &client)
+{
+	std::cout	<< BRIGHT_YELLOW "POST QUERY" RESET << std::endl;
+
+	UtilParsing::checkAccessRessource(client.request.completeUri, W_OK);
+
+	if (isCGI(client.request) == true) {
+		std::cout << BRIGHT_YELLOW "It's CGI\n" RESET; // here play CGI
+		throw ErrorHandler(ERR_404, "CGI"); // provisoirement
+	}
+	else
+	{
+		if (client.request.getbody().contentType != MULTIPART)
+			throw ErrorHandler(ERR_415, "The media type is not supported by the server");
+		cleanBody(client.request);getsid
+		uploadFile(client.request);
+
+		client.request.completeUri = "./uploads/uploadSucces.html";
+		UtilParsing::readFile(client.request.completeUri, message);
+		try {
+			message.insert(0, setHeader(client.request, COD_201));
+		}
+		catch(const std::exception& e) {
+			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
+		}		
+	}
+}
+/*----------------------------------------------------------------------------*/
+
+void	Response::deleteQuery(const Client &)
+{
+	std::cout << BRIGHT_CYAN "DELETE QUERY" << RESET << std::endl;
+}
+/*----------------------------------------------------------------------------*/
 
 /*============================================================================*/
 						/*### PRIVATE METHODS ###*/
 /*============================================================================*/
+
+void Response::uploadFile(const Request &req) throw (ErrorHandler)
+{
+	// extract the name of the file
+	//  
+	const t_body	&ref = req.getbody();
+	size_t			iStart = ref.body.find_first_of("\r\n\r\n");
+	size_t			endOfFile = ref.body.find_last_of("\r\n\r\n");
+
+	std::cout << RED << ref.body << RESET;
+
+	if (iStart == std::string::npos || endOfFile == std::string::npos)
+		throw ErrorHandler(ERR_400, "No separator in the file to upload");
+	
+	iStart += 4;
+	endOfFile -= 4;
+	
+	
+}
+/*----------------------------------------------------------------------------*/
 
 std::string	&Response::findMimeType(const std::string &uri)
 {
@@ -70,17 +147,7 @@ std::string	&Response::findMimeType(const std::string &uri)
 }
 /*----------------------------------------------------------------------------*/
 
-/*
-	HTTP/1.1 404 Not Found
-
-	Date: Tue, 04 Mar 2025 12:34:56 GMT
-
-	Server: MyMinimalWebServer/1.0
-	Content-Type: text/html; charset=UTF-8
-	Content-Length: 123
-	Connection: close
-*/
-std::string	Response::setHeader(const Request &req) throw (ErrorHandler)
+std::string	Response::setHeader(const Request &req, const std::string &code) throw (ErrorHandler)
 {
 	std::ostringstream oss;
 	oss << message.length();
@@ -89,7 +156,7 @@ std::string	Response::setHeader(const Request &req) throw (ErrorHandler)
 		throw ErrorHandler(ERR_500, "In Response::setHeader()\nconversion of the length message faild");
 
 	std::string header = \
-		PROTOCOL_VERION " " + (message.empty() ? std::string(COD_204) : std::string(COD_200) ) + "\r\n" \
+		PROTOCOL_VERION " " + code + "\r\n" \
 		"Server: Rob&Flo V0.9" + "\r\n" \
 		"Content-Type: " + findMimeType(req.completeUri) + "; charset=UTF-8\r\n" \
 		"Content-Length: " + oss.str() + "\r\n" \
@@ -97,55 +164,6 @@ std::string	Response::setHeader(const Request &req) throw (ErrorHandler)
 		"\r\n";
 
 	return header;	
-}
-/*----------------------------------------------------------------------------*/
-
-void	Response::getQuery(const Client &client)
-{
-	std::cout << BRIGHT_GREEN "GET QUERY" RESET << std::endl;
-
-	if (isCGI(client.request) == true) {
-
-		std::cout << "It's CGI\n"; // here play CGI
-		throw ErrorHandler(ERR_404, "CGI"); // provisoirement
-	}
-	else
-	{
-		// std::cout	<< "in getQuery:\n"
-		// 			<< client.request << std::endl
-		// 			<< client.response << std::endl;
-		UtilParsing::readFile(client.request.completeUri, message);
-		setHeader(client.request);
-		
-		try {
-			message.insert(0, setHeader(client.request));
-		}
-		catch(const std::exception& e) {
-			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
-		}
-		// std::cout	<< std::endl << "in getQuery after:\n"
-		// 			<< client.request
-		// 			<< client.response;
-
-	}
-}
-/*----------------------------------------------------------------------------*/
-
-void	Response::postQuery(const Client &client)
-{
-	std::cout	<< BRIGHT_YELLOW "POST QUERY" RESET << std::endl;
-
-	if (isCGI(client.request) == true) {
-		std::cout << "It's CGI\n"; // here play CGI
-		throw ErrorHandler(ERR_404, "CGI"); // provisoirement
-	}
-
-}
-/*----------------------------------------------------------------------------*/
-
-void	Response::deleteQuery(const Client &)
-{
-	std::cout << BRIGHT_CYAN "DELETE QUERY" << RESET << std::endl;
 }
 /*----------------------------------------------------------------------------*/
 

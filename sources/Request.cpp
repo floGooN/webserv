@@ -69,8 +69,8 @@ std::ostream & operator<<(std::ostream & o, const Request &ref)
 	o	<< BOLD "Request:\n"
 		<< BOLD "Header:\n" << ref.getHeader()
 		<< BOLD "Args:\n" << ref.getArgs() << std::endl
-		<< BOLD "Body:\n" << ref.getbody()
-		<< BOLD "body_content:\n" << ref.getbody().body;
+		<< BOLD "Body:\n" << ref.getbody();
+		// << BOLD "body_content:\n" << ref.getbody().body;
 
 	return o << RESET << std::endl;
 }
@@ -83,8 +83,11 @@ std::ostream & operator<<(std::ostream &o, const t_header &ref)
         << "Request type: " << ref.requestType << std::endl
         << "HostPort: " << ref.hostPort << std::endl
         << "HostName: " << ref.hostName;
+	for (std::map<std::string, std::string>::const_iterator it = ref.otherFields.begin(); \
+		it != ref.otherFields.end(); it++)
+		o << it->first << ": " << it->second << std::endl;
 
-    return o << RESET << std::endl;
+    return o << RESET;
 }
 /*----------------------------------------------------------------------------*/
 
