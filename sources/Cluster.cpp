@@ -284,6 +284,7 @@ void	Cluster::recvData(const struct epoll_event &event)
 			throw ErrGenerator(findClient(event.data.fd), ERR_413, "Max body size reached");
 		}
 	}
+
 	if (currentClient->request.getbody().body.size() == \
 		currentClient->request.getbody().contentLength)
 	{
@@ -292,6 +293,7 @@ void	Cluster::recvData(const struct epoll_event &event)
 			changeEventMod(false, event.data.fd);
 		}
 		catch(const ErrorHandler& e) {
+			std::cout << "HERE\n";
 			throw ErrGenerator(findClient(event.data.fd), e.errorNumber, e.errorLog);
 		}
 	}

@@ -71,6 +71,11 @@ std::ostream & operator<<(std::ostream &o, const t_params &ref)
         o   << *it << " ";
     }
 
+	o	<< "\nmethodsAccept:\n";
+	for (std::set<e_methods>::iterator itt = ref.methods.begin(); itt != ref.methods.end(); \
+		itt++)
+		o << *itt << " ";
+
     return o << RESET << std::endl;
 }
 /*----------------------------------------------------------------------------*/
@@ -87,7 +92,7 @@ std::ostream & operator<<(std::ostream &o, const t_location &ref)
 		
 		std::set<e_methods>::iterator it = ref.methods.begin();
 		for (; it != ref.methods.end(); it++) {
-			o << *it << " ";
+			o << "[" << *it << "] ";
 		}
 
 	return o << RESET << std::endl;
@@ -161,9 +166,11 @@ void	Server::setUploadPath(const std::string &uploadPath, t_params &params) {
 }
 /*----------------------------------------------------------------------------*/
 
-void	Server::setMethod(const std::vector<std::string> &conf, t_params &params) {
+void	Server::setMethod(const std::vector<std::string> &conf, t_params &params)
+{
 	std::vector<std::string>::const_iterator it = conf.begin();
 
+	params.methods.clear();
 	while (it != conf.end())
 	{
 		if (it->compare("GET") == 0)
@@ -174,6 +181,7 @@ void	Server::setMethod(const std::vector<std::string> &conf, t_params &params) {
 			params.methods.insert(DELETE);
 		else
 			throw std::invalid_argument(*it + " is not a valid method in this server (methods accepted -> GET POST DELETE)");
+		
 		it++;
 	}
 }
@@ -209,12 +217,12 @@ std::set<t_location> Server::setLocations(const std::vector<LocationConfig> &con
 
 void	Server::setAutoindex(const std::string &conf, t_location &loc)
 {
-	if (conf.compare("off") == 0)
+	if (conf.empty() || conf.compare("off") == 0)
 		loc.autoindex = false;
 	else if (conf.compare("on") == 0)
 		loc.autoindex = true;
 	else
-		throw std::invalid_argument(conf + " is not a valid parameter: (autoindex -> on/off)");
+		throw std::invalid_argument("[" + conf + "] is not a valid parameter: (autoindex -> on/off)");
 }
 /*----------------------------------------------------------------------------*/
 

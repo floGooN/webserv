@@ -134,7 +134,8 @@ void	Client::buildResponse() throw (ErrorHandler)
 */
 bool	Client::isAutoindex() throw (ErrorHandler)
 {
-	if (UtilParsing::isDirectory(request.completeUri) == false)
+	if (request.getHeader().uri.find("upload") != std::string::npos || \
+		UtilParsing::isDirectory(request.completeUri) == false)
 		return false;
 
 	const t_location *current = UtilParsing::findLocation(clientServer->getLocationSet(), request.getHeader().uri);
@@ -163,7 +164,9 @@ const t_location * Client::buildCompleteUri()
 	else
 		rootPart = clientServer->getParams().rootPath;
 
-	if (result && ! result->index.empty())
+	if (request.getHeader().uri.find("upload") != std::string::npos)
+		uriPart = "";
+	else if (result && ! result->index.empty())
 		uriPart = result->index;
 	else
 		uriPart = request.getHeader().uri;
@@ -195,14 +198,18 @@ void Client::checkAutorisation(const t_location *current) const throw (ErrorHand
 		itEnd = clientServer->getParams().methods.end();
 	}
 
+	bool found = false;
 	while (itStart != itEnd)
 	{
-		if (*itStart == request.getHeader().requestType)
+		if (*itStart == request.getHeader().requestType) {
+			found = true;
 			break;
+		}
 		itStart++;
 	}
-	if (itStart == itEnd)
-		ErrorHandler(ERR_405, "Method not allowed in this service");
+	if (!found) {
+		throw ErrorHandler(ERR_405, "Method not allowed in this service");
+	}
 }
 /*----------------------------------------------------------------------------*/
 
@@ -261,6 +268,5 @@ void	Client::clearData()
 {
 	request.clearRequest();
 	response.clearResponse();
-	// clientServer = NULL;
 }
 /*----------------------------------------------------------------------------*/
