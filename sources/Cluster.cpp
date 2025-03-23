@@ -224,6 +224,7 @@ ssize_t	Cluster::safeRecv(const int clientFd, std::string &message)
 	
 	if ( ! bytesReceived || bytesReceived == -1 )
 	{
+		std::cout << RED << bytesReceived << RESET << std::endl;
 		if ( bytesReceived )
 			perror("recv()");
 		return bytesReceived;
@@ -269,8 +270,9 @@ void	Cluster::recvData(const struct epoll_event &event)
 	bytesReceived = safeRecv(event.data.fd, message);
 	checkByteReceived(event, bytesReceived);
 	currentClient = addClient(Request(message), event.data.fd);
+	currentClient->request.totalBytesReceived = bytesReceived;
 
-	while (bytesReceived == STATIC_BUFFSIZE)
+	while (currentClient->request.getbody().contentLength != currentClient->request.totalBytesReceived)
 	{
 		bytesReceived = safeRecv(event.data.fd, message);
 		checkByteReceived(event, bytesReceived);
@@ -282,6 +284,7 @@ void	Cluster::recvData(const struct epoll_event &event)
 			currentClient->clientServer->getParams().maxBodySize) {
 			throw ErrGenerator(findClient(event.data.fd), ERR_413, "Max body size reached");
 		}
+		currentClient->request.totalBytesReceived += bytesReceived;
 	}
 	// std::cout	<< BRIGHT_RED "HERE\n"
 	// 			<< "BODYSIZE: " << currentClient->request.getbody().body.size() << std::endl

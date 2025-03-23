@@ -92,9 +92,6 @@ void	Client::checkRequestValidity() throw (ErrorHandler)
 	checkUriContent();
 
 	validTheUriPath();
-
-	std::cout	<< BRIGHT_GREEN "fullRequest:\n"
-				<< request << RESET;
 }
 /*----------------------------------------------------------------------------*/
 

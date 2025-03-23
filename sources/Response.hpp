@@ -35,9 +35,10 @@ class Response
 		std::map<std::string, std::string>	_mimeMap;
 
 		void		initMimeMap();
-		void		uploadFile(const Request &) throw (ErrorHandler);
+		void		uploadFile(const Client &) throw (ErrorHandler);
 		bool		isCGI(const Request &) throw (ErrorHandler);
 		std::string	&findMimeType(const std::string &uri);
+		std::string extractFilename(const std::string &) throw (ErrorHandler);
 		std::string	setHeader(const Request &, const std::string &) throw (ErrorHandler);
 };
 
