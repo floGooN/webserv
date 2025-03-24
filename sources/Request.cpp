@@ -82,7 +82,7 @@ std::ostream & operator<<(std::ostream &o, const t_header &ref)
         << "URI: " << ref.uri << std::endl
         << "Request type: " << ref.requestType << std::endl
         << "HostPort: " << ref.hostPort << std::endl
-        << "HostName: " << ref.hostName;
+        << "HostName: " << ref.hostName << std::endl;
 	for (std::map<std::string, std::string>::const_iterator it = ref.otherFields.begin(); \
 		it != ref.otherFields.end(); it++)
 		o << it->first << ": " << it->second << std::endl;

@@ -24,6 +24,7 @@ class Client
 		Server		*clientServer;
 		Request		request;
 		Response	response;
+		size_t		totalBytesReceived;
 
 		void	checkRequestValidity() throw (ErrorHandler);
 		void	buildResponse() throw (ErrorHandler);

@@ -17,8 +17,9 @@
 				/*### CONSTRUCTORS - DESTRUCTOR - OVERLOAD OP ###*/
 /*============================================================================*/
 
-Client::Client(){
+Client::Client() {
 	clientServer = NULL;
+	totalBytesReceived = 0;
 }
 /*----------------------------------------------------------------------------*/
 
@@ -38,6 +39,7 @@ Client &Client::operator=(const Client &ref)
 		clientServer = ref.clientServer;
 		request = ref.request;
 		response = ref.response;
+		totalBytesReceived = ref.totalBytesReceived;
 	}
 	return *this;
 }
@@ -48,9 +50,10 @@ std::ostream & operator<<(std::ostream &o, const Client &ref)
 	o   << "CLIENT:" << std::endl
 		<< *ref.clientServer << std::endl
 		<< ref.request << std::endl
-		<< ref.response;
+		<< ref.response
+		<< "Total Bytes Received" << ref.totalBytesReceived;
 
-	return o;
+	return o << std::endl;
 }
 /*----------------------------------------------------------------------------*/
 
@@ -271,5 +274,6 @@ void	Client::clearData()
 {
 	request.clearRequest();
 	response.clearResponse();
+	totalBytesReceived = 0;
 }
 /*----------------------------------------------------------------------------*/
