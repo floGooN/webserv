@@ -174,7 +174,6 @@ void Request::clearRequest()
 {
 	completeUri.clear();
 	keepAlive = false;
-	totalBytesReceived = 0;
 
 	_args.clear();
 	_header.clear();

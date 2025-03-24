@@ -30,7 +30,6 @@ class Request
 		void	updateRequest(const Request &req) throw(ErrorHandler);
 	
 		bool		keepAlive;
-		size_t		totalBytesReceived;
 		std::string	completeUri;
 
 	private:
