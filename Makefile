@@ -33,7 +33,7 @@ MODE		?= release
 ifeq ($(MODE), debug)
 	COMPFLAGS = -g3 -Wall -Wextra -Wshadow -Wpedantic -std=c++98 -D=TEST
 else
-	COMPFLAGS = -O3 -Wall -Wextra -Werror -Wshadow -Wpedantic -std=c++98
+	COMPFLAGS = -Wall -Wextra -Werror -Wshadow -Wpedantic -std=c++98
 endif
 
 DEPFLAGS	= -MM -MT $@ $< -MF $(DEP_PATH)/$*.d

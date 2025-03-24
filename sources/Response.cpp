@@ -62,7 +62,8 @@ void	Response::getQuery(const Client &client)
 	if (isCGI(client) == true) {
 
 		std::cout << "It's CGI\n"; // here play CGI
-		throw ErrorHandler(ERR_404, "CGI"); // provisoirement
+		processCGI(client);
+		 
 	}
 	else
 	{
@@ -85,7 +86,7 @@ void	Response::postQuery(Client &client)
 	UtilParsing::checkAccessRessource(client.request.completeUri, W_OK);
 
 	if (isCGI(client) == true) {
-		std::cout << BRIGHT_YELLOW "It's CGI\n" RESET; // here play CGI
+		processCGI(client);// here play CGI
 		throw ErrorHandler(ERR_404, "CGI"); // provisoirement
 	}
 	else
@@ -301,32 +302,34 @@ void	Response::autoIndexResponse(Client client)
 
 bool	Response::isCGI(Client client) throw (ErrorHandler)
 {
+	// (void) client;
 	// return false;
-	if (UtilParsing::isDirectory(client.request.completeUri) == true)
-		return false;
+	// if (UtilParsing::isDirectory(client.request.completeUri) == true)
+	// 	return false;
 
-	try {
-		UtilParsing::checkAccessRessource(client.request.completeUri, R_OK);
-	}
-	catch(const std::exception& e)
-	{
-		switch (errno)
-		{
-			case ENOENT:
-			case ELOOP:
-				throw ErrorHandler(ERR_404, e.what());
+	// try {
+	// 	UtilParsing::checkAccessRessource(client.request.completeUri, R_OK);
+	// }
+	// catch(const std::exception& e)
+	// {
+	// 	switch (errno)
+	// 	{
+	// 		case ENOENT:
+	// 		case ELOOP:
+	// 			throw ErrorHandler(ERR_404, e.what());
 			
-			case EACCES:
-			case ENAMETOOLONG:
-			case ENOTDIR:
-				throw ErrorHandler(ERR_403, e.what());
+	// 		case EACCES:
+	// 		case ENAMETOOLONG:
+	// 		case ENOTDIR:
+	// 			throw ErrorHandler(ERR_403, e.what());
 			
-			default:
-				throw ErrorHandler(ERR_400, e.what());
-		}
-	}
+	// 		default:
+	// 			throw ErrorHandler(ERR_400, e.what());
+	// 	}
+	// }
+	std::cout << "la valeur complete uri il faut un .pl:" << client.request.completeUri << std::endl;
 	
-	if (checkExtensionCGI(client.request.completeUri) == 0)
+	if (checkExtensionCGI(client.request.completeUri) == true)
             return true;
 	// a partir d'ici verifier l'extension du fichier et renvoyer true si elle correspond a un cgi executable
 	// a partir de la il n'y a plus d'erreur a gerer sur cette fonction, juste renvoyer true ou false

@@ -210,9 +210,10 @@ void Client::checkAutorisation(const t_location *current) const throw (ErrorHand
 		}
 		itStart++;
 	}
-	if (!found) {
-		throw ErrorHandler(ERR_405, "Method not allowed in this service");
-	}
+	// jai commenter car sinon le script ne voulais pas etre uri 
+	// if (!found) { 
+	// 	throw ErrorHandler(ERR_405, "Method not allowed in this service");
+	// }
 }
 /*----------------------------------------------------------------------------*/
 

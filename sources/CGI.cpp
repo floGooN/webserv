@@ -153,6 +153,7 @@ std::string executeCGI(const std::string &path, Server &server, Request req)
         throw ;
     env = initEnv(req, server);
     body = playCgi(path, req, env);
+    std::cout << "ici le play est jouer" << std::endl;
     if (env)
         freeEnv(env);
     return body;
