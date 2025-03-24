@@ -92,7 +92,7 @@ void	Response::postQuery(Client &client)
 	{
 		if (client.request.getbody().contentType != MULTIPART)
 			throw ErrorHandler(ERR_415, "The media type is not supported by the server");
-		
+
 		uploadFile(client);
 
 		client.request.completeUri = "./uploads/uploadSucces.html";
@@ -119,8 +119,6 @@ void	Response::deleteQuery(const Client &)
 
 std::string Response::extractFilename(const std::string &bodyHeader) throw (ErrorHandler)
 {
-	std::cout << bodyHeader;
-	
 	size_t i = bodyHeader.find("filename=");
 	if (i == std::string::npos)
 		throw ErrorHandler(ERR_400, "The format of the request is wrong (missing filename)");
@@ -155,7 +153,11 @@ void Response::uploadFile(const Client &client) throw (ErrorHandler)
 	iStart += 4;
 	endOfFile -= 1;
 	
-	std::string filename = client.request.completeUri + extractFilename(bodyHeader);
+	std::string filename = extractFilename(bodyHeader);
+	if (filename.empty() == true)
+		throw ErrorHandler(ERR_400, "no file name is specified");
+	
+	filename.insert(0, client.request.completeUri);
 
 	std::ofstream ss(filename.c_str(), std::ios::binary);
 	if (! ss)

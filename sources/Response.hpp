@@ -39,7 +39,7 @@ class Response
 		// bool		isCGI(const Request &) throw (ErrorHandler);
 		bool	isCGI(Client client) throw (ErrorHandler);
 		std::string	&findMimeType(const std::string &uri);
-		std::string extractFilename(const std::string &) throw (ErrorHandler);
+		std::string	extractFilename(const std::string &bodyHeader) throw (ErrorHandler);
 		std::string	setHeader(const Request &, const std::string &) throw (ErrorHandler);
 		void	autoIndexResponse(Client client);
 };
