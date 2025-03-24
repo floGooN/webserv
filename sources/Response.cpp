@@ -91,7 +91,6 @@ void	Response::postQuery(Client &client)
 	{
 		if (client.request.getbody().contentType != MULTIPART)
 			throw ErrorHandler(ERR_415, "The media type is not supported by the server");
-
 		uploadFile(client);
 
 		client.request.completeUri = "./uploads/uploadSucces.html";
