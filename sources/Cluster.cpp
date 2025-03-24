@@ -141,10 +141,12 @@ void	Cluster::runCluster()
 					}
 				}
 				catch(ErrGenerator &e) {
+					if (e.what() != NULL)
+						std::cerr << RED << e.what() << RESET << std::endl;
+					else {
 						e.generateErrorPage();
-				}
-				catch(std::exception &e) {
-					std::cerr << e.what() << RESET << std::endl;
+						changeEventMod(false, events[i].data.fd);
+					}
 				}
 			}
 		}
@@ -161,9 +163,11 @@ void	Cluster::runCluster()
 Client & Cluster::findClient(const int fd) throw (std::runtime_error)
 {
 	try {
-		return _clientList.at(fd);
+		return  _clientList.at(fd);
 	}
-	catch(const std::exception& e) {
+	catch(const std::exception& e)
+	{
+		std::cout << "IN Cluster::findClient(): fdClient: " << fd << std::endl;
 		throw std::runtime_error("no matching client");
 	}
 }
@@ -185,22 +189,25 @@ Client * Cluster::addClient(const Request &req, const int fdClient) throw (ErrGe
 		throw ErrGenerator(findClient(fdClient), ERR_500, "We didn't recovered the client");
 	}
 
-	current->request = req;
-	
-	try {
-		server = &getServersByPort().at(current->request.getHeader().hostPort);
+	if (current->clientServer == NULL)
+	{
+		try {
+			server = &getServersByPort().at(req.getHeader().hostPort);
+		}
+		catch(const std::exception& e) {
+			throw ErrGenerator(findClient(fdClient), ERR_500, "We didn't recovered the service");
+		}
+		current->clientServer = server;
 	}
-	catch(const std::exception& e) {
-		throw ErrGenerator(findClient(fdClient), ERR_500, "We didn't recovered the service");
-	}
+
+	current->request.updateRequest(req);
 
 	if (current->request.getHeader().uri.size() > DFLT_URISIZE)
 		throw ErrGenerator(findClient(fdClient), ERR_414, "URI exceed the limit of the server");
 
-	if (current->request.getbody().contentLength > server->getParams().maxBodySize)
+	if (current->request.getbody().contentLength > current->clientServer->getParams().maxBodySize)
 		throw ErrGenerator(findClient(fdClient), ERR_413, "The content length of the request exceed the limit allowed by the server");
 
-	current->clientServer = server;
 	return current;
 }
 /*----------------------------------------------------------------------------*/
@@ -217,6 +224,7 @@ ssize_t	Cluster::safeRecv(const int clientFd, std::string &message)
 	
 	if ( ! bytesReceived || bytesReceived == -1 )
 	{
+		std::cout << RED << bytesReceived << RESET << std::endl;
 		if ( bytesReceived )
 			perror("recv()");
 		return bytesReceived;
@@ -262,13 +270,13 @@ void	Cluster::recvData(const struct epoll_event &event)
 	bytesReceived = safeRecv(event.data.fd, message);
 	checkByteReceived(event, bytesReceived);
 	currentClient = addClient(Request(message), event.data.fd);
+	currentClient->request.totalBytesReceived = bytesReceived;
 
-	while (bytesReceived == STATIC_BUFFSIZE)
+	while (currentClient->request.getbody().contentLength != currentClient->request.totalBytesReceived)
 	{
 		bytesReceived = safeRecv(event.data.fd, message);
 		checkByteReceived(event, bytesReceived);
 		currentClient->request.updateRequest(message);
-
 		if (currentClient->request.getHeader().uri.size() > DFLT_URISIZE)
 			throw ErrGenerator(findClient(event.data.fd), ERR_414, "URI exceed the limit of the server");
 
@@ -276,8 +284,11 @@ void	Cluster::recvData(const struct epoll_event &event)
 			currentClient->clientServer->getParams().maxBodySize) {
 			throw ErrGenerator(findClient(event.data.fd), ERR_413, "Max body size reached");
 		}
+		currentClient->request.totalBytesReceived += bytesReceived;
 	}
-
+	// std::cout	<< BRIGHT_RED "HERE\n"
+	// 			<< "BODYSIZE: " << currentClient->request.getbody().body.size() << std::endl
+	// 			<< "BODYLENGTH: " << currentClient->request.getbody().contentLength << std::endl;
 	if (currentClient->request.getbody().body.size() == \
 		currentClient->request.getbody().contentLength)
 	{
@@ -311,7 +322,7 @@ void	Cluster::sendData(const struct epoll_event &event)
 	catch(const ErrorHandler& e) {
 		throw ErrGenerator(findClient(event.data.fd), e.errorNumber, e.errorLog);
 	}
-	
+
 	while (client.response.totalBytesSended != client.response.message.size())
 	{
 		ssize_t ret = send(event.data.fd, client.response.message.c_str(), \
@@ -324,7 +335,7 @@ void	Cluster::sendData(const struct epoll_event &event)
 		}
 		client.response.totalBytesSended += ret;
 	}
-
+	
 	if (client.response.message.length() == client.response.totalBytesSended && \
 		client.request.keepAlive == true)
 	{
@@ -332,7 +343,7 @@ void	Cluster::sendData(const struct epoll_event &event)
 		{
 			client.clearData();
 			changeEventMod(true, event.data.fd);
-			std::cout << "sended with success to client" << std::endl;
+			std::cout << "sended with success to the client" << std::endl;
 		}
 		catch(const std::exception& e) {
 			throw ErrGenerator(findClient(event.data.fd), ERR_500, e.what());

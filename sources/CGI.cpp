@@ -13,32 +13,31 @@
 #include "ErrorHandler.hpp"
 
 
-void processCGI(const std::string &path, Server server, Request req, Response res)
-{
-    try
-    {
-        if (UtilParsing::fileExits(path) != 0)
-            throw ErrorHandler(ERR_404, "Not Found");
-        if (access(path.c_str(), X_OK) != 0)
-            throw ErrorHandler(ERR_404, "Not Found");
-        if (checkExtensionCGI(path, server) != 0)
-            throw ErrorHandler(ERR_502, "Bad Gateway"); 
-        if (moveToDirectoryScript(extractDirectory(path)) != 0)
-            throw ErrorHandler(ERR_500, "Internal server error");
-        res.body = executeCGI(path, server, req); // ici dans ce body header + body
-        if (res.body.empty())
-            throw ErrorHandler(ERR_502, "Bad Gateway");
-    }
-    catch (const ErrorHandler& e)
-    {
-        std::cerr << e.errorNumber << ":" << e.errorNumber << std::endl;
-    }
-}
+// void processCGI(const std::string &path, Server server, Request req, Response res)
+// {
+//     try
+//     {
+//         if (UtilParsing::fileExits(path) != 0)
+//             throw ErrorHandler(ERR_404, "Not Found");
+//         if (access(path.c_str(), X_OK) != 0)
+//             throw ErrorHandler(ERR_404, "Not Found");
+//         if (checkExtensionCGI(path) != 0)
+//             throw ErrorHandler(ERR_502, "Bad Gateway"); 
+//         if (moveToDirectoryScript(extractDirectory(path)) != 0)
+//             throw ErrorHandler(ERR_500, "Internal server error");
+//         res.message = executeCGI(path, server, req); // ici dans ce body header + body
+//         if (res.message.empty())
+//             throw ErrorHandler(ERR_502, "Bad Gateway");
+//     }
+//     catch (const ErrorHandler& e)
+//     {
+//         std::cerr << e.errorNumber << ":" << e.errorNumber << std::endl;
+//     }
+// }
 // fonction pour check le type d'extension du script demander pour verifier si le server la supporte
 // pareil la recuperer dans le parsing le nom par server  le nom du script cgi pour verifier son extension
-bool checkExtensionCGI(const std::string &path, Server server)
+bool checkExtensionCGI(const std::string &path)
 {
-    (void)server;
    std::string cgi_path = "support.pl";
    std::string cgi_path_other = "support.py";
 
@@ -70,16 +69,16 @@ bool moveToDirectoryScript(const std::string &directory)
 
 
 std::string _method,  _params, _contentType, _http, _httpReferer, _remoteAddr, _remotePort, _scriptName, _pathInfo;
-char** initEnv(Request req, Server server)
+char** initEnv(Request req, Server &server)
 {
       std::string environnement[] = 
       {
-        "REQUEST_METHOD=" + req.getHeader().requestType,
-        "QUERY_STRING=" + ((req.getHeader().requestType == GET) ? ParseUri(req.getHeader().uri)  : " "), // si c'est une get je mets rien apres a voir si on met une valeur ou pas
-        "CONTENT_TYPE=" + req.getbody().contentType, // content-type request
-        "HTTP_HOST=" + req.getHeader().hostName,
+        std::string("REQUEST_METHOD=") + UtilParsing::emethodsTypeToString(req.getHeader().requestType),
+        std::string("QUERY_STRING=") + ((req.getHeader().requestType == GET) ? ParseUri(req.getHeader().uri)  : " "), // si c'est une get je mets rien apres a voir si on met une valeur ou pas
+        std::string("CONTENT_TYPE=") + UtilParsing::econtentTypeToString(req.getbody().contentType), // content-type request
+        std::string("HTTP_HOST=") + req.getHeader().hostName,
         buildScriptName(server), // ici le nom du script je pense pas que ce soit bon
-        "PATH_INFO=" + req.getHeader().uri, // tout url 
+        std::string("PATH_INFO=") + req.getHeader().uri, // tout url 
     };
     int  environSize = sizeof(environnement) / sizeof(environnement[0]);
     char** envCGI = new char*[environSize + 1]; 
@@ -93,7 +92,7 @@ char** initEnv(Request req, Server server)
     return envCGI;
 }
 
-std::string buildScriptName(Server server)
+std::string buildScriptName(Server &server)
 {
     std::string scriptName = "SCRIPT_NAME=";
     for (std::set<std::string>::iterator it = server.getParams().nameList.begin(); it != server.getParams().nameList.end(); ++it) 
@@ -146,7 +145,7 @@ void closePipe(int *pipe_in, int *pipe_out)
     close(pipe_out[1]);
 }
 
-std::string executeCGI(const std::string &path, Server server, Request req)
+std::string executeCGI(const std::string &path, Server &server, Request req)
 {
     char **env;
     std::string body;

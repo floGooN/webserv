@@ -20,7 +20,6 @@ class Client
 		Client(const Client &);
 		~Client();
 		Client &operator=(const Client &);
-		// bool	operator<(const Client &);
 
 		Server		*clientServer;
 		Request		request;

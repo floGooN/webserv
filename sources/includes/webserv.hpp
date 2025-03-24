@@ -70,7 +70,7 @@
 /* -------------------------------------- */
 
 # define	COD_200	"200 Ok"
-# define	COD_201	"21 Created"
+# define	COD_201	"201 Created"
 # define	COD_204	"204 No Content"
 
 # define	ERR_400	"400 Bad Request"
@@ -80,6 +80,7 @@
 # define	ERR_408	"408 Request Time-out"
 # define	ERR_413	"413 Request Entity Too Large"
 # define	ERR_414	"Request-URI Too Long"
+# define	ERR_415	"Unsupported Media Type"
 # define	ERR_444	"444 No Response"
 # define	ERR_499	"499 Client Closed Request"
 
@@ -102,11 +103,17 @@
 
 enum e_methods
 {
-    ERROR = -1,
     GET,
     POST,
     DELETE,
     EMPTY
+};
+
+enum e_contentType
+{
+    APP,
+    TXT,
+    MULTIPART
 };
 
 

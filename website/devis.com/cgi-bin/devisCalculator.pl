@@ -1,26 +1,28 @@
 #!/usr/bin/perl
-use CGI qw(:standard);
-use POSIX 'strftime';
-print "HTTP/1.1 200 OK\r\n";
-print "Content-Type: text/html\n\n";
-print "<HTML><HEAD><TITLE>Time</TITLE></HEAD><BODY>\n";
+
+use strict;
+use warnings;
+use CGI;
+
 
 my $cgi = CGI->new;
 
-my $value_final = 200;
-my $pref_design = $cgi->param('design');
-my $rdv = $cgi->param('rdv');
-my $delai = $cgi->param('delai');
-my $maintenance = $cgi->param('maintenance');
-my $SEO = $cgi->param('SEO');
+my $objectif = $cgi->param('objectif') || "";
+my $design = $cgi->param('design') || "";
+my $rdv = $cgi->param('rdv') || "";
+my $delai = $cgi->param('delai') || "";
+my $maintenance = $cgi->param('maintenance') || "";
+my $seo = $cgi->param('SEO') || "";
 
-$value_final += ($pref_design eq 'oui') ? 200 : 100;
-$value_final += ($rdv eq 'oui') ? 200 : 0; 
-$value_final += ($delai eq '1 mois') ? 400 : 200;
-$value_final += ($maintenance eq 'oui') ? 200 : 0;
-$value_final += ($SEO eq 'oui') ? 299 : 0;
+my $finalValue = 0;
 
-print "<h1>Le Calcul de votre Devis revient a : </h1>\n";
-print "<h2>$value_final</h2>\n";
+$finalValue += ($design eq "oui" ? 200 : 100);
+$finalValue += ($rdv eq "oui" ? 200 : 0);
+$finalValue += ($delai eq "1 mois" ? 300 : 200);
+$finalValue += ($maintenance eq "oui" ? 100 : 0);
+$finalValue += ($seo eq "oui" ? 299 : 0);
+my $body =  "<html>\n <body>\n <p>Le prix de votre devis est de: <strong>$finalValue</strong>.</p>\n </body> \n </html>";
 
-print "</BODY></HTML>\n";
+
+print $cgi->header(-type => 'text/html', -status => '200 OK', -http11 => 'HTTP/1.1', -length => length($body));
+print $body;

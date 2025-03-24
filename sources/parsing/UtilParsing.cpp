@@ -84,7 +84,7 @@ std::vector<std::string>	UtilParsing::splitSpecialDeleteKey(const std::string & 
 	return result; 
 }
 
-std::vector<std::string>	UtilParsing::cleanVector(std::vector<std::string> vec)
+std::vector<std::string>	UtilParsing::cleanVector(std::vector<std::string> vec) // unusefull
 {
 	for (std::vector<std::string>::iterator it = vec.begin(); it != vec.end(); ) {
 		if (*it == "{" || *it == "}") { 
@@ -96,7 +96,7 @@ std::vector<std::string>	UtilParsing::cleanVector(std::vector<std::string> vec)
 	return vec;
 }
 
-std::vector<std::string>	UtilParsing::cleanVectorClose(std::vector<std::string> vec)
+std::vector<std::string>	UtilParsing::cleanVectorClose(std::vector<std::string> vec) // unused
 {
 	for (std::vector<std::string>::iterator it = vec.begin(); it != vec.end(); ) {
 		if (*it == "}") { 
@@ -151,7 +151,7 @@ void UtilParsing::safeCloseDirectory(DIR *current)
 	}
 }
 
-void	UtilParsing::printMapVector(const std::map<int, std::map<std::string, std::vector<std::string> > >& allMapRoads)
+void	UtilParsing::printMapVector(const std::map<int, std::map<std::string, std::vector<std::string> > >& allMapRoads) // unused
 {
 	for (std::map<int, std::map<std::string, std::vector<std::string> > >::const_iterator outerIt = allMapRoads.begin(); 
 		outerIt != allMapRoads.end(); ++outerIt)
@@ -179,7 +179,7 @@ void	UtilParsing::printMapVector(const std::map<int, std::map<std::string, std::
 	}
 }
 
-void	UtilParsing::controlMapLocation(std::map<int, std::map<std::string, std::vector<std::string> > > allMapRoads, std::string keyValue)
+void	UtilParsing::controlMapLocation(std::map<int, std::map<std::string, std::vector<std::string> > > allMapRoads, std::string keyValue) // unused
 {
 	int index = 0;
 	for (std::map<int, std::map<std::string, std::vector<std::string> > >::const_iterator outerIt = allMapRoads.begin(); 
@@ -199,7 +199,7 @@ void	UtilParsing::controlMapLocation(std::map<int, std::map<std::string, std::ve
 	}
 }
 
-void	UtilParsing::manageControlMapLocation(std::map<int, std::map<std::string, std::vector<std::string> > > allMapRoads)
+void	UtilParsing::manageControlMapLocation(std::map<int, std::map<std::string, std::vector<std::string> > > allMapRoads) // unused
 {
 	UtilParsing::controlMapLocation(allMapRoads, "location");
 	UtilParsing::controlMapLocation(allMapRoads, "root");
@@ -207,7 +207,7 @@ void	UtilParsing::manageControlMapLocation(std::map<int, std::map<std::string, s
 	UtilParsing::controlMapLocation(allMapRoads, "methods_accept");
 }
 
-void	UtilParsing::displayVector(std::vector<std::string> vec)
+void	UtilParsing::displayVector(std::vector<std::string> vec) // unused
 {
 	for (std::vector<std::string>::iterator it = vec.begin(); it != vec.end(); it++)
 		std::cout   << "[" << *it << "]" << "\n";
@@ -229,23 +229,27 @@ std::string	UtilParsing::trim(const std::string& str)
 */
 void	UtilParsing::readFile(const std::string &filepath, std::string &buffer) throw (ErrorHandler)
 {
-	try {
-
-		std::ifstream file(filepath.c_str(), std::ios::binary);
-		if ( ! file.is_open() )
-			throw ErrorHandler(ERR_404, "readFile(): Ressource unavailable");
-		
-		std::ostringstream stream;
-		stream << file.rdbuf();
-		buffer = stream.str();
-
-	}
-	catch(const std::exception& e) {
-		throw ErrorHandler(ERR_500, "readFile():" + std::string(e.what()));
-	}	
+	std::ifstream file(filepath.c_str(), std::ios::binary);
+	if ( ! file.is_open() )
+		throw ErrorHandler(ERR_404, "readFile(): Ressource unavailable");
+	
+	std::ostringstream stream;
+	stream << file.rdbuf();
+	buffer = stream.str();
 }
 
-std::string	UtilParsing::trimSemicolon(const std::string& str) 
+void	UtilParsing::readErrorFile(const std::string &filepath, std::string &buffer)
+{
+	std::ifstream file(filepath.c_str(), std::ios::binary);
+	if ( ! file.is_open() )
+		buffer = "";
+	
+	std::ostringstream stream;
+	stream << file.rdbuf();
+	buffer = stream.str();
+}
+
+std::string	UtilParsing::trimSemicolon(const std::string& str)  // unused
 {
 	std::size_t first = str.find_first_not_of(';');
 	std::size_t last = str.find_last_not_of(';');
@@ -276,7 +280,7 @@ std::string	UtilParsing::recoverValue(std::string line, std::string key)
 	return "";
 }
 
-std::string UtilParsing::intToString(int value)
+std::string UtilParsing::intToString(int value) // unused
 {
 	std::ostringstream oss;
     oss << value;
@@ -346,11 +350,35 @@ bool UtilParsing::fileExits(const std::string &filename)
 	return file.good();
 }
 
-std::string UtilParsing::intToString(int value)
+std::string UtilParsing::emethodsTypeToString(e_methods type)
 {
-    char buffer[20];
-    sprintf(buffer, "%d", value);
-    return std::string(buffer);
+	switch (type)
+	{
+		case GET:
+			return "GET";
+		case POST:
+			return "POST";
+		case DELETE:
+			return "DELETE";
+		case EMPTY:
+			return "Unknowm";
+	}
 }
+
+std::string UtilParsing::econtentTypeToString(e_contentType type)
+{
+	switch (type)
+	{
+	case APP:
+		return "APP";
+	case TXT:
+		return "TXT";
+	case MULTIPART:
+		return "MULTIPART";
+	default:
+		return "Unknowm";
+	}
+} 
+
 
 

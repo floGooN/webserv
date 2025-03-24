@@ -32,8 +32,9 @@
 				/*### CONSTRUCTORS - DESTRUCTOR - OVERLOAD OP ###*/
 /*============================================================================*/
 
-Request::Request()
-{	}
+Request::Request(){
+	clearRequest();
+}
 
 Request::Request(const std::string &content) throw (ErrorHandler) {
 	updateRequest(content);
@@ -66,10 +67,10 @@ Request & Request::operator=(const Request &ref)
 std::ostream & operator<<(std::ostream & o, const Request &ref)
 {
 	o	<< BOLD "Request:\n"
-		<< BOLD "Header:\n" << ref.getHeader() << std::endl
+		<< BOLD "Header:\n" << ref.getHeader()
 		<< BOLD "Args:\n" << ref.getArgs() << std::endl
-		<< BOLD "Body:\n" << ref.getbody() << std::endl
-		<< BOLD "body_content:\n" << ref.getbody().body;
+		<< BOLD "Body:\n" << ref.getbody();
+		// << BOLD "body_content:\n" << ref.getbody().body;
 
 	return o << RESET << std::endl;
 }
@@ -78,21 +79,23 @@ std::ostream & operator<<(std::ostream & o, const Request &ref)
 std::ostream & operator<<(std::ostream &o, const t_header &ref)
 {
     o   << ITAL BLUE "t_header:\n"
-        << "URI: " << ref.uri
-        << "Request type: " << ref.requestType
-        << "HostPort: " << ref.hostPort
-        << "HostName: " << ref.hostName
-        << "Keep-alive: " << ref.keepAlive;
+        << "URI: " << ref.uri << std::endl
+        << "Request type: " << ref.requestType << std::endl
+        << "HostPort: " << ref.hostPort << std::endl
+        << "HostName: " << ref.hostName;
+	for (std::map<std::string, std::string>::const_iterator it = ref.otherFields.begin(); \
+		it != ref.otherFields.end(); it++)
+		o << it->first << ": " << it->second << std::endl;
 
-    return o << RESET << std::endl;
+    return o << RESET;
 }
 /*----------------------------------------------------------------------------*/
 
 std::ostream & operator<<(std::ostream &o, const t_body &ref)
 {
     o   << ITAL BRIGHT_BLUE "t_header:\n"
-        << "Content type: " << ref.contentType
-        << "Content length: " << ref.contentLength
+        << "Content type: " << ref.contentType << std::endl
+        << "Content length: " << ref.contentLength << std::endl
         << "Boundary: " << ref.bound;
 
     return o << RESET << std::endl;
@@ -146,10 +149,32 @@ void Request::updateRequest(const std::string &content) throw(ErrorHandler)
 }
 /*----------------------------------------------------------------------------*/
 
+void Request::updateRequest(const Request &req) throw(ErrorHandler)
+{
+	if (_header.requestType == EMPTY) {
+		*this = req;
+		return;
+	}
+
+	std::map<std::string, std::string>::const_iterator it = req._header.otherFields.begin();
+
+	while (it != req._header.otherFields.end())
+	{
+		this->_header.otherFields[it->first] = it->second;
+		it++;
+	}
+	if (_body.body.empty())
+		_body.body = req._body.body;
+	else
+		_body.body.append(req._body.body);
+}
+/*----------------------------------------------------------------------------*/
+
 void Request::clearRequest()
 {
 	completeUri.clear();
 	keepAlive = false;
+	totalBytesReceived = 0;
 
 	_args.clear();
 	_header.clear();
@@ -200,13 +225,8 @@ void Request::setArgs() throw(ErrorHandler)
 */
 void Request::setHeader(const std::string &header) throw(ErrorHandler)
 {
-#ifdef TEST
-	std::cout	<< ITAL BLUE "setHeader():" << std::endl
-				<< "brut header:\n" << header
-				<< RESET << std::endl;
-#endif
-
 	std::vector<std::string> token;
+
 	try {
 		token = UtilParsing::split(header, "\r\n");
 	}
@@ -215,10 +235,12 @@ void Request::setHeader(const std::string &header) throw(ErrorHandler)
 	}
 
 	std::vector<std::string>::iterator it = token.begin();
-	
-	setRequestType(*it);
-	checkProtocole(*it);
-	setUri(*it);
+	if (it->find(PROTOCOL_VERION) != it->npos)
+	{
+		setRequestType(*it);
+		checkProtocole(*it);
+		setUri(*it);
+	}
 	while (++it != token.end())
 	{
 		if (it->find("Host: ") != it->npos)
@@ -229,12 +251,9 @@ void Request::setHeader(const std::string &header) throw(ErrorHandler)
 			setContentLength(*it);
 		else if (_header.requestType == POST && it->find("Content-Type") != it->npos)
 			setContentType(*it);
+		else
+			addHeaderField(*it);
 	}
-#ifdef TEST
-	std::cout	<< ITAL BLUE "Parsed header:\n"
-				<< _header
-				<< RESET << std::endl;
-#endif
 }
 /*----------------------------------------------------------------------------*/
 
@@ -321,7 +340,7 @@ void Request::setHost(const std::string &line) throw(ErrorHandler)
 /*	* set keep-alive at true if its ask in the header
 */
 void Request::setKeepAlive(const std::string &line) {
-	_header.keepAlive = (line.find("close") == line.npos ? true : false);
+	keepAlive = (line.find("close") == line.npos ? true : false);
 }
 /*----------------------------------------------------------------------------*/
 
@@ -332,14 +351,35 @@ void Request::setContentLength(const std::string &line) throw(ErrorHandler)
 		return ;
 	}
 
+	size_t		tokenSize = line.find_first_not_of("0123456789", idx) - idx;
+	std::string lenAsStr("");
+	
 	try {
-		size_t		tokenSize = line.find_first_not_of("0123456789", idx) - idx;
-		std::string lenAsStr = line.substr(idx, tokenSize);
-		_body.contentLength = UtilParsing::convertBodySize(lenAsStr);
+		lenAsStr = line.substr(idx, tokenSize);
 	}
 	catch(const std::exception& e) {
 		throw ErrorHandler(ERR_500, " in setContentLength(): " + std::string(e.what()));
 	}
+
+    size_t				result;
+	std::istringstream	iss(lenAsStr);
+    iss >> result;
+
+    if (iss.fail())
+		throw ErrorHandler(ERR_500, "In Response::setHeader()\nconversion of the length message faild");
+
+	_body.contentLength = result;
+}
+/*----------------------------------------------------------------------------*/
+
+void Request::addHeaderField(const std::string &line)
+{
+	size_t i = line.find_first_of(' ');
+
+	if (i == line.npos)
+		return;
+
+	_header.otherFields[line.substr(0, i)] = line.substr((i + 1), line.length() - (i + 1));
 }
 /*----------------------------------------------------------------------------*/
 

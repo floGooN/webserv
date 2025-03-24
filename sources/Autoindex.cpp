@@ -28,8 +28,24 @@
 //     return -1; 
 // }
 
+// std::string processAutoIndex(Server *server, std::string path) // path ici c'est le nom du dossier donc en theori uri ?
+// {
+//     DIR *dir;
+//     std::string body;
+//     std::string header;
+//     std::string response;
 
-std::string processAutoIndex(Server server, std::string path) // path ici c'est le nom du dossier donc en theori uri ?
+//     if ((dir = opendir(path.c_str())) == NULL)
+//         throw ErrorHandler(ERR_404, "Not Found");
+//     body = buildBodyAutoIndex(dir, path);
+//     header = buildHeaderAutoIndex(body);
+//     response += header + body;
+//     closedir(dir);
+//     return response;
+// }
+
+
+std::string processAutoIndex(std::string path) // path ici c'est le nom du dossier donc en theori uri ?
 {
     DIR *dir;
     std::string body;

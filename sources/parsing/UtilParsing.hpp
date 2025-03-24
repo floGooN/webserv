@@ -43,12 +43,12 @@ class UtilParsing
 		static void	safeCloseDirectory(DIR *);
 		static void	displayVector(std::vector<std::string> vec);
 		static void	checkAccessRessource(const std::string &, int);
+		static void	readErrorFile(const std::string &filepath, std::string &buffer);
 		static void	readFile(const std::string &filepath, std::string &buffer) throw (ErrorHandler);
 		static void	printMapVector(const std::map<int, std::map<std::string, std::vector<std::string> > >& allMapRoads);
 		static void	manageControlMapLocation(std::map<int, std::map<std::string, std::vector<std::string> > > allMapRoads);
 		static void	controlMapLocation(std::map<int, std::map<std::string, std::vector<std::string> > > allMapRoads, std::string keyValue);
 		
-		static std::string	intToString(int value);
 		static std::string	findFile(std::string &);
 		static std::string	trim(const std::string& str);
 		static std::string	trimSemicolon(const std::string& str);
@@ -68,6 +68,8 @@ class UtilParsing
 		static int decryptHexa(std::string value);
 		static bool fileExits(const std::string &filename);
 		static std::string intToString(int value);
+		static std::string emethodsTypeToString(e_methods type);
+		static std::string econtentTypeToString(e_contentType type);
 	private:
 		UtilParsing() {};
 };

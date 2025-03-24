@@ -23,11 +23,11 @@ std::string processCGI(const Client &client)
         //     throw ErrorHandler(ERR_404, "Not Found");
         // if (access(path.c_str(), X_OK) != 0)
         //     throw ErrorHandler(ERR_404, "Not Found");
-        if (checkExtensionCGI(client.request.completeUri, client.clientServer) != 0)
+        if (checkExtensionCGI(client.request.completeUri) != 0)
             throw ErrorHandler(ERR_502, "Bad Gateway"); 
         if (moveToDirectoryScript(extractDirectory(client.request.completeUri)) != 0)
             throw ErrorHandler(ERR_500, "Internal server error");
-        res = executeCGI(client.request.completeUri, client.clientServer, client.request); // ici dans ce body header + body
+        res = executeCGI(client.request.completeUri, *client.clientServer, client.request); // ici dans ce body header + body
         if (res.empty())
             throw ErrorHandler(ERR_502, "Bad Gateway");
     }

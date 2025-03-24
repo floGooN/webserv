@@ -45,7 +45,8 @@ Response &Response::operator=(const Response &ref)
 std::ostream & operator<<(std::ostream &o, const Response &ref)
 {
 	o	<< "Response:\n"
-		<< BOLD "Total bytes sended: " << ref.totalBytesSended << std::endl;
+		<< BOLD "Total bytes sended: " << ref.totalBytesSended << std::endl
+		<< "File + Header: " << ref.message;
 
 	return o;
 }
@@ -54,10 +55,115 @@ std::ostream & operator<<(std::ostream &o, const Response &ref)
 /*============================================================================*/
 						/*### PUBLIC METHODS ###*/
 /*============================================================================*/
+void	Response::getQuery(const Client &client)
+{
+	std::cout << BRIGHT_GREEN "GET QUERY" RESET << std::endl;
+
+	if (isCGI(client) == true) {
+
+		std::cout << "It's CGI\n"; // here play CGI
+		throw ErrorHandler(ERR_404, "CGI"); // provisoirement
+	}
+	else
+	{
+		UtilParsing::readFile(client.request.completeUri, message);
+
+		try {
+			message.insert(0, setHeader(client.request, (message.empty() ? COD_204 : COD_200 )));
+		}
+		catch(const std::exception& e) {
+			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
+		}
+	}
+}
+/*----------------------------------------------------------------------------*/
+
+void	Response::postQuery(Client &client)
+{
+	std::cout	<< BRIGHT_YELLOW "POST QUERY" RESET << std::endl;
+
+	UtilParsing::checkAccessRessource(client.request.completeUri, W_OK);
+
+	if (isCGI(client) == true) {
+		std::cout << BRIGHT_YELLOW "It's CGI\n" RESET; // here play CGI
+		throw ErrorHandler(ERR_404, "CGI"); // provisoirement
+	}
+	else
+	{
+		if (client.request.getbody().contentType != MULTIPART)
+			throw ErrorHandler(ERR_415, "The media type is not supported by the server");
+		
+		uploadFile(client);
+
+		client.request.completeUri = "./uploads/uploadSucces.html";
+		UtilParsing::readFile(client.request.completeUri, message);
+		try {
+			message.insert(0, setHeader(client.request, COD_201));
+		}
+		catch(const std::exception& e) {
+			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
+		}		
+	}
+}
+/*----------------------------------------------------------------------------*/
+
+void	Response::deleteQuery(const Client &)
+{
+	std::cout << BRIGHT_CYAN "DELETE QUERY" << RESET << std::endl;
+}
+/*----------------------------------------------------------------------------*/
 
 /*============================================================================*/
 						/*### PRIVATE METHODS ###*/
 /*============================================================================*/
+
+std::string Response::extractFilename(const std::string &bodyHeader) throw (ErrorHandler)
+{
+	std::cout << bodyHeader;
+	
+	size_t i = bodyHeader.find("filename=");
+	if (i == std::string::npos)
+		throw ErrorHandler(ERR_400, "The format of the request is wrong (missing filename)");
+	i += 9;
+	std::vector<std::string> res = UtilParsing::split(bodyHeader.substr(i, bodyHeader.find_first_of("\r\n") - i), "\"");
+	for (std::vector<std::string>::iterator it = res.begin(); it != res.end(); it++)
+	{
+		if (it->compare("\""))
+			return *it;
+	}	
+	return "";
+}
+/*----------------------------------------------------------------------------*/
+
+void Response::uploadFile(const Client &client) throw (ErrorHandler)
+{
+	const t_body	&ref = client.request.getbody();
+	size_t			iStart = ref.body.find("\r\n\r\n");
+	
+	if (iStart== std::string::npos)
+		throw ErrorHandler(ERR_400, "No separator in the file to upload");
+		
+	std::string bodyHeader = ref.body.substr(0, iStart);
+		
+	size_t	endOfFile = ref.body.find(ref.bound, iStart);
+
+	if (endOfFile == std::string::npos)
+		throw ErrorHandler(ERR_400, "No EOF delimiter in the file to upload");
+
+	endOfFile = ref.body.find_last_of('\n', endOfFile);
+
+	iStart += 4;
+	endOfFile -= 1;
+	
+	std::string filename = client.request.completeUri + extractFilename(bodyHeader);
+
+	std::ofstream ss(filename.c_str(), std::ios::binary);
+	if (! ss)
+		throw ErrorHandler(ERR_500, "in uploadFile()");
+
+	ss.write(ref.body.c_str() + iStart, endOfFile - iStart);
+}
+/*----------------------------------------------------------------------------*/
 
 std::string	&Response::findMimeType(const std::string &uri)
 {
@@ -70,17 +176,7 @@ std::string	&Response::findMimeType(const std::string &uri)
 }
 /*----------------------------------------------------------------------------*/
 
-/*
-	HTTP/1.1 404 Not Found
-
-	Date: Tue, 04 Mar 2025 12:34:56 GMT
-
-	Server: MyMinimalWebServer/1.0
-	Content-Type: text/html; charset=UTF-8
-	Content-Length: 123
-	Connection: close
-*/
-std::string	Response::setHeader(const Request &req) throw (ErrorHandler)
+std::string	Response::setHeader(const Request &req, const std::string &code) throw (ErrorHandler)
 {
 	std::ostringstream oss;
 	oss << message.length();
@@ -89,78 +185,126 @@ std::string	Response::setHeader(const Request &req) throw (ErrorHandler)
 		throw ErrorHandler(ERR_500, "In Response::setHeader()\nconversion of the length message faild");
 
 	std::string header = \
-		PROTOCOL_VERION " " + (message.empty() ? std::string(COD_204) : std::string(COD_200) ) + "\r\n" \
+		PROTOCOL_VERION " " + code + "\r\n" \
 		"Server: Rob&Flo V0.9" + "\r\n" \
 		"Content-Type: " + findMimeType(req.completeUri) + "; charset=UTF-8\r\n" \
 		"Content-Length: " + oss.str() + "\r\n" \
-		"Connection: " + (req.getHeader().keepAlive == true ? "keep-alive" : "close") + "\r\n" \
+		"Connection: " + (req.keepAlive == true ? "keep-alive" : "close") + "\r\n" \
 		"\r\n";
 
 	return header;	
 }
 /*----------------------------------------------------------------------------*/
 
-void	Response::getQuery(const Client &client)
-{
-	std::cout << BRIGHT_GREEN "GET QUERY" RESET << std::endl;
+// void	Response::getQuery(const Client &client)
+// {
+// 	std::cout << BRIGHT_GREEN "GET QUERY" RESET << std::endl;
 
-	if (isCGI(client.request.completeUri) == true) {
+// 	if (isCGI(client.request.completeUri) == true) {
 
-		std::cout << "It's CGI\n"; // here play CGI
-		processCGI(client);
-		throw ErrorHandler(ERR_404, "CGI"); // provisoirement
-	}
-	else
-	{
-		UtilParsing::readFile(client.request.completeUri, message);
-		setHeader(client.request);
+// 		std::cout << "It's CGI\n"; // here play CGI
+// 		processCGI(client);
+// 		throw ErrorHandler(ERR_404, "CGI"); // provisoirement
+// 	}
+// 	else
+// 	{
+// 		UtilParsing::readFile(client.request.completeUri, message);
+// 		setHeader(client.request);
 		
-		try {
-			message.insert(0, setHeader(client.request));
-		}
-		catch(const std::exception& e) {
-			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
-		}
-	}
-}
+// 		try {
+// 			message.insert(0, setHeader(client.request));
+// 		}
+// 		catch(const std::exception& e) {
+// 			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
+// 		}
+// 	}
+// }
 /*----------------------------------------------------------------------------*/
 
-void	Response::postQuery(const Client &client)
-{
-	std::cout	<< BRIGHT_YELLOW "POST QUERY" RESET << std::endl;
 
-	if (isCGI(client.request.completeUri) == true) {
-		std::cout << "It's CGI\n"; // here play CGI
-		processCGI(client);
-		throw ErrorHandler(ERR_404, "CGI"); // provisoirement
-	}
 
-}
+
+/*----------------------------------------------------------------------------*/
+
+
+// void	Response::postQuery(const Client &client)
+// {
+// 	std::cout	<< BRIGHT_YELLOW "POST QUERY" RESET << std::endl;
+
+// 	if (isCGI(client.request.completeUri) == true) {
+// 		std::cout << "It's CGI\n"; // here play CGI
+// 		processCGI(client);
+// 		throw ErrorHandler(ERR_404, "CGI"); // provisoirement
+// 	}
+
+// }
 /*----------------------------------------------------------------------------*/
 
 void	Response::autoIndexResponse(Client client)
 {
-	processAutoIndex(client.clientServer, client.request.completeUri);
+	processAutoIndex(client.request.completeUri);
 }
 
 
 /*----------------------------------------------------------------------------*/
 
-void	Response::deleteQuery(const Request &)
-{
-	std::cout << BRIGHT_CYAN "DELETE QUERY" << RESET << std::endl;
-}
+// void	Response::deleteQuery(const Request &)
+// {
+// 	std::cout << BRIGHT_CYAN "DELETE QUERY" << RESET << std::endl;
+// }
 /*----------------------------------------------------------------------------*/
 
 /*	* unterminated function
 */
-bool	Response::isCGI(const Request &req) throw (ErrorHandler)
+// bool	Response::isCGI(const Request &req) throw (ErrorHandler)
+// {
+// 	return false;
+// 	if (UtilParsing::isDirectory(req.completeUri) == true)
+// 		return false;
+
+// 	try {
+// 		UtilParsing::checkAccessRessource(req.completeUri, R_OK);
+// 	}
+// 	catch(const std::exception& e)
+// 	{
+// 		switch (errno)
+// 		{
+// 			case ENOENT:
+// 			case ELOOP:
+// 				throw ErrorHandler(ERR_404, e.what());
+			
+// 			case EACCES:
+// 			case ENAMETOOLONG:
+// 			case ENOTDIR:
+// 				throw ErrorHandler(ERR_403, e.what());
+			
+// 			default:
+// 				throw ErrorHandler(ERR_400, e.what());
+// 		}
+// 	}
+	
+// 	if (checkExtensionCGI(client.request.completeUri, client.clientServer) != 0)
+//             throw ErrorHandler(ERR_502, "Bad Gateway");
+// 	// a partir d'ici verifier l'extension du fichier et renvoyer true si elle correspond a un cgi executable
+// 	// a partir de la il n'y a plus d'erreur a gerer sur cette fonction, juste renvoyer true ou false
+// 	size_t idx = req.completeUri.find_last_of('.');
+
+// 	if (idx == req.completeUri.npos)
+// 		return false;
+	
+// 	return false;
+// }
+/*----------------------------------------------------------------------------*/
+
+
+bool	Response::isCGI(Client client) throw (ErrorHandler)
 {
-	if (UtilParsing::isDirectory(req.completeUri) == true)
+	// return false;
+	if (UtilParsing::isDirectory(client.request.completeUri) == true)
 		return false;
 
 	try {
-		UtilParsing::checkAccessRessource(req.completeUri, R_OK);
+		UtilParsing::checkAccessRessource(client.request.completeUri, R_OK);
 	}
 	catch(const std::exception& e)
 	{
@@ -180,18 +324,21 @@ bool	Response::isCGI(const Request &req) throw (ErrorHandler)
 		}
 	}
 	
-	if (checkExtensionCGI(client.request.completeUri, client.clientServer) != 0)
-            throw ErrorHandler(ERR_502, "Bad Gateway");
+	if (checkExtensionCGI(client.request.completeUri) == 0)
+            return true;
 	// a partir d'ici verifier l'extension du fichier et renvoyer true si elle correspond a un cgi executable
 	// a partir de la il n'y a plus d'erreur a gerer sur cette fonction, juste renvoyer true ou false
-	size_t idx = req.completeUri.find_last_of('.');
+	// size_t idx = client.request.completeUri.find_last_of('.');
 
-	if (idx == req.completeUri.npos)
-		return false;
+	// if (idx == client.request.completeUri.npos)
+	// 	return false;
 	
 	return false;
 }
+
 /*----------------------------------------------------------------------------*/
+
+
 
 void	Response::clearResponse()
 {

@@ -25,8 +25,8 @@ class Response
 		size_t		totalBytesSended;
 
 		void	clearResponse();
+		void	postQuery(Client &);
 		void	getQuery(const Client &);
-		void	postQuery(const Client &);
 		void	deleteQuery(const Client &);
 
 		std::string	message;
@@ -35,9 +35,13 @@ class Response
 		std::map<std::string, std::string>	_mimeMap;
 
 		void		initMimeMap();
-		bool		isCGI(const Request &) throw (ErrorHandler);
+		void		uploadFile(const Client &) throw (ErrorHandler);
+		// bool		isCGI(const Request &) throw (ErrorHandler);
+		bool	isCGI(Client client) throw (ErrorHandler);
 		std::string	&findMimeType(const std::string &uri);
-		std::string	setHeader(const Request &) throw (ErrorHandler);
+		std::string extractFilename(const std::string &) throw (ErrorHandler);
+		std::string	setHeader(const Request &, const std::string &) throw (ErrorHandler);
+		void	autoIndexResponse(Client client);
 };
 
 std::ostream & operator<<(std::ostream &, const Response &);
