@@ -81,9 +81,8 @@ std::string	Cluster::ErrGenerator::findErrorFile(DIR *current, const std::string
 	}
 
 	UtilParsing::safeCloseDirectory(current);
-	if ( result.empty() && errno && errno != ENOENT && errno != ENOTDIR ) {
+	if ( result.empty() && errno && errno != ENOENT && errno != ENOTDIR && errno != EISDIR)
 		perror("readdir()");
-	}
 
 	return result ;
 }

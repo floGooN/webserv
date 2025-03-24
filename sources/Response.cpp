@@ -91,8 +91,8 @@ void	Response::postQuery(Client &client)
 	{
 		if (client.request.getbody().contentType != MULTIPART)
 			throw ErrorHandler(ERR_415, "The media type is not supported by the server");
-		cleanBody(client.request);getsid
-		uploadFile(client.request);
+
+		uploadFile(client);
 
 		client.request.completeUri = "./uploads/uploadSucces.html";
 		UtilParsing::readFile(client.request.completeUri, message);
@@ -116,23 +116,53 @@ void	Response::deleteQuery(const Client &)
 						/*### PRIVATE METHODS ###*/
 /*============================================================================*/
 
-void Response::uploadFile(const Request &req) throw (ErrorHandler)
+std::string Response::extractFilename(const std::string &bodyHeader) throw (ErrorHandler)
 {
-	// extract the name of the file
-	//  
-	const t_body	&ref = req.getbody();
-	size_t			iStart = ref.body.find_first_of("\r\n\r\n");
-	size_t			endOfFile = ref.body.find_last_of("\r\n\r\n");
+	size_t i = bodyHeader.find("filename=");
+	if (i == std::string::npos)
+		throw ErrorHandler(ERR_400, "The format of the request is wrong (missing filename)");
+	i += 9;
+	std::vector<std::string> res = UtilParsing::split(bodyHeader.substr(i, bodyHeader.find_first_of("\r\n") - i), "\"");
+	for (std::vector<std::string>::iterator it = res.begin(); it != res.end(); it++)
+	{
+		if (it->compare("\""))
+			return *it;
+	}	
+	return "";
+}
+/*----------------------------------------------------------------------------*/
 
-	std::cout << RED << ref.body << RESET;
-
-	if (iStart == std::string::npos || endOfFile == std::string::npos)
+void Response::uploadFile(const Client &client) throw (ErrorHandler)
+{
+	const t_body	&ref = client.request.getbody();
+	size_t			iStart = ref.body.find("\r\n\r\n");
+	
+	if (iStart== std::string::npos)
 		throw ErrorHandler(ERR_400, "No separator in the file to upload");
-	
+		
+	std::string bodyHeader = ref.body.substr(0, iStart);
+		
+	size_t	endOfFile = ref.body.find(ref.bound, iStart);
+
+	if (endOfFile == std::string::npos)
+		throw ErrorHandler(ERR_400, "No EOF delimiter in the file to upload");
+
+	endOfFile = ref.body.find_last_of('\n', endOfFile);
+
 	iStart += 4;
-	endOfFile -= 4;
+	endOfFile -= 1;
 	
+	std::string filename = extractFilename(bodyHeader);
+	if (filename.empty() == true)
+		throw ErrorHandler(ERR_400, "no file name is specified");
 	
+	filename.insert(0, client.request.completeUri);
+
+	std::ofstream ss(filename.c_str(), std::ios::binary);
+	if (! ss)
+		throw ErrorHandler(ERR_500, "in uploadFile()");
+
+	ss.write(ref.body.c_str() + iStart, endOfFile - iStart);
 }
 /*----------------------------------------------------------------------------*/
 
