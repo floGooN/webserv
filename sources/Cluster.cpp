@@ -19,6 +19,7 @@
 #include <csignal>
 #include <sstream>
 #include <cstdlib>
+#include <unistd.h>
 
 #define MAXEVENT	10
 
@@ -280,6 +281,7 @@ void	Cluster::recvData(const struct epoll_event &event)
 	
 	while (currentClient->totalBytesReceived < currentClient->request.getbody().contentLength)
 	{
+		usleep(150);
 		bytesReceived = safeRecv(event.data.fd, message);
 		checkByteReceived(event, bytesReceived);
 		currentClient->request.updateRequest(message);
@@ -291,6 +293,7 @@ void	Cluster::recvData(const struct epoll_event &event)
 			throw ErrGenerator(findClient(event.data.fd), ERR_413, "Max body size reached");
 		}
 		currentClient->totalBytesReceived += bytesReceived;
+
 		std::cout	<< BRIGHT_YELLOW "MESSAGE IN Cluster::recvData():\n"
 		<< message << RESET;
 
