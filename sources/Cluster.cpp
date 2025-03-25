@@ -275,8 +275,8 @@ void	Cluster::recvData(const struct epoll_event &event)
 	currentClient = addClient(Request(message), event.data.fd);
 	currentClient->totalBytesReceived += bytesReceived;
 	
-	// std::cout	<< BRIGHT_YELLOW "REQUEST IN Cluster::recvData():\n"
-	// 			<< currentClient->request << RESET;
+	std::cout	<< BRIGHT_YELLOW "MESSAGE IN Cluster::recvData():\n"
+				<< message << RESET;
 	
 	while (currentClient->totalBytesReceived < currentClient->request.getbody().contentLength)
 	{
@@ -291,10 +291,13 @@ void	Cluster::recvData(const struct epoll_event &event)
 			throw ErrGenerator(findClient(event.data.fd), ERR_413, "Max body size reached");
 		}
 		currentClient->totalBytesReceived += bytesReceived;
+		std::cout	<< BRIGHT_YELLOW "MESSAGE IN Cluster::recvData():\n"
+		<< message << RESET;
+
 	}
-	// std::cout	<< BRIGHT_YELLOW "HEADER CONTENT LENGTH: " << currentClient->request.getbody().contentLength << std::endl
-	// 			<< "BODY SIZE: " << currentClient->request.getbody().body.size() << RESET << std::endl
-	// 			<< "BODY CONTENT:\n" << currentClient->request.getbody().body << std::endl;
+	std::cout	<< BRIGHT_YELLOW "HEADER CONTENT LENGTH: " << currentClient->request.getbody().contentLength << std::endl
+				<< "BODY SIZE: " << currentClient->request.getbody().body.size() << RESET << std::endl
+				<< "BODY CONTENT:\n" << currentClient->request.getbody().body << std::endl;
 	if (currentClient->request.getbody().body.size() == \
 		currentClient->request.getbody().contentLength)
 	{

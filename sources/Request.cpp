@@ -134,12 +134,14 @@ void Request::updateRequest(const std::string &content) throw(ErrorHandler)
 	{
 		try
 		{
-			setHeader(content.substr(0, idxSeparator));
-			setArgs();
-			if ( _header.requestType == POST ) {
+			if (this->getHeader().requestType == EMPTY)
+				setHeader(content.substr(0, idxSeparator));
+			if ( _header.requestType == POST )
+			{
 				idxSeparator += 4;
 				setBody(content.substr(idxSeparator, content.length() - idxSeparator));
 			}
+			setArgs();
 		}
 		catch(const std::exception& e) {
 			std::string log = RED "in updateRequest(): " + std::string(e.what()) + RESET;
