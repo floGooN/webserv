@@ -87,8 +87,8 @@ class Cluster
 
 		Client	&findClient(const int) throw (std::runtime_error);
 		ssize_t	safeRecv(const int, std::string &);
+		void	updateClient(Client &client) throw (ErrGenerator);
 		void	changeEventMod(const bool, const int) throw (ErrGenerator);
-		Client	*addClient(const Request &req, const int) throw (ErrGenerator);
 		void	checkByteReceived(const struct epoll_event &event, ssize_t bytes) throw (ErrGenerator);
 
 		void	closeConnexion(const struct epoll_event &event);

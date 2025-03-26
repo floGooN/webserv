@@ -182,38 +182,23 @@ Client & Cluster::findClient(const int fd) throw (std::runtime_error)
 	* init the client with the parsed request
 	* assign a pointer to the server associated with the request
 */
-Client * Cluster::addClient(const Request &req, const int fdClient) throw (ErrGenerator)
+void Cluster::updateClient(Client &client) throw (ErrGenerator)
 {
-	Client	*current = NULL;
-	Server	*server = NULL;
-	
-	try {
-		current = &_clientList.at(fdClient);
-	}
-	catch(const std::exception& e) {
-		throw ErrGenerator(findClient(fdClient), ERR_500, "We didn't recovered the client");
-	}
-
-	if (current->clientServer == NULL)
+	if (client.clientServer == NULL)
 	{
 		try {
-			server = &getServersByPort().at(req.getHeader().hostPort);
+			client.clientServer = &getServersByPort().at(client.request.getHeader().hostPort);
 		}
 		catch(const std::exception& e) {
-			throw ErrGenerator(findClient(fdClient), ERR_500, "We didn't recovered the service");
+			throw ErrGenerator(client, ERR_500, "We didn't recovered the service");
 		}
-		current->clientServer = server;
 	}
 
-	current->request.updateRequest(req);
+	if (client.request.getHeader().uri.size() > DFLT_URISIZE)
+		throw ErrGenerator(client, ERR_414, "URI exceed the limit of the server");
 
-	if (current->request.getHeader().uri.size() > DFLT_URISIZE)
-		throw ErrGenerator(findClient(fdClient), ERR_414, "URI exceed the limit of the server");
-
-	if (current->request.getbody().contentLength > current->clientServer->getParams().maxBodySize)
-		throw ErrGenerator(findClient(fdClient), ERR_413, "The content length of the request exceed the limit allowed by the server");
-
-	return current;
+	if (client.request.getbody().contentLength > client.clientServer->getParams().maxBodySize)
+		throw ErrGenerator(client, ERR_413, "The content length of the request exceed the limit allowed by the server");
 }
 /*----------------------------------------------------------------------------*/
 
@@ -269,43 +254,25 @@ void	Cluster::recvData(const struct epoll_event &event)
 #endif
 	std::string	message("\0");
 	ssize_t		bytesReceived;
-	Client		*currentClient = NULL;
+	Client		&currentClient = findClient(event.data.fd);
 	
 	bytesReceived = safeRecv(event.data.fd, message);
 	checkByteReceived(event, bytesReceived);
-	currentClient = addClient(Request(message), event.data.fd);
-	currentClient->totalBytesReceived += bytesReceived;
 	
-	std::cout	<< BRIGHT_YELLOW "MESSAGE IN Cluster::recvData():\n"
-				<< message << RESET;
-	
-	while (currentClient->totalBytesReceived < currentClient->request.getbody().contentLength)
-	{
-		usleep(150);
-		bytesReceived = safeRecv(event.data.fd, message);
-		checkByteReceived(event, bytesReceived);
-		currentClient->request.updateRequest(message);
-		if (currentClient->request.getHeader().uri.size() > DFLT_URISIZE)
-			throw ErrGenerator(findClient(event.data.fd), ERR_414, "URI exceed the limit of the server");
-
-		if (currentClient->request.getbody().body.size() > \
-			currentClient->clientServer->getParams().maxBodySize) {
-			throw ErrGenerator(findClient(event.data.fd), ERR_413, "Max body size reached");
-		}
-		currentClient->totalBytesReceived += bytesReceived;
-
-		std::cout	<< BRIGHT_YELLOW "MESSAGE IN Cluster::recvData():\n"
-		<< message << RESET;
-
+	if (currentClient.request.getHeader().requestType == EMPTY) {
+		currentClient.request = Request(message);
+		updateClient(currentClient);
 	}
-	std::cout	<< BRIGHT_YELLOW "HEADER CONTENT LENGTH: " << currentClient->request.getbody().contentLength << std::endl
-				<< "BODY SIZE: " << currentClient->request.getbody().body.size() << RESET << std::endl
-				<< "BODY CONTENT:\n" << currentClient->request.getbody().body << std::endl;
-	if (currentClient->request.getbody().body.size() == \
-		currentClient->request.getbody().contentLength)
+	else
+		currentClient.request.updateRequest(message);
+	
+	currentClient.totalBytesReceived += bytesReceived;
+	
+	if (currentClient.request.getbody().body.size() == \
+		currentClient.request.getbody().contentLength)
 	{
 		try {
-			currentClient->checkRequestValidity();
+			currentClient.checkRequestValidity();
 			changeEventMod(false, event.data.fd);
 		}
 		catch(const ErrorHandler& e) {
@@ -332,34 +299,26 @@ void	Cluster::sendData(const struct epoll_event &event)
 		client.buildResponse();
 	}
 	catch(const ErrorHandler& e) {
-		throw ErrGenerator(findClient(event.data.fd), e.errorNumber, e.errorLog);
+		throw ErrGenerator(client, e.errorNumber, e.errorLog);
 	}
 
-	while (client.response.totalBytesSended != client.response.message.size())
+	ssize_t ret = send(event.data.fd, client.response.message.c_str(), \
+									client.response.message.length(), 0);
+	if (ret <= 0)
 	{
-		ssize_t ret = send(event.data.fd, client.response.message.c_str(), \
-										client.response.message.length(), 0);
-		if (ret <= 0)
-		{
-			if (ret == -1)
-				throw ErrGenerator(findClient(event.data.fd), ERR_500, "send(): an error occured");
-			std::cout << "send() returned 0" << std::endl;			 
-		}
-		client.response.totalBytesSended += ret;
+		if (ret == -1)
+			throw ErrGenerator(client, ERR_500, "send(): an error occured");
+		std::cout << "send() returned 0" << std::endl;			 
 	}
+
+	client.response.totalBytesSended += ret;
 	
 	if (client.response.message.length() == client.response.totalBytesSended && \
 		client.request.keepAlive == true)
 	{
-		try
-		{
-			client.clearData();
-			changeEventMod(true, event.data.fd);
-			std::cout << "sended with success to the client" << std::endl;
-		}
-		catch(const std::exception& e) {
-			throw ErrGenerator(findClient(event.data.fd), ERR_500, e.what());
-		}
+		client.clearData();
+		changeEventMod(true, event.data.fd);
+		std::cout << "sended with success to the client" << std::endl;
 	}
 	else {
 		std::cout << "closeConnexion in sendData()\nsended with success" << std::endl;
@@ -588,7 +547,7 @@ void	Cluster::changeEventMod(const bool changeForRead, const int fd) throw (ErrG
 	memset(&ev, 0, sizeof(ev));
 	
 	ev.data.fd = fd;
-	ev.events = EPOLLET | EPOLLRDHUP | (changeForRead ? EPOLLIN : EPOLLOUT);
+	ev.events = EPOLLRDHUP | (changeForRead ? EPOLLIN : EPOLLOUT);
 	
 	if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, fd, &ev) == -1)
 		throw ErrGenerator(findClient(fd), ERR_500, "changeEventMod(): " + std::string(strerror(errno)));
