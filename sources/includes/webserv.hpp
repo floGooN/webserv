@@ -31,7 +31,7 @@
 /* ---		   DEFAULT VALUES  	   	  --- */
 /* -------------------------------------- */
 
-# define DFLT_TIMEOUT		"65"
+# define DFLT_TIMEOUT		65
 # define DFLT_WORKCONNEX	"1024"
 # define DFLT_BACKLOG		20
 # define DFLT_BODYSIZE		1000

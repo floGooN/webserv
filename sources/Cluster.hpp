@@ -44,8 +44,11 @@ class Cluster
 			
 			const char *	what() const throw() {
 				return NULL;
-			};
-			void	generateErrorPage();
+			}
+			void			generateErrorPage();
+			const Client	&getClient() const {
+				return _client;
+			}
 
 		private:
 			void		generateContent(std::string &) const;
@@ -66,8 +69,10 @@ class Cluster
 		void	runCluster();
 		
 		std::map<std::string, Server>	& getServersByPort() const;
+		time_t							getKeepAlive() const;
 
 	private:
+		time_t							_keepAlive;
 		int								_epollFd;
 		std::set<int>					_serverSockets;
 		std::map<const int, Client>		_clientList;
@@ -75,6 +80,7 @@ class Cluster
 
 		void	setEpollFd();
 		void	setServerSockets();
+		void	setKeepAlive(const std::string &);
 		void	setServersByPort(const HttpConfig &);
 		void	safeGetAddr(const char *, struct addrinfo **) const;
 		void	createAndLinkSocketServer(const struct addrinfo &, const std::string &, int *);
@@ -91,6 +97,8 @@ class Cluster
 		void	changeEventMod(const bool, const int) throw (ErrGenerator);
 		void	checkByteReceived(const struct epoll_event &event, ssize_t bytes) throw (ErrGenerator);
 
+		Client	*updateClientsTime();
+		void	updateTime(Client &client) throw (ErrGenerator);
 		void	closeConnexion(const struct epoll_event &event);
 		void	closeAllSockets() const;
 };

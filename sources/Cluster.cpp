@@ -13,6 +13,7 @@
 #include <sys/epoll.h>
 #include <fcntl.h>
 #include <netdb.h>
+#include <ctime>
 
 /*	* ressources provisoirs
 */
@@ -36,7 +37,10 @@ void hand(int, siginfo_t *, void *) {
 
 Cluster::Cluster(const std::string &filepath)
 {
-	setServersByPort(ConfigParser().parse(filepath));
+	HttpConfig conf = ConfigParser().parse(filepath);
+
+	setKeepAlive(conf.keepalive_timeout);
+	setServersByPort(conf);
 	try {
 		_serverSockets.clear();
 		setServerSockets();
@@ -86,6 +90,7 @@ Cluster & Cluster::operator=(const Cluster & ) {
 std::ostream	& operator<<(std::ostream & o, const Cluster &ref)
 {
 	o	<< BOLD "CLUSTER:" RESET << std::endl
+		<< "_keepAliveTimeout: " << ref.getKeepAlive() << std::endl
 		<< "_serversByService:\n";
 	for (std::map<std::string, Server >::const_iterator it = ref.getServersByPort().begin();
 		it != ref.getServersByPort().end(); it++) {
@@ -102,6 +107,11 @@ std::ostream	& operator<<(std::ostream & o, const Cluster &ref)
 
 std::map<std::string, Server> & Cluster::getServersByPort() const {
 	return const_cast<std::map<std::string, Server> & >(_serversByService);
+}
+/*----------------------------------------------------------------------------*/
+
+time_t	Cluster::getKeepAlive() const {
+	return _keepAlive;
 }
 /*----------------------------------------------------------------------------*/
 
@@ -154,7 +164,17 @@ void	Cluster::runCluster()
 		}
 		else
 		{
-			// majchecktimout();
+			try {
+				Client *client = updateClientsTime();
+				if (client)
+					throw ErrGenerator(*client, ERR_408, "The client exceed the limit of time without activity");
+			}
+			catch (ErrGenerator &e)
+			{
+				std::cout << "FD CLIENT: [" << e.getClient().fdClient << "]" << std::endl;
+				e.generateErrorPage();
+				changeEventMod(false, e.getClient().fdClient);
+			}
 			std::cout	<< "\rWaiting on a connection" << dot[n == 3 ? n = 0 : n++]
 						<< std::flush;
 		}
@@ -165,6 +185,19 @@ void	Cluster::runCluster()
 /*============================================================================*/
 						/*### PRIVATE METHODS ###*/
 /*============================================================================*/
+void	Cluster::setKeepAlive(const std::string &keepalive)
+{
+	if (keepalive.empty() == false)
+	{
+		std::istringstream	iss(keepalive);
+		iss >> _keepAlive;
+		if (iss.fail())
+			throw ;
+	}
+	else
+		_keepAlive = DFLT_TIMEOUT;
+}
+
 Client & Cluster::findClient(const int fd) throw (std::runtime_error)
 {
 	try {
@@ -259,12 +292,14 @@ void	Cluster::recvData(const struct epoll_event &event)
 	bytesReceived = safeRecv(event.data.fd, message);
 	checkByteReceived(event, bytesReceived);
 	
-	if (currentClient.request.getHeader().requestType == EMPTY) {
+	if (currentClient.request.getHeader().requestType == EMPTY)
+	{
 		currentClient.request = Request(message);
 		updateClient(currentClient);
 	}
-	else
+	else {
 		currentClient.request.updateRequest(message);
+	}
 	
 	currentClient.totalBytesReceived += bytesReceived;
 	
@@ -301,7 +336,6 @@ void	Cluster::sendData(const struct epoll_event &event)
 	catch(const ErrorHandler& e) {
 		throw ErrGenerator(client, e.errorNumber, e.errorLog);
 	}
-
 	ssize_t ret = send(event.data.fd, client.response.message.c_str(), \
 									client.response.message.length(), 0);
 	if (ret <= 0)
@@ -317,6 +351,7 @@ void	Cluster::sendData(const struct epoll_event &event)
 		client.request.keepAlive == true)
 	{
 		client.clearData();
+		updateTime(client);
 		changeEventMod(true, event.data.fd);
 		std::cout << "sended with success to the client" << std::endl;
 	}
@@ -527,7 +562,8 @@ void	Cluster::acceptConnexion(const struct epoll_event &event)
 
 	try {
 		addFdInEpoll(false, clientSocket);
-		_clientList.insert(std::make_pair(clientSocket, Client()));
+		_clientList.insert(std::make_pair(clientSocket, Client(clientSocket)));
+
 	}
 	catch(const std::exception& e)
 	{
@@ -577,6 +613,28 @@ void	Cluster::closeConnexion(const struct epoll_event &event)
 
 	if (event.data.fd > 0 && close(event.data.fd) == -1)
 		perror("Error\nclose() in closeConnexion()");
+}
+/*----------------------------------------------------------------------------*/
+
+void	Cluster::updateTime(Client &client) throw (ErrGenerator)
+{
+	client.time = time(NULL);
+	if (client.time == (time_t) - 1)
+		throw ErrorHandler(ERR_500, "In updateTime(): ");
+}
+/*----------------------------------------------------------------------------*/
+
+Client *Cluster::updateClientsTime()
+{
+	std::map<const int, Client>::iterator it = _clientList.begin();
+	
+	for (; it != _clientList.end(); it++)
+	{
+		if (time(NULL) - it->second.time >= _keepAlive) {
+			return &it->second;
+		}
+	}
+	return NULL;
 }
 /*----------------------------------------------------------------------------*/
 

@@ -17,13 +17,14 @@
 				/*### CONSTRUCTORS - DESTRUCTOR - OVERLOAD OP ###*/
 /*============================================================================*/
 
-Client::Client() {
+Client::Client(const int sockfd) : fdClient(sockfd) {
 	clientServer = NULL;
 	totalBytesReceived = 0;
+	time = 0;
 }
 /*----------------------------------------------------------------------------*/
 
-Client::Client(const Client &ref) {
+Client::Client(const Client &ref) : fdClient(ref.fdClient) {
 	*this = ref;
 }
 /*----------------------------------------------------------------------------*/
@@ -40,6 +41,7 @@ Client &Client::operator=(const Client &ref)
 		request = ref.request;
 		response = ref.response;
 		totalBytesReceived = ref.totalBytesReceived;
+		time = ref.time;
 	}
 	return *this;
 }
