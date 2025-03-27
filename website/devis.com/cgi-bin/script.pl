@@ -28,7 +28,7 @@ my $style = sprintf "<header>\n <style>         body {
             align-items: center;
             height: 100vh;
             font-family: 'Poppins', sans-serif;
-            font-weight: 300;
+            font-weight: 700;
             font-size: 15px;
             line-height: 1.7;
             color: #c4c3ca;
@@ -36,7 +36,7 @@ my $style = sprintf "<header>\n <style>         body {
             overflow-x: hidden;
             margin: 0;
         } </style> </header>";
-my $body = sprintf "<html>\n <body>\n <p>Le prix de votre devis est de: <strong>%d</strong>.</p>\n </body> \n </html>", $finalValue;
+my $body = sprintf "<html>\n <body>\n <p>Le prix de votre devis est de: <strong>%d</strong> euros.</p>\n </body> \n </html>", $finalValue;
 
 print $style;
 print $body;

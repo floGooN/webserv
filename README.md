@@ -1,4 +1,5 @@
-il me faut : chemin total pour bouger dans le bon dossier pour le script
-Pour ca recuperer le root et ensuite reussir a choper la bonne location pour recuperer le cgi-path
+Il me reste faire foctionner les requete GET avec les CGI
 
-il me faut : les arguments dans le body pour la req POST
+Il me reste de verifier quand on telecharge avec des cgi des fichiers
+
+Faire du style sur les differentes pages pour faire un site styler
