@@ -403,5 +403,6 @@ void Response::initMimeMap()
     _mimeMap.insert(std::make_pair(".3gp", "video/3gpp"));
     _mimeMap.insert(std::make_pair(".7z", "application/x-7z-compressed"));
     _mimeMap.insert(std::make_pair(".bin", "application/octet-stream"));
+	_mimeMap.insert(std::make_pair(".urlencoded", "application/x-www-form-urlencoded"));
 }
 /*----------------------------------------------------------------------------*/
