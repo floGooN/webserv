@@ -108,5 +108,4 @@ enum e_methods
     EMPTY
 };
 
-
 #endif

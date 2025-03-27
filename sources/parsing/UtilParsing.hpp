@@ -38,7 +38,6 @@ class UtilParsing
 		static void	controlMapLocation(std::map<int, std::map<std::string, std::vector<std::string> > > allMapRoads, std::string keyValue);
 		
 		static std::string	intToString(int value);
-		static std::string	findFile(std::string &);
 		static std::string	trim(const std::string& str);
 		static std::string	trimSemicolon(const std::string& str);
 		static std::string	recoverExtension(const std::string &filename);

@@ -143,10 +143,8 @@ void	Cluster::runCluster()
 							recvData(events[i]);
 						else if (events[i].events & EPOLLOUT)
 							sendData(events[i]);
-						else if (events[i].events & EPOLLRDHUP) {
-							std::cout << "IN RUN" << std::endl;
+						else if (events[i].events & EPOLLRDHUP)
 							closeConnexion(events[i]);
-						}
 						else
 							std::cerr << "have to print EPOLLERR" << std::endl;
 					}
@@ -164,19 +162,14 @@ void	Cluster::runCluster()
 		}
 		else
 		{
-			try {
-				Client *client = updateClientsTime();
-				if (client)
-					throw ErrGenerator(*client, ERR_408, "The client exceed the limit of time without activity");
-			}
-			catch (ErrGenerator &e)
+			Client *client = updateClientsTime();
+			if (client)
 			{
-				std::cout << "FD CLIENT: [" << e.getClient().fdClient << "]" << std::endl;
+				ErrGenerator e = ErrGenerator(*client, ERR_408, "The client exceed the limit of time without activity");
 				e.generateErrorPage();
 				changeEventMod(false, e.getClient().fdClient);
 			}
-			std::cout	<< "\rWaiting on a connection" << dot[n == 3 ? n = 0 : n++]
-						<< std::flush;
+			std::cout	<< "\rWaiting on a connection" << dot[n == 3 ? n = 0 : n++] << std::flush;
 		}
 	}
 }
@@ -288,21 +281,32 @@ void	Cluster::recvData(const struct epoll_event &event)
 	std::string	message("\0");
 	ssize_t		bytesReceived;
 	Client		&currentClient = findClient(event.data.fd);
-	
+
 	bytesReceived = safeRecv(event.data.fd, message);
 	checkByteReceived(event, bytesReceived);
-	
+
 	if (currentClient.request.getHeader().requestType == EMPTY)
 	{
-		currentClient.request = Request(message);
-		updateClient(currentClient);
+		try {
+			currentClient.request = Request(message);
+			updateClient(currentClient);
+		}
+		catch(const ErrorHandler &e) {
+			throw ErrGenerator(currentClient, e.errorNumber, e.errorLog);
+		}
 	}
-	else {
-		currentClient.request.updateRequest(message);
+	else
+	{
+		try {
+			currentClient.request.updateRequest(message);
+		}
+		catch(const ErrorHandler &e) {
+			throw ErrGenerator(currentClient, e.errorNumber, e.errorLog);
+		}	
 	}
-	
+
 	currentClient.totalBytesReceived += bytesReceived;
-	
+
 	if (currentClient.request.getbody().body.size() == \
 		currentClient.request.getbody().contentLength)
 	{
@@ -336,13 +340,12 @@ void	Cluster::sendData(const struct epoll_event &event)
 	catch(const ErrorHandler& e) {
 		throw ErrGenerator(client, e.errorNumber, e.errorLog);
 	}
+
 	ssize_t ret = send(event.data.fd, client.response.message.c_str(), \
 									client.response.message.length(), 0);
-	if (ret <= 0)
-	{
+	if (ret <= 0) {
 		if (ret == -1)
 			throw ErrGenerator(client, ERR_500, "send(): an error occured");
-		std::cout << "send() returned 0" << std::endl;			 
 	}
 
 	client.response.totalBytesSended += ret;
@@ -620,7 +623,7 @@ void	Cluster::updateTime(Client &client) throw (ErrGenerator)
 {
 	client.time = time(NULL);
 	if (client.time == (time_t) - 1)
-		throw ErrorHandler(ERR_500, "In updateTime(): ");
+		throw ErrGenerator(client, ERR_500, "In updateTime(): ");
 }
 /*----------------------------------------------------------------------------*/
 
@@ -630,9 +633,8 @@ Client *Cluster::updateClientsTime()
 	
 	for (; it != _clientList.end(); it++)
 	{
-		if (time(NULL) - it->second.time >= _keepAlive) {
+		if (std::time(NULL) - it->second.time >= _keepAlive)
 			return &it->second;
-		}
 	}
 	return NULL;
 }

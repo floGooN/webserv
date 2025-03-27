@@ -62,16 +62,16 @@ class Cluster
 
 	public:
 		Cluster(const std::string &);
-		Cluster(const Cluster &);
 		~Cluster();
 		Cluster & operator=(const Cluster &);
 
 		void	runCluster();
-		
+
 		std::map<std::string, Server>	& getServersByPort() const;
 		time_t							getKeepAlive() const;
 
 	private:
+		Cluster(const Cluster &);
 		time_t							_keepAlive;
 		int								_epollFd;
 		std::set<int>					_serverSockets;
@@ -87,7 +87,7 @@ class Cluster
 
 		void	acceptConnexion(const struct epoll_event &);
 		void	addFdInEpoll(const bool, const int)	const throw (std::runtime_error);
-		
+
 		void	recvData(const struct epoll_event &);
 		void	sendData(const struct epoll_event &);
 
