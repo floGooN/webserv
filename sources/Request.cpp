@@ -36,8 +36,21 @@ Request::Request(){
 	clearRequest();
 }
 
-Request::Request(const std::string &content) throw (ErrorHandler) {
-	updateRequest(content);
+Request::Request(const std::string &content) throw (ErrorHandler)
+{
+	size_t delimiter = content.find("\r\n\r\n");
+	if (delimiter == std::string::npos)
+		throw ErrorHandler(ERR_400, "Bad request in Reqest constructor");
+
+	try
+	{
+		setHeader(content.substr(0, delimiter));
+		delimiter += 4;
+		setBody(content.substr(delimiter, content.length() - delimiter));
+	}
+	catch(const std::exception& e) {
+		throw ErrorHandler(ERR_500, "In Request(): " + std::string(e.what()));
+	}
 }
 /*----------------------------------------------------------------------------*/
 
@@ -82,7 +95,7 @@ std::ostream & operator<<(std::ostream &o, const t_header &ref)
         << "URI: " << ref.uri << std::endl
         << "Request type: " << ref.requestType << std::endl
         << "HostPort: " << ref.hostPort << std::endl
-        << "HostName: " << ref.hostName;
+        << "HostName: " << ref.hostName << std::endl;
 	for (std::map<std::string, std::string>::const_iterator it = ref.otherFields.begin(); \
 		it != ref.otherFields.end(); it++)
 		o << it->first << ": " << it->second << std::endl;
@@ -123,50 +136,12 @@ const std::string &	Request::getArgs() const {
 
 void Request::updateRequest(const std::string &content) throw(ErrorHandler)
 {
-	size_t idxSeparator = content.find(BODY_SEPARATOR);
-	if (idxSeparator == content.npos)
-	{
-		if ( content.empty() )
-			throw ErrorHandler(ERR_400, "the request is empty");
+	try {
 		setBody(content);
 	}
-	else
-	{
-		try
-		{
-			setHeader(content.substr(0, idxSeparator));
-			setArgs();
-			if ( _header.requestType == POST ) {
-				idxSeparator += 4;
-				setBody(content.substr(idxSeparator, content.length() - idxSeparator));
-			}
-		}
-		catch(const std::exception& e) {
-			std::string log = RED "in updateRequest(): " + std::string(e.what()) + RESET;
-			throw ErrorHandler(ERR_500, log);
-		}
+	catch(const ErrorHandler& e) {
+		throw ErrorHandler(ERR_500, e.errorLog);
 	}
-}
-/*----------------------------------------------------------------------------*/
-
-void Request::updateRequest(const Request &req) throw(ErrorHandler)
-{
-	if (_header.requestType == EMPTY) {
-		*this = req;
-		return;
-	}
-
-	std::map<std::string, std::string>::const_iterator it = req._header.otherFields.begin();
-
-	while (it != req._header.otherFields.end())
-	{
-		this->_header.otherFields[it->first] = it->second;
-		it++;
-	}
-	if (_body.body.empty())
-		_body.body = req._body.body;
-	else
-		_body.body.append(req._body.body);
 }
 /*----------------------------------------------------------------------------*/
 
@@ -400,6 +375,8 @@ void Request::setContentType(const std::string &line) throw(ErrorHandler)
 
 void Request::setBody(const std::string &body) throw(ErrorHandler)
 {
+	if (body.empty())
+		return;
 	try {
 		_body.body.empty() ? _body.body = body : _body.body.append(body);
 	}

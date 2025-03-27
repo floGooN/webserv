@@ -13,12 +13,14 @@
 #include <sys/epoll.h>
 #include <fcntl.h>
 #include <netdb.h>
+#include <ctime>
 
 /*	* ressources provisoirs
 */
 #include <csignal>
 #include <sstream>
 #include <cstdlib>
+#include <unistd.h>
 
 #define MAXEVENT	10
 
@@ -35,7 +37,10 @@ void hand(int, siginfo_t *, void *) {
 
 Cluster::Cluster(const std::string &filepath)
 {
-	setServersByPort(ConfigParser().parse(filepath));
+	HttpConfig conf = ConfigParser().parse(filepath);
+
+	setKeepAlive(conf.keepalive_timeout);
+	setServersByPort(conf);
 	try {
 		_serverSockets.clear();
 		setServerSockets();
@@ -85,6 +90,7 @@ Cluster & Cluster::operator=(const Cluster & ) {
 std::ostream	& operator<<(std::ostream & o, const Cluster &ref)
 {
 	o	<< BOLD "CLUSTER:" RESET << std::endl
+		<< "_keepAliveTimeout: " << ref.getKeepAlive() << std::endl
 		<< "_serversByService:\n";
 	for (std::map<std::string, Server >::const_iterator it = ref.getServersByPort().begin();
 		it != ref.getServersByPort().end(); it++) {
@@ -101,6 +107,11 @@ std::ostream	& operator<<(std::ostream & o, const Cluster &ref)
 
 std::map<std::string, Server> & Cluster::getServersByPort() const {
 	return const_cast<std::map<std::string, Server> & >(_serversByService);
+}
+/*----------------------------------------------------------------------------*/
+
+time_t	Cluster::getKeepAlive() const {
+	return _keepAlive;
 }
 /*----------------------------------------------------------------------------*/
 
@@ -153,7 +164,17 @@ void	Cluster::runCluster()
 		}
 		else
 		{
-			// majchecktimout();
+			try {
+				Client *client = updateClientsTime();
+				if (client)
+					throw ErrGenerator(*client, ERR_408, "The client exceed the limit of time without activity");
+			}
+			catch (ErrGenerator &e)
+			{
+				std::cout << "FD CLIENT: [" << e.getClient().fdClient << "]" << std::endl;
+				e.generateErrorPage();
+				changeEventMod(false, e.getClient().fdClient);
+			}
 			std::cout	<< "\rWaiting on a connection" << dot[n == 3 ? n = 0 : n++]
 						<< std::flush;
 		}
@@ -164,6 +185,19 @@ void	Cluster::runCluster()
 /*============================================================================*/
 						/*### PRIVATE METHODS ###*/
 /*============================================================================*/
+void	Cluster::setKeepAlive(const std::string &keepalive)
+{
+	if (keepalive.empty() == false)
+	{
+		std::istringstream	iss(keepalive);
+		iss >> _keepAlive;
+		if (iss.fail())
+			throw ;
+	}
+	else
+		_keepAlive = DFLT_TIMEOUT;
+}
+
 Client & Cluster::findClient(const int fd) throw (std::runtime_error)
 {
 	try {
@@ -181,38 +215,23 @@ Client & Cluster::findClient(const int fd) throw (std::runtime_error)
 	* init the client with the parsed request
 	* assign a pointer to the server associated with the request
 */
-Client * Cluster::addClient(const Request &req, const int fdClient) throw (ErrGenerator)
+void Cluster::updateClient(Client &client) throw (ErrGenerator)
 {
-	Client	*current = NULL;
-	Server	*server = NULL;
-	
-	try {
-		current = &_clientList.at(fdClient);
-	}
-	catch(const std::exception& e) {
-		throw ErrGenerator(findClient(fdClient), ERR_500, "We didn't recovered the client");
-	}
-
-	if (current->clientServer == NULL)
+	if (client.clientServer == NULL)
 	{
 		try {
-			server = &getServersByPort().at(req.getHeader().hostPort);
+			client.clientServer = &getServersByPort().at(client.request.getHeader().hostPort);
 		}
 		catch(const std::exception& e) {
-			throw ErrGenerator(findClient(fdClient), ERR_500, "We didn't recovered the service");
+			throw ErrGenerator(client, ERR_500, "We didn't recovered the service");
 		}
-		current->clientServer = server;
 	}
 
-	current->request.updateRequest(req);
+	if (client.request.getHeader().uri.size() > DFLT_URISIZE)
+		throw ErrGenerator(client, ERR_414, "URI exceed the limit of the server");
 
-	if (current->request.getHeader().uri.size() > DFLT_URISIZE)
-		throw ErrGenerator(findClient(fdClient), ERR_414, "URI exceed the limit of the server");
-
-	if (current->request.getbody().contentLength > current->clientServer->getParams().maxBodySize)
-		throw ErrGenerator(findClient(fdClient), ERR_413, "The content length of the request exceed the limit allowed by the server");
-
-	return current;
+	if (client.request.getbody().contentLength > client.clientServer->getParams().maxBodySize)
+		throw ErrGenerator(client, ERR_413, "The content length of the request exceed the limit allowed by the server");
 }
 /*----------------------------------------------------------------------------*/
 
@@ -268,33 +287,27 @@ void	Cluster::recvData(const struct epoll_event &event)
 #endif
 	std::string	message("\0");
 	ssize_t		bytesReceived;
-	Client		*currentClient = NULL;
+	Client		&currentClient = findClient(event.data.fd);
 	
 	bytesReceived = safeRecv(event.data.fd, message);
 	checkByteReceived(event, bytesReceived);
-	currentClient = addClient(Request(message), event.data.fd);
-
-	while (bytesReceived == STATIC_BUFFSIZE)
+	
+	if (currentClient.request.getHeader().requestType == EMPTY)
 	{
-		bytesReceived = safeRecv(event.data.fd, message);
-		checkByteReceived(event, bytesReceived);
-		currentClient->request.updateRequest(message);
-		if (currentClient->request.getHeader().uri.size() > DFLT_URISIZE)
-			throw ErrGenerator(findClient(event.data.fd), ERR_414, "URI exceed the limit of the server");
-
-		if (currentClient->request.getbody().body.size() > \
-			currentClient->clientServer->getParams().maxBodySize) {
-			throw ErrGenerator(findClient(event.data.fd), ERR_413, "Max body size reached");
-		}
+		currentClient.request = Request(message);
+		updateClient(currentClient);
 	}
-	// std::cout	<< BRIGHT_RED "HERE\n"
-	// 			<< "BODYSIZE: " << currentClient->request.getbody().body.size() << std::endl
-	// 			<< "BODYLENGTH: " << currentClient->request.getbody().contentLength << std::endl;
-	if (currentClient->request.getbody().body.size() == \
-		currentClient->request.getbody().contentLength)
+	else {
+		currentClient.request.updateRequest(message);
+	}
+	
+	currentClient.totalBytesReceived += bytesReceived;
+	
+	if (currentClient.request.getbody().body.size() == \
+		currentClient.request.getbody().contentLength)
 	{
 		try {
-			currentClient->checkRequestValidity();
+			currentClient.checkRequestValidity();
 			changeEventMod(false, event.data.fd);
 		}
 		catch(const ErrorHandler& e) {
@@ -321,34 +334,26 @@ void	Cluster::sendData(const struct epoll_event &event)
 		client.buildResponse();
 	}
 	catch(const ErrorHandler& e) {
-		throw ErrGenerator(findClient(event.data.fd), e.errorNumber, e.errorLog);
+		throw ErrGenerator(client, e.errorNumber, e.errorLog);
+	}
+	ssize_t ret = send(event.data.fd, client.response.message.c_str(), \
+									client.response.message.length(), 0);
+	if (ret <= 0)
+	{
+		if (ret == -1)
+			throw ErrGenerator(client, ERR_500, "send(): an error occured");
+		std::cout << "send() returned 0" << std::endl;			 
 	}
 
-	while (client.response.totalBytesSended != client.response.message.size())
-	{
-		ssize_t ret = send(event.data.fd, client.response.message.c_str(), \
-										client.response.message.length(), 0);
-		if (ret <= 0)
-		{
-			if (ret == -1)
-				throw ErrGenerator(findClient(event.data.fd), ERR_500, "send(): an error occured");
-			std::cout << "send() returned 0" << std::endl;			 
-		}
-		client.response.totalBytesSended += ret;
-	}
+	client.response.totalBytesSended += ret;
 	
 	if (client.response.message.length() == client.response.totalBytesSended && \
 		client.request.keepAlive == true)
 	{
-		try
-		{
-			client.clearData();
-			changeEventMod(true, event.data.fd);
-			std::cout << "sended with success to the client" << std::endl;
-		}
-		catch(const std::exception& e) {
-			throw ErrGenerator(findClient(event.data.fd), ERR_500, e.what());
-		}
+		client.clearData();
+		updateTime(client);
+		changeEventMod(true, event.data.fd);
+		std::cout << "sended with success to the client" << std::endl;
 	}
 	else {
 		std::cout << "closeConnexion in sendData()\nsended with success" << std::endl;
@@ -557,7 +562,8 @@ void	Cluster::acceptConnexion(const struct epoll_event &event)
 
 	try {
 		addFdInEpoll(false, clientSocket);
-		_clientList.insert(std::make_pair(clientSocket, Client()));
+		_clientList.insert(std::make_pair(clientSocket, Client(clientSocket)));
+
 	}
 	catch(const std::exception& e)
 	{
@@ -577,7 +583,7 @@ void	Cluster::changeEventMod(const bool changeForRead, const int fd) throw (ErrG
 	memset(&ev, 0, sizeof(ev));
 	
 	ev.data.fd = fd;
-	ev.events = EPOLLET | EPOLLRDHUP | (changeForRead ? EPOLLIN : EPOLLOUT);
+	ev.events = EPOLLRDHUP | (changeForRead ? EPOLLIN : EPOLLOUT);
 	
 	if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, fd, &ev) == -1)
 		throw ErrGenerator(findClient(fd), ERR_500, "changeEventMod(): " + std::string(strerror(errno)));
@@ -607,6 +613,28 @@ void	Cluster::closeConnexion(const struct epoll_event &event)
 
 	if (event.data.fd > 0 && close(event.data.fd) == -1)
 		perror("Error\nclose() in closeConnexion()");
+}
+/*----------------------------------------------------------------------------*/
+
+void	Cluster::updateTime(Client &client) throw (ErrGenerator)
+{
+	client.time = time(NULL);
+	if (client.time == (time_t) - 1)
+		throw ErrorHandler(ERR_500, "In updateTime(): ");
+}
+/*----------------------------------------------------------------------------*/
+
+Client *Cluster::updateClientsTime()
+{
+	std::map<const int, Client>::iterator it = _clientList.begin();
+	
+	for (; it != _clientList.end(); it++)
+	{
+		if (time(NULL) - it->second.time >= _keepAlive) {
+			return &it->second;
+		}
+	}
+	return NULL;
 }
 /*----------------------------------------------------------------------------*/
 

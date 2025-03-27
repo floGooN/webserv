@@ -1,8 +1,12 @@
-from cgi import FieldStorage
+#!/usr/bin/python3
+
+import cgi
+import cgitb
+cgitb.enable()
+
+form = cgi.FieldStorage()
 
 
-
-form = FieldStorage()
 objectif = form.getvalue('objectif', '')
 design = form.getvalue('design', '')
 rdv = form.getvalue('rdv', '')
@@ -10,35 +14,32 @@ delai = form.getvalue('delai', '')
 maintenance = form.getvalue('maintenance', '')
 seo = form.getvalue('SEO', '')
 
-final_value = 0
-if design == 'oui':
-    final_value += 200
+
+finalValue = 0
+if design == "oui":
+    finalValue += 200
 else:
-    final_value += 100
-if rdv == 'oui':
-    final_value += 200
-if delai == '1 mois':
-    final_value += 300
-else:
-    final_value += 200
-if maintenance == 'oui':
-    final_value += 100
-if seo == 'oui':
-    final_value += 299
+    finalValue += 100
 
-body = f"""
-<html>
- <body>
- <p>Le prix de votre devis est de: <strong>{final_value}</strong>.</p>
- </body>
-</html>
-"""
+if rdv == "oui":
+    finalValue += 200
+
+if delai == "1 mois":
+    finalValue += 300
+elif delai == "2 mois":
+    finalValue += 200
+
+if maintenance == "oui":
+    finalValue += 100
+
+if seo == "oui":
+    finalValue += 299
 
 
-print(f"Content-type: text/html\n")
-print(f"Status: 200 OK\n")
-print(f"HTTP/1.1\n")
-print(f"Content-Length: {len(body)}\n\n")
 
+print("<html>")
+print("<body>")
+print("<p>Le prix de votre devis est de: <strong>{}</strong>.</p>".format(finalValue))
+print("</body>")
+print("</html>")
 
-print(body)

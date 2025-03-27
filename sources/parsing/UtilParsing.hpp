@@ -24,18 +24,6 @@ class UtilParsing
 				it != src.end(); it++)
 				dest.insert(*it);
 		}
-		template<typename T>
-		static void	deepCopieSet(std::set<T> &dest, const std::set<T> &src) {
-			for (typename std::set<T>::const_iterator it = src.begin();
-				it != src.end(); it++)
-					dest.insert(*it);
-		}
-		template<typename T>
-		static void	deepCopieVector(std::vector<T> &dest, const std::vector<T> &src) {
-			for (typename std::vector<T>::const_iterator it = src.begin();
-				it != src.end(); it++)
-				dest.push_back(*it);
-		}
 
 		static bool	isOnlySpace(const std::string & str);
 		static bool	isDirectory(const std::string &) throw (ErrorHandler);

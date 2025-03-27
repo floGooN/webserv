@@ -8,7 +8,6 @@
 #include "Client.hpp"
 #include "Response.hpp"
 #include "UtilParsing.hpp"
-#include "upCGI.hpp"
 #include "CGI.hpp"
 /*============================================================================*/
 				/*### CONSTRUCTORS - DESTRUCTOR - OVERLOAD OP ###*/
@@ -86,8 +85,16 @@ void	Response::postQuery(Client &client)
 	UtilParsing::checkAccessRessource(client.request.completeUri, W_OK);
 
 	if (isCGI(client) == true) {
-		processCGI(client);// here play CGI
-		throw ErrorHandler(ERR_404, "CGI"); // provisoirement
+		message = processCGI(client);// here play CGI
+		// throw ErrorHandler(ERR_404, "CGI"); // provisoirement
+
+		try {
+			message.insert(0, setHeader(client.request, COD_200));
+		}
+		catch(const std::exception& e) {
+			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
+		}
+		std::cout << "Valeur de message : " << message << std::endl;
 	}
 	else
 	{
@@ -174,7 +181,8 @@ std::string	&Response::findMimeType(const std::string &uri)
 		return _mimeMap.at(UtilParsing::recoverExtension(uri));
 	}
 	catch(const std::exception& e) {
-		return _mimeMap.at(".bin");
+		// return _mimeMap.at(".bin");
+		return _mimeMap.at(".html"); // mis car sinon les scripts se considerer comme des binaires
 	}
 }
 /*----------------------------------------------------------------------------*/
@@ -327,9 +335,11 @@ bool	Response::isCGI(Client client) throw (ErrorHandler)
 	// 			throw ErrorHandler(ERR_400, e.what());
 	// 	}
 	// }
-	std::cout << "la valeur complete uri il faut un .pl:" << client.request.completeUri << std::endl;
+	std::cout << "la valeur complete uri il faut un .pl:" << client.request.getHeader().uri << std::endl;
+	// client.request.getHeader().uri
+	// client.request.completeUri
 	
-	if (checkExtensionCGI(client.request.completeUri) == true)
+	if (checkExtensionCGI(client.request.getHeader().uri) == true)
             return true;
 	// a partir d'ici verifier l'extension du fichier et renvoyer true si elle correspond a un cgi executable
 	// a partir de la il n'y a plus d'erreur a gerer sur cette fonction, juste renvoyer true ou false

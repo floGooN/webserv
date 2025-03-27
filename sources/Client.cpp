@@ -17,12 +17,14 @@
 				/*### CONSTRUCTORS - DESTRUCTOR - OVERLOAD OP ###*/
 /*============================================================================*/
 
-Client::Client(){
+Client::Client(const int sockfd) : fdClient(sockfd) {
 	clientServer = NULL;
+	totalBytesReceived = 0;
+	time = 0;
 }
 /*----------------------------------------------------------------------------*/
 
-Client::Client(const Client &ref) {
+Client::Client(const Client &ref) : fdClient(ref.fdClient) {
 	*this = ref;
 }
 /*----------------------------------------------------------------------------*/
@@ -38,6 +40,8 @@ Client &Client::operator=(const Client &ref)
 		clientServer = ref.clientServer;
 		request = ref.request;
 		response = ref.response;
+		totalBytesReceived = ref.totalBytesReceived;
+		time = ref.time;
 	}
 	return *this;
 }
@@ -48,9 +52,10 @@ std::ostream & operator<<(std::ostream &o, const Client &ref)
 	o   << "CLIENT:" << std::endl
 		<< *ref.clientServer << std::endl
 		<< ref.request << std::endl
-		<< ref.response;
+		<< ref.response
+		<< "Total Bytes Received" << ref.totalBytesReceived;
 
-	return o;
+	return o << std::endl;
 }
 /*----------------------------------------------------------------------------*/
 
@@ -272,5 +277,6 @@ void	Client::clearData()
 {
 	request.clearRequest();
 	response.clearResponse();
+	totalBytesReceived = 0;
 }
 /*----------------------------------------------------------------------------*/

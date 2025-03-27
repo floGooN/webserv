@@ -35,7 +35,6 @@ Cluster::ErrGenerator::~ErrGenerator() throw()
 
 void	Cluster::ErrGenerator::generateErrorPage()
 {
-	std::cerr << BRIGHT_RED << _errorLog << RESET << std::endl;
 	try
 	{
 		generateContent(_client.response.message);
