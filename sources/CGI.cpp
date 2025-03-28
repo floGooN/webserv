@@ -58,9 +58,9 @@ char** initEnv(const Request &req)
       std::string environnement[] = 
       {
         std::string("REQUEST_METHOD=") + UtilParsing::emethodsTypeToString(req.getHeader().requestType),
-        std::string("QUERY_STRING=") + ((req.getHeader().requestType == GET) ? ParseUri(req.getHeader().uri)  : " "), // si c'est pas une get je mets rien apres a voir si on met une valeur ou pas
-        std::string("CONTENT_TYPE=") + std::string("application/x-www-form-urlencoded"),
-        std::string("CONTENT_LENGTH=") + UtilParsing::intToString(req.getbody().contentLength),
+        std::string("QUERY_STRING=") + ((req.getHeader().requestType == GET) ? ParseUri(req.getArgs())  : " "), // si c'est pas une get je mets rien apres a voir si on met une valeur ou pas
+        std::string("CONTENT_TYPE=") + ((req.getHeader().requestType == POST) ? std::string("application/x-www-form-urlencoded") : " "),
+        std::string("CONTENT_LENGTH=") + ((req.getbody().contentLength == (size_t)0) ? std::string("100") : UtilParsing::intToString(req.getbody().contentLength)),
         std::string("HTTP_HOST=") + req.getHeader().hostName,
         buildScriptName(req),
         std::string("PATH_INFO=") + req.getHeader().uri, // tout url 
@@ -69,6 +69,7 @@ char** initEnv(const Request &req)
     char** envCGI = new char*[environSize + 1]; 
     for (int i = 0; i < environSize; i++) 
     {
+        // std::cout << "Valeur de env : " << environnement[i] << std::endl;
         envCGI[i] = new char[environnement[i].size() + 1];
         strcpy(envCGI[i], environnement[i].c_str());
     }
@@ -85,16 +86,23 @@ std::string buildScriptName(const Request &req)
     if (end == std::string::npos)
     {
         if (start == std::string::npos)
+        {
+            std::cout << "rentre ici" << std::endl;
             return req.getHeader().uri;
+        }
         else
         {
+            // std::cout << "rentre la OUAIIIIII" << std::endl;
+            // std::cout << "base de uri : " << req.getHeader().uri << std::endl;
             std::string result = req.getHeader().uri.substr(start + 1);
+            // std::cout << "rendu : " << result << std::endl;
             return result;
         }
     }
     else
     {
-        std::string result = req.getHeader().uri.substr(0, end);
+        // std::cout << "rentre dans le dernier " << std::endl;
+        std::string result = req.getHeader().uri.substr(start + 1, end);
         return result;
     }
 }
@@ -145,6 +153,7 @@ std::string executeCGI(const std::string &path, const Request &req)
         return body;
     env = initEnv(req);
     body = playCgi(path, req, env);
+    std::cout << "play realiser : " << body << std::endl;
     if (env)
         freeEnv(env);
     return body;

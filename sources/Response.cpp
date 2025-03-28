@@ -61,8 +61,14 @@ void	Response::getQuery(const Client &client)
 	if (isCGI(client) == true) {
 
 		std::cout << "It's CGI\n"; // here play CGI
-		processCGI(client);
-		 
+		message = processCGI(client);
+		try {
+			message.insert(0, setHeader(client.request, COD_200));
+		}
+		catch(const std::exception& e) {
+			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
+		}
+		// std::cout << "Valeur de message : " << message << std::endl;
 	}
 	else
 	{
@@ -335,6 +341,8 @@ bool	Response::isCGI(Client client) throw (ErrorHandler)
 	// 			throw ErrorHandler(ERR_400, e.what());
 	// 	}
 	// }
+	
+
 	std::cout << "la valeur complete uri il faut un .pl:" << client.request.getHeader().uri << std::endl;
 	// client.request.getHeader().uri
 	// client.request.completeUri

@@ -214,6 +214,8 @@ void Request::setHeader(const std::string &header) throw(ErrorHandler)
 		setRequestType(*it);
 		checkProtocole(*it);
 		setUri(*it);
+		// rajout ici 
+		setArgs();
 	}
 	while (++it != token.end())
 	{
