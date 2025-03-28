@@ -59,7 +59,7 @@ char** initEnv(const Request &req)
       {
         std::string("REQUEST_METHOD=") + UtilParsing::emethodsTypeToString(req.getHeader().requestType),
         std::string("QUERY_STRING=") + ((req.getHeader().requestType == GET) ? ParseUri(req.getArgs())  : " "), // si c'est pas une get je mets rien apres a voir si on met une valeur ou pas
-        std::string("CONTENT_TYPE=") + ((req.getHeader().requestType == POST) ? std::string("application/x-www-form-urlencoded") : " "),
+        std::string("CONTENT_TYPE=") + UtilParsing::econtentTypeToString(req.getbody().contentType),
         std::string("CONTENT_LENGTH=") + ((req.getbody().contentLength == (size_t)0) ? std::string("100") : UtilParsing::intToString(req.getbody().contentLength)),
         std::string("HTTP_HOST=") + req.getHeader().hostName,
         buildScriptName(req),
@@ -69,7 +69,6 @@ char** initEnv(const Request &req)
     char** envCGI = new char*[environSize + 1]; 
     for (int i = 0; i < environSize; i++) 
     {
-        // std::cout << "Valeur de env : " << environnement[i] << std::endl;
         envCGI[i] = new char[environnement[i].size() + 1];
         strcpy(envCGI[i], environnement[i].c_str());
     }
@@ -87,21 +86,16 @@ std::string buildScriptName(const Request &req)
     {
         if (start == std::string::npos)
         {
-            std::cout << "rentre ici" << std::endl;
             return req.getHeader().uri;
         }
         else
         {
-            // std::cout << "rentre la OUAIIIIII" << std::endl;
-            // std::cout << "base de uri : " << req.getHeader().uri << std::endl;
             std::string result = req.getHeader().uri.substr(start + 1);
-            // std::cout << "rendu : " << result << std::endl;
             return result;
         }
     }
     else
     {
-        // std::cout << "rentre dans le dernier " << std::endl;
         std::string result = req.getHeader().uri.substr(start + 1, end);
         return result;
     }
@@ -206,6 +200,7 @@ std::string parentProcessCgi(const Request &req, pid_t pid, int *pipe_in, int *p
 
     close(pipe_in[0]);
     close(pipe_out[1]);
+    std::cout << req.getbody().body << std::endl;
     write(pipe_in[1], req.getbody().body.c_str(), req.getbody().contentLength);
     close(pipe_in[1]);
     newBody = createBody(pipe_out);

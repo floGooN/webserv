@@ -8,23 +8,25 @@ use CGI;
 my $cgi = CGI->new;
 
 my $query = $ENV{'QUERY_STRING'};
+my $value1;
+my $value2;
 
-# if ($query)
-# {
-#     my @pairs = split(/&/, $query);
-#     foreach my $pair (@pairs)
-#     {
-#         my ($key, $val) = split(/=/, $pair);
-#         if ($key eq "email")
-#         {
-#             $value1 = $val;
-#         }
-#         if ($key eq "adresse")
-#         {
-#             my $value2 = $val;
-#         }
-#     }
-# }
+if ($query)
+{
+    my @pairs = split(/&/, $query);
+    foreach my $pair (@pairs)
+    {
+        my ($key, $val) = split(/=/, $pair);
+        if ($key eq "email")
+        {
+            $value1 = $val;
+        }
+        if ($key eq "adresse")
+        {
+            $value2 = $val;
+        }
+    }
+}
 
 my $body = "<html>
 
@@ -32,7 +34,8 @@ my $body = "<html>
 <body>
 
 
-<p>Your email address: $query</p>
+<p>Your email address: $value1\n</p>
+<p>Your adress: $value2</p>
 
 </body>
 </html>";

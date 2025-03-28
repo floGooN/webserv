@@ -60,7 +60,7 @@ void	Response::getQuery(const Client &client)
 
 	if (isCGI(client) == true) {
 
-		std::cout << "It's CGI\n"; // here play CGI
+		// std::cout << "It's CGI\n"; // here play CGI
 		message = processCGI(client);
 		try {
 			message.insert(0, setHeader(client.request, COD_200));

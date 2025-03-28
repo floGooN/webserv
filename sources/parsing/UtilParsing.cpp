@@ -370,11 +370,11 @@ std::string UtilParsing::econtentTypeToString(e_contentType type)
 	switch (type)
 	{
 	case APP:
-		return "APP";
+		return "application/x-www-form-urlencoded";
 	case TXT:
-		return "TXT";
+		return "text/plain";
 	case MULTIPART:
-		return "MULTIPART";
+		return "multipart/form-data";
 	default:
 		return "Unknowm";
 	}
