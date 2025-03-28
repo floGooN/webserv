@@ -18,11 +18,15 @@ std::string processCGI(const Client &client)
     try
     {
         const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
+        char cwd[PATH_MAX];
+        getcwd(cwd, sizeof(cwd));
         if (moveToDirectoryScript(current->root) != true)
             throw ErrorHandler(ERR_500, "Internal server error");
-        res = executeCGI(client.request.getHeader().uri, client.request);
+        res = executeCGI(client);
         if (res.empty())
             throw ErrorHandler(ERR_502, "Bad Gateway");
+        if (moveToDirectoryScript(std::string(cwd)) != true)
+            throw ErrorHandler(ERR_500);
     }
     catch (const ErrorHandler& e)
     {
@@ -139,19 +143,20 @@ void closePipe(int *pipe_in, int *pipe_out)
     close(pipe_out[1]);
 }
 
-std::string executeCGI(const std::string &path, const Request &req)
+std::string executeCGI(const Client &client)
 {
     char **env;
     std::string body;
-    if (controlContentBodyReq(req) == -1)
+    if (controlContentBodyReq(client.request) == -1)
         return body;
-    env = initEnv(req);
-    body = playCgi(path, req, env);
+    env = initEnv(client.request);
+    body = playCgi(client.request.getHeader().uri, client.request, env);
     std::cout << "play realiser : " << body << std::endl;
     if (env)
         freeEnv(env);
     return body;
 }
+
 
 int controlContentBodyReq(const Request &req)
 {
@@ -200,7 +205,7 @@ std::string parentProcessCgi(const Request &req, pid_t pid, int *pipe_in, int *p
 
     close(pipe_in[0]);
     close(pipe_out[1]);
-    std::cout << req.getbody().body << std::endl;
+    // std::cout << req.getbody().body << std::endl;
     write(pipe_in[1], req.getbody().body.c_str(), req.getbody().contentLength);
     close(pipe_in[1]);
     newBody = createBody(pipe_out);

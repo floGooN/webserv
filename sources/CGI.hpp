@@ -25,7 +25,7 @@ std::string processAutoIndex(std::string path);
 std::string buildBodyAutoIndex(DIR *dir, std::string path);
 std::string buildHeaderAutoIndex(std::string body);
 std::string processCGI(const Client &client);
-std::string executeCGI(const std::string &path,  const Request &req);
+std::string executeCGI(const Client &client);
 std::string parentProcessCgi(const Request &req, pid_t pid, int *pipe_in, int *pipe_out);
 std::string createBody(int *pipe_out);
 std::string ParseUri(std::string uri);
