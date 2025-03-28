@@ -89,9 +89,7 @@ std::string buildScriptName(const Request &req)
     if (end == std::string::npos)
     {
         if (start == std::string::npos)
-        {
             return req.getHeader().uri;
-        }
         else
         {
             std::string result = req.getHeader().uri.substr(start + 1);
@@ -151,7 +149,6 @@ std::string executeCGI(const Client &client)
         return body;
     env = initEnv(client.request);
     body = playCgi(client.request.getHeader().uri, client.request, env);
-    std::cout << "play realiser : " << body << std::endl;
     if (env)
         freeEnv(env);
     return body;
@@ -205,7 +202,6 @@ std::string parentProcessCgi(const Request &req, pid_t pid, int *pipe_in, int *p
 
     close(pipe_in[0]);
     close(pipe_out[1]);
-    // std::cout << req.getbody().body << std::endl;
     write(pipe_in[1], req.getbody().body.c_str(), req.getbody().contentLength);
     close(pipe_in[1]);
     newBody = createBody(pipe_out);

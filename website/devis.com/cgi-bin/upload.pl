@@ -7,7 +7,7 @@ use CGI;
 
 my $query = CGI->new;
 
-my $upload_dir = "./uploads";
+my $upload_dir = "../../uploads";
 my $filename = $query->param('fileToUpload');
 my $upload_filehandle = $query->upload('fileToUpload');
 

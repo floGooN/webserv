@@ -314,47 +314,30 @@ void	Response::autoIndexResponse(Client client)
 /*----------------------------------------------------------------------------*/
 
 
+bool checkExecutable(const std::string& uri) {
+    // Vérifier si le fichier existe et est exécutable
+    if (access(uri.c_str(), X_OK) == 0) {
+        return true; // Le fichier est exécutable
+    } else {
+        // Gérer l'erreur - peut-être le fichier n'existe pas ou n'est pas exécutable
+        throw std::runtime_error("File is not executable or does not exist.");
+    }
+}
+
 bool	Response::isCGI(Client client) throw (ErrorHandler)
 {
 	// (void) client;
 	// return false;
-	// if (UtilParsing::isDirectory(client.request.completeUri) == true)
-	// 	return false;
-
-	// try {
-	// 	UtilParsing::checkAccessRessource(client.request.completeUri, R_OK);
-	// }
-	// catch(const std::exception& e)
-	// {
-	// 	switch (errno)
-	// 	{
-	// 		case ENOENT:
-	// 		case ELOOP:
-	// 			throw ErrorHandler(ERR_404, e.what());
-			
-	// 		case EACCES:
-	// 		case ENAMETOOLONG:
-	// 		case ENOTDIR:
-	// 			throw ErrorHandler(ERR_403, e.what());
-			
-	// 		default:
-	// 			throw ErrorHandler(ERR_400, e.what());
-	// 	}
-	// }
-	
-
-	std::cout << "la valeur complete uri il faut un .pl:" << client.request.getHeader().uri << std::endl;
-	// client.request.getHeader().uri
-	// client.request.completeUri
+	if (UtilParsing::isDirectory(client.request.completeUri) == true)
+		return false;
 	
 	if (checkExtensionCGI(client.request.getHeader().uri) == true)
-            return true;
-	// a partir d'ici verifier l'extension du fichier et renvoyer true si elle correspond a un cgi executable
-	// a partir de la il n'y a plus d'erreur a gerer sur cette fonction, juste renvoyer true ou false
-	// size_t idx = client.request.completeUri.find_last_of('.');
+	{
+		// if (access(client.request.getHeader().uri.c_str(), X_OK) != 1)
+		// 	throw ErrorHandler(ERR_500);
+		return true;
+	}
 
-	// if (idx == client.request.completeUri.npos)
-	// 	return false;
 	
 	return false;
 }
