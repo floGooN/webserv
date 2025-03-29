@@ -67,7 +67,7 @@ char** initEnv(const Request &req)
         std::string("CONTENT_LENGTH=") + ((req.getbody().contentLength == (size_t)0) ? std::string("100") : UtilParsing::intToString(req.getbody().contentLength)),
         std::string("HTTP_HOST=") + req.getHeader().hostName,
         buildScriptName(req),
-        std::string("PATH_INFO=") + req.getHeader().uri, // tout url 
+        std::string("PATH_INFO=") + req.getHeader().uri,
     };
     int  environSize = sizeof(environnement) / sizeof(environnement[0]);
     char** envCGI = new char*[environSize + 1]; 

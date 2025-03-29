@@ -58,9 +58,8 @@ void	Response::getQuery(const Client &client)
 {
 	std::cout << BRIGHT_GREEN "GET QUERY" RESET << std::endl;
 
-	if (isCGI(client) == true) {
-
-		// std::cout << "It's CGI\n"; // here play CGI
+	if (isCGI(client) == true) 
+	{
 		message = processCGI(client);
 		try {
 			message.insert(0, setHeader(client.request, COD_200));
@@ -68,7 +67,6 @@ void	Response::getQuery(const Client &client)
 		catch(const std::exception& e) {
 			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
 		}
-		// std::cout << "Valeur de message : " << message << std::endl;
 	}
 	else
 	{
@@ -90,17 +88,15 @@ void	Response::postQuery(Client &client)
 
 	UtilParsing::checkAccessRessource(client.request.completeUri, W_OK);
 
-	if (isCGI(client) == true) {
-		message = processCGI(client);// here play CGI
-		// throw ErrorHandler(ERR_404, "CGI"); // provisoirement
-
+	if (isCGI(client) == true) 
+	{
+		message = processCGI(client);
 		try {
 			message.insert(0, setHeader(client.request, COD_200));
 		}
 		catch(const std::exception& e) {
 			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
 		}
-		std::cout << "Valeur de message : " << message << std::endl;
 	}
 	else
 	{
@@ -186,8 +182,8 @@ std::string	&Response::findMimeType(const std::string &uri)
 	try {
 		return _mimeMap.at(UtilParsing::recoverExtension(uri));
 	}
-	catch(const std::exception& e) {
-		// return _mimeMap.at(".bin");
+	catch(const std::exception& e) 
+	{
 		return _mimeMap.at(".html"); // mis car sinon les scripts se considerer comme des binaires
 	}
 }
@@ -213,29 +209,6 @@ std::string	Response::setHeader(const Request &req, const std::string &code) thr
 }
 /*----------------------------------------------------------------------------*/
 
-// void	Response::getQuery(const Client &client)
-// {
-// 	std::cout << BRIGHT_GREEN "GET QUERY" RESET << std::endl;
-
-// 	if (isCGI(client.request.completeUri) == true) {
-
-// 		std::cout << "It's CGI\n"; // here play CGI
-// 		processCGI(client);
-// 		throw ErrorHandler(ERR_404, "CGI"); // provisoirement
-// 	}
-// 	else
-// 	{
-// 		UtilParsing::readFile(client.request.completeUri, message);
-// 		setHeader(client.request);
-		
-// 		try {
-// 			message.insert(0, setHeader(client.request));
-// 		}
-// 		catch(const std::exception& e) {
-// 			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
-// 		}
-// 	}
-// }
 /*----------------------------------------------------------------------------*/
 
 
@@ -243,18 +216,6 @@ std::string	Response::setHeader(const Request &req, const std::string &code) thr
 
 /*----------------------------------------------------------------------------*/
 
-
-// void	Response::postQuery(const Client &client)
-// {
-// 	std::cout	<< BRIGHT_YELLOW "POST QUERY" RESET << std::endl;
-
-// 	if (isCGI(client.request.completeUri) == true) {
-// 		std::cout << "It's CGI\n"; // here play CGI
-// 		processCGI(client);
-// 		throw ErrorHandler(ERR_404, "CGI"); // provisoirement
-// 	}
-
-// }
 /*----------------------------------------------------------------------------*/
 
 void	Response::autoIndexResponse(Client client)
@@ -265,10 +226,6 @@ void	Response::autoIndexResponse(Client client)
 
 /*----------------------------------------------------------------------------*/
 
-// void	Response::deleteQuery(const Request &)
-// {
-// 	std::cout << BRIGHT_CYAN "DELETE QUERY" << RESET << std::endl;
-// }
 /*----------------------------------------------------------------------------*/
 
 
