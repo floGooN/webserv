@@ -7,7 +7,7 @@ use CGI;
 
 my $query = CGI->new;
 
-my $upload_dir = "../../uploads";
+my $upload_dir = "../../../uploads";
 my $filename = $query->param('fileToUpload');
 my $upload_filehandle = $query->upload('fileToUpload');
 
@@ -16,8 +16,8 @@ if (!$filename)
     print "<html><body><p>No file uploaded.</p></body></html>";
     exit;
 }
-
-open (my $upload_file, ">$filename") or die "Cannot open file: $!";
+my $full_path = "$upload_dir/$filename";
+open (my $upload_file, ">$full_path") or die "Cannot open file: $!";
 binmode $upload_file;
 
 while (my $ligne = <$upload_filehandle>) {

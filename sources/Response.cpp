@@ -314,31 +314,22 @@ void	Response::autoIndexResponse(Client client)
 /*----------------------------------------------------------------------------*/
 
 
-bool checkExecutable(const std::string& uri) {
-    // Vérifier si le fichier existe et est exécutable
-    if (access(uri.c_str(), X_OK) == 0) {
-        return true; // Le fichier est exécutable
-    } else {
-        // Gérer l'erreur - peut-être le fichier n'existe pas ou n'est pas exécutable
-        throw std::runtime_error("File is not executable or does not exist.");
-    }
-}
-
 bool	Response::isCGI(Client client) throw (ErrorHandler)
 {
-	// (void) client;
-	// return false;
-	if (UtilParsing::isDirectory(client.request.completeUri) == true)
-		return false;
 	
 	if (checkExtensionCGI(client.request.getHeader().uri) == true)
 	{
-		// if (access(client.request.getHeader().uri.c_str(), X_OK) != 1)
-		// 	throw ErrorHandler(ERR_500);
+		const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
+		std::string path = current->root + client.request.getHeader().uri;
+		if (UtilParsing::isDirectory(path) == true)
+			return false;
+		if (access(path.c_str(), X_OK) != 0)
+		{
+			std::cout << path << std::endl;
+			throw ErrorHandler(ERR_500);
+		}
 		return true;
 	}
-
-	
 	return false;
 }
 
