@@ -28,7 +28,27 @@ if ($query)
     }
 }
 
-my $body = "<html>
+my $body = "
+<header>
+<style>       
+body {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 300;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #c4c3ca;
+    background-color: #1f2029;
+    overflow-x: hidden;
+    margin: 0;
+    }
+</style>
+</header>
+<html>
 
 
 <body>

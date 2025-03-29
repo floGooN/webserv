@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 300;
+            font-size: 15px;
+            line-height: 1.7;
+            color: #c4c3ca;
+            background-color: #1f2029;
+            overflow-x: hidden;
+            margin: 0;
+        }
+        form {
+            background-color: #2a2d36;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        h1 {
+            color: #fff;
+        }
+        label, input[type="submit"], input[type="text"], select {
+            display: block;
+            margin: 10px 0;
+            width: 100%;  
+            padding: 8px;  
+            border: 1px solid #ccc;
+            
+            border-radius: 4px;  
+        }
+        input[name="delai"]
+        {
+            display: block;
+            margin: 10px 0;
+            width: 100%;  
+            padding: 8px;  
+            border: 1px solid #ccc;
+            color:dimgray;
+        }
+        option{
+            color: blue;
+        }
+        input[type="submit"] {
+            background-color: #4CAF50;  
+            color: white;  
+            border: none;  
+            cursor: pointer;  
+        }
+        input[type="submit"]:hover {
+            background-color: #45a049;  
+        }
+    </style>
+</head>
+<body>
+    <form action="/script.py" method="POST" enctype="application/x-www-form-urlencoded">
+        <h1>Demande de devis pour site web</h1>
+        <p>Nous vous proposons de calculer le prix de nos services pour la création d'un site web personnalisé.</p>
+        
+        <p>Quel est l'objectif principal de votre site web ?</p>
+        <label for="objectif">Objectif :</label> 
+        <input type="text" id="objectif" name="objectif" required>
+
+        <p>Avez-vous des préférences en matière de design ?</p>
+        <label>
+            <input type="radio" name="design" value="oui" required> Oui
+        </label>
+        <label>
+            <input type="radio" name="design" value="non" required> Non
+        </label>
+
+        <p>Souhaitez-vous une fonctionnalité de réservation ou de prise de rendez-vous ?</p>
+        <label>
+            <input type="radio" name="rdv" value="oui" required> Oui
+        </label>
+        <label>
+            <input type="radio" name="rdv" value="non" required> Non
+        </label>
+
+        <p>Quel est le délai souhaité pour le lancement du site ?</p>
+        <label for="delai">Délai :</label>
+        <select id="delai" name="delai" required>
+            <option value="1 mois">1 mois</option>
+            <option value="2 mois">2 mois</option>
+            <option value="3 mois">3 mois</option>
+            <option value="plus de 3 mois">Plus de 3 mois</option>
+        </select>
+
+        <p>Souhaitez-vous une maintenance continue après le lancement du site ?</p>
+        <label>
+            <input type="radio" name="maintenance" value="oui" required> Oui
+        </label>
+        <label>
+            <input type="radio" name="maintenance" value="non" required> Non
+        </label>
+
+        <p>Souhaitez-vous inclure notre module optimisation SEO ? (299€)</p>
+        <label>
+            <input type="radio" name="SEO" value="oui" required> Oui
+        </label>
+        <label>
+            <input type="radio" name="SEO" value="non" required> Non
+        </label>
+
+        <input type="submit" value="Soumettre">
+    </form>
+</body>
+</html>
+

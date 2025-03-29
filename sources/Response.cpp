@@ -271,52 +271,12 @@ void	Response::autoIndexResponse(Client client)
 // }
 /*----------------------------------------------------------------------------*/
 
-/*	* unterminated function
-*/
-// bool	Response::isCGI(const Request &req) throw (ErrorHandler)
-// {
-// 	return false;
-// 	if (UtilParsing::isDirectory(req.completeUri) == true)
-// 		return false;
 
-// 	try {
-// 		UtilParsing::checkAccessRessource(req.completeUri, R_OK);
-// 	}
-// 	catch(const std::exception& e)
-// 	{
-// 		switch (errno)
-// 		{
-// 			case ENOENT:
-// 			case ELOOP:
-// 				throw ErrorHandler(ERR_404, e.what());
-			
-// 			case EACCES:
-// 			case ENAMETOOLONG:
-// 			case ENOTDIR:
-// 				throw ErrorHandler(ERR_403, e.what());
-			
-// 			default:
-// 				throw ErrorHandler(ERR_400, e.what());
-// 		}
-// 	}
-	
-// 	if (checkExtensionCGI(client.request.completeUri, client.clientServer) != 0)
-//             throw ErrorHandler(ERR_502, "Bad Gateway");
-// 	// a partir d'ici verifier l'extension du fichier et renvoyer true si elle correspond a un cgi executable
-// 	// a partir de la il n'y a plus d'erreur a gerer sur cette fonction, juste renvoyer true ou false
-// 	size_t idx = req.completeUri.find_last_of('.');
-
-// 	if (idx == req.completeUri.npos)
-// 		return false;
-	
-// 	return false;
-// }
 /*----------------------------------------------------------------------------*/
 
 
 bool	Response::isCGI(Client client) throw (ErrorHandler)
 {
-	
 	if (checkExtensionCGI(client.request.getHeader().uri) == true)
 	{
 		const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
