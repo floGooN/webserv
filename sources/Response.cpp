@@ -8,6 +8,7 @@
 #include "Client.hpp"
 #include "Response.hpp"
 #include "UtilParsing.hpp"
+#include <sys/stat.h>
 
 /*============================================================================*/
 				/*### CONSTRUCTORS - DESTRUCTOR - OVERLOAD OP ###*/
@@ -106,9 +107,36 @@ void	Response::postQuery(Client &client)
 }
 /*----------------------------------------------------------------------------*/
 
-void	Response::deleteQuery(const Client &)
+void	Response::deleteQuery(const Client &client)
 {
 	std::cout << BRIGHT_CYAN "DELETE QUERY" << RESET << std::endl;
+
+	std::string basePath = "./uploads/"; // Dossier autorisé
+    std::string filePath = basePath + client.request.getHeader().uri;
+	char		path[100];
+
+	if (realpath(filePath.c_str(), path) == NULL)
+		throw ErrorHandler(ERR_400, "realpath() in DELETE, invalid path");
+	else if (basePath.compare(0, basePath.size(), path) != 0)
+		throw ErrorHandler(ERR_403, "realpath() in DELETE, invalid path");
+    else if (access(path, F_OK) == -1)
+		throw ErrorHandler(ERR_404, "Not found in delete()");
+	else if (access(path, W_OK) == -1)
+		throw ErrorHandler(ERR_403, "Acces forbidden");
+    else
+    {
+        struct stat path_stat;
+        stat(path, &path_stat);
+        if (S_ISREG(path_stat.st_mode))
+        {
+            if (remove(path) == 0)
+				throw ErrorHandler(COD_204, "No content in DELETE");
+            else
+				throw ErrorHandler(ERR_500, "remove() in deleteQuery()");
+        }
+        else
+			throw ErrorHandler(ERR_403, "Forbidden removing");
+    }
 }
 /*----------------------------------------------------------------------------*/
 
