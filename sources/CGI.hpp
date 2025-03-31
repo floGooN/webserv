@@ -21,7 +21,7 @@ std::string ParseUri(std::string uri);
 void freeEnv(char** tab);
 int controlContentBodyReq(const Request &req);
 std::string buildScriptName(const Request &req);
-std::string processAutoIndex(std::string path);
+std::string processAutoIndex(Client client);
 std::string buildBodyAutoIndex(DIR *dir, std::string path);
 std::string buildHeaderAutoIndex(std::string body);
 std::string processCGI(const Client &client);

@@ -36,12 +36,11 @@ class Response
 
 		void		initMimeMap();
 		void		uploadFile(const Client &) throw (ErrorHandler);
-		// bool		isCGI(const Request &) throw (ErrorHandler);
 		bool	isCGI(Client client) throw (ErrorHandler);
+		bool isRepository(Client client) throw (ErrorHandler);
 		std::string	&findMimeType(const std::string &uri);
 		std::string	extractFilename(const std::string &bodyHeader) throw (ErrorHandler);
 		std::string	setHeader(const Request &, const std::string &) throw (ErrorHandler);
-		void	autoIndexResponse(Client client);
 };
 
 std::ostream & operator<<(std::ostream &, const Response &);

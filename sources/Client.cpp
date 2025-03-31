@@ -109,27 +109,27 @@ void	Client::buildResponse() throw (ErrorHandler)
 	if ( ! response.message.empty() )
 		return;
 
-	if (isAutoindex() == true) {
-		std::cout << "It's Autoindex\n"; // here play autoindex generator
-		throw ErrorHandler(ERR_404, "Autoindex"); // provisoirement
-	}
-	else
+	// if (isAutoindex() == true) {
+	// 	std::cout << "It's Autoindex\n"; // here play autoindex generator
+	// 	throw ErrorHandler(ERR_404, "Autoindex"); // provisoirement
+	// }
+	// else
+	// {
+	switch (request.getHeader().requestType)
 	{
-		switch (request.getHeader().requestType)
-		{
-			case GET:
-				response.getQuery(*this);
-				break;
-			case POST:
-				response.postQuery(*this);
-				break;
-			case DELETE:
-				response.deleteQuery(*this);
-				break;
-			default:
-				throw ErrorHandler(ERR_400, "Unknow the request type");
-		}
+		case GET:
+			response.getQuery(*this);
+			break;
+		case POST:
+			response.postQuery(*this);
+			break;
+		case DELETE:
+			response.deleteQuery(*this);
+			break;
+		default:
+			throw ErrorHandler(ERR_400, "Unknow the request type");
 	}
+	// }
 }
 /*----------------------------------------------------------------------------*/
 

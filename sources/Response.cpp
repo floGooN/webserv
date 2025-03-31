@@ -68,6 +68,16 @@ void	Response::getQuery(const Client &client)
 			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
 		}
 	}
+	else if (isRepository(client) == true)
+	{
+		message = processAutoIndex(client);
+		try {
+			message.insert(0, setHeader(client.request, COD_200));
+		}
+		catch(const std::exception& e) {
+			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
+		}
+	}
 	else
 	{
 		UtilParsing::readFile(client.request.completeUri, message);
@@ -218,12 +228,6 @@ std::string	Response::setHeader(const Request &req, const std::string &code) thr
 
 /*----------------------------------------------------------------------------*/
 
-void	Response::autoIndexResponse(Client client)
-{
-	processAutoIndex(client.request.completeUri);
-}
-
-
 /*----------------------------------------------------------------------------*/
 
 /*----------------------------------------------------------------------------*/
@@ -241,10 +245,7 @@ bool	Response::isCGI(Client client) throw (ErrorHandler)
 		if (UtilParsing::isDirectory(path) == true)
 			return false;
 		if (access(path.c_str(), X_OK) != 0)
-		{
-			std::cout << path << std::endl;
 			throw ErrorHandler(ERR_500);
-		}
 		return true;
 	}
 	return false;
@@ -253,6 +254,18 @@ bool	Response::isCGI(Client client) throw (ErrorHandler)
 /*----------------------------------------------------------------------------*/
 
 
+bool Response::isRepository(Client client) throw (ErrorHandler)
+{
+	if (client.request.getHeader().uri == "/")
+		return false;
+	const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
+	if (current == NULL)
+		return false;
+	std::string path = current->root + client.request.getHeader().uri;
+	return UtilParsing::isDirectory(path);
+}
+
+/*----------------------------------------------------------------------------*/
 
 void	Response::clearResponse()
 {

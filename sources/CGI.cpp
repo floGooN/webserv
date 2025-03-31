@@ -47,7 +47,6 @@ bool checkExtensionCGI(const std::string &path)
     return false;
 }
 
-// fonction qui permet d'aller dans le bon dossier avec execution du processus cgi
 bool moveToDirectoryScript(const std::string &directory)
 {
     if (chdir(directory.c_str()) != 0)
@@ -55,8 +54,6 @@ bool moveToDirectoryScript(const std::string &directory)
     return true;
 }
 
-
-// foction pour creer env necessaire dans les script CGI et plus particulieerement les GET
 char** initEnv(const Request &req)
 {
       std::string environnement[] = 
@@ -132,7 +129,6 @@ std::string playCgi(const std::string &path, const Request &req, char **env)
     return "";
 }
 
-
 void closePipe(int *pipe_in, int *pipe_out)
 {
     close(pipe_in[0]); 
@@ -154,16 +150,14 @@ std::string executeCGI(const Client &client)
     return body;
 }
 
-
 int controlContentBodyReq(const Request &req)
 {
-    if (req.getHeader().requestType == POST) // a verifier mais je crois que c'est bon
+    if (req.getHeader().requestType == POST)
         if (req.getbody().body.empty())
             return -1;
     return 0;
 }
 
-// rajouter le nom du script a appele de facon modulable
 void childProcessCgi(char**env, int *pipe_in, int *pipe_out, const Request &req)
 {
     close(pipe_in[1]);
@@ -179,7 +173,6 @@ void childProcessCgi(char**env, int *pipe_in, int *pipe_out, const Request &req)
 }
 
 
-// rajouter le nom du script a appele de facon modulable
 void childProcessCgiPy(char**env, int *pipe_in, int *pipe_out, const Request &req)
 {
     close(pipe_in[1]);
@@ -193,8 +186,6 @@ void childProcessCgiPy(char**env, int *pipe_in, int *pipe_out, const Request &re
     execve(args[0], (char *const *)args, env);
     _exit(1);
 }
-
-
 
 std::string parentProcessCgi(const Request &req, pid_t pid, int *pipe_in, int *pipe_out)
 {
@@ -226,7 +217,7 @@ std::string createBody(int *pipe_out)
     return newBody;
 }
 
-std::string ParseUri(std::string uri) // ici donner args
+std::string ParseUri(std::string uri)
 {
     std::string::size_type start = uri.find('?');
     if (start == std::string::npos)
