@@ -25,10 +25,7 @@
 
     # * si le service inclus des scripts, ils doivent etre stockes dans un repertoire cgi-bin
     # * le serveur cherche le repertoire cgi-bin a la racine du service si aucune route n'est redefinit sur le service
-    
 
-
-#
 #
 # les blocs location permettent de definir des regles specifiques pour un directory
     # directives uniques au bloc location
