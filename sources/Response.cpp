@@ -78,6 +78,17 @@ void	Response::getQuery(const Client &client)
 			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
 		}
 	}
+	else if (isRedirect(client) == true)
+	{
+		std::cout << "C'est une redirection" << std::endl;
+		message = processRedirect(client);
+		try {
+			message.insert(0, setHeaderRedirect(client, client.request));
+		}
+		catch(const std::exception& e) {
+			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
+		}
+	}
 	else
 	{
 		UtilParsing::readFile(client.request.completeUri, message);
@@ -219,6 +230,29 @@ std::string	Response::setHeader(const Request &req, const std::string &code) thr
 }
 /*----------------------------------------------------------------------------*/
 
+std::string	Response::setHeaderRedirect(const Client &client, const Request &req) throw (ErrorHandler)
+{
+	std::ostringstream oss;
+	oss << message.length();
+
+	if (oss.fail())
+		throw ErrorHandler(ERR_500, "In Response::setHeader()\nconversion of the length message faild");
+	const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
+	
+	std::string header = \
+		PROTOCOL_VERION " " + current->redirect[0] + "\r\n" \
+		"Server: Rob&Flo V0.9" + "\r\n" \
+		"Content-Type: " + findMimeType(req.completeUri) + "; charset=UTF-8\r\n" \
+		"Content-Length: " + oss.str() + "\r\n" \
+		"Connection: " + (req.keepAlive == true ? "keep-alive" : "close") +
+		"Location" + current->redirect[1] +
+		 "\r\n" \
+		"\r\n";
+
+
+	return header;	
+}
+
 /*----------------------------------------------------------------------------*/
 
 
@@ -231,6 +265,24 @@ std::string	Response::setHeader(const Request &req, const std::string &code) thr
 /*----------------------------------------------------------------------------*/
 
 /*----------------------------------------------------------------------------*/
+
+// prendre les redirect pour verifier .
+bool	Response::isRedirect(Client client)
+{
+	const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
+	if (current == NULL)
+	{
+		std::cout << "rentre1" << std::endl;
+		return false;
+	}
+	std::cout << current->redirect[0] << std::endl;
+	if (current->redirect[0] == "")
+	{
+		std::cout << "rentre" << std::endl;
+		return false;
+	}
+	return true;
+}
 
 
 /*----------------------------------------------------------------------------*/

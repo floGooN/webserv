@@ -42,6 +42,7 @@ class Server
 		void	setIndex(const std::string &, t_location &);
 		void	setPath(const std::string &, t_location &);
 		void	setRoot(const std::string &, t_location &);
+		void	setRedir(const std::vector<std::string> &, t_location &);
 };
 
 std::ostream	& operator<<(std::ostream &, const Server &);

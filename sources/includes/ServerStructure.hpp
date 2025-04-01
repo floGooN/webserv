@@ -28,6 +28,7 @@ struct s_location
 			path = ref.path;
 			root = ref.root;
 			methods = ref.methods;
+			redirect = ref.redirect;
 		}
 		return *this;
 	}
@@ -44,6 +45,7 @@ struct s_location
 		path.clear();
 		root.clear();
 		methods.clear();
+		redirect.clear();
 	}
 
 	bool		autoindex;
@@ -52,6 +54,7 @@ struct s_location
 	std::string	path;
 	std::string	root;
 	std::set<e_methods> methods;
+	std::vector<std::string> redirect;
 
 };
 

@@ -21,13 +21,15 @@ std::string ParseUri(std::string uri);
 void freeEnv(char** tab);
 int controlContentBodyReq(const Request &req);
 std::string buildScriptName(const Request &req);
-std::string processAutoIndex(Client client);
 std::string buildBodyAutoIndex(DIR *dir, std::string path);
-std::string buildHeaderAutoIndex(std::string body);
 std::string processCGI(const Client &client);
 std::string executeCGI(const Client &client);
 std::string parentProcessCgi(const Request &req, pid_t pid, int *pipe_in, int *pipe_out);
 std::string createBody(int *pipe_out);
 std::string ParseUri(std::string uri);
+std::string processRedirect(const Client &client) throw (ErrorHandler);
+bool controlValuesRedirect(const std::vector<std::string> &vec);
+std::string buildBodyRedirect(const std::vector<std::string> &vec);
+std::string processAutoIndex(const Client &client);
 
 #endif

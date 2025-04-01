@@ -18,6 +18,7 @@ class LocationConfig
         std::string cgipath;
         std::string autoindex;
         std::vector<std::string> methods;
+        std::vector<std::string> redirect;
 
         void controlDefaultLocationConf();
         void checkSemiColonLocation();

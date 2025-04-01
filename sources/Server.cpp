@@ -207,6 +207,7 @@ std::set<t_location> Server::setLocations(const std::vector<LocationConfig> &con
 		setMethods(it->methods, newLoc);
 		setPath(it->path, newLoc);
 		setRoot(it->root, newLoc);
+		setRedir(it->redirect, newLoc);
 		result.insert(newLoc);
 		it++;
 	}
@@ -253,6 +254,18 @@ void	Server::setMethods(const std::vector<std::string> &conf, t_location &loc)
 		it++;
 	}
 }
+
+/*----------------------------------------------------------------------------*/
+void	Server::setRedir(const std::vector<std::string> &conf, t_location &loc)
+{
+	std::vector<std::string>::const_iterator it = conf.begin();
+	while (it != conf.end())
+	{
+		loc.redirect.push_back(*it);
+		it++;
+	}
+}
+
 /*----------------------------------------------------------------------------*/
 
 void	Server::setPath(const std::string &conf, t_location &loc) {

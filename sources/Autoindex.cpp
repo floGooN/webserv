@@ -6,7 +6,7 @@
 #include "UtilParsing.hpp"
 
 
-std::string processAutoIndex(Client client)
+std::string processAutoIndex(const Client &client)
 {
     DIR *dir;
     std::string body;

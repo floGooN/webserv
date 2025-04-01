@@ -12,6 +12,7 @@ LocationConfig::LocationConfig()
 	index.clear();
 	cgipath.clear();
 	methods.clear();
+	redirect.clear();
 }
 
 LocationConfig::LocationConfig(const LocationConfig &ref) {
@@ -30,6 +31,9 @@ std::ostream & operator<<(std::ostream &o, const LocationConfig & ref)
 	for (std::vector<std::string>::const_iterator it = ref.methods.begin();
 		it != ref.methods.end(); it++)
 		o << *it << " ";
+	for (std::vector<std::string>::const_iterator iter = ref.redirect.begin();
+		iter != ref.redirect.end(); iter++)
+		o << *iter << " ";
 	return o << RESET << std::endl;
 }
 
@@ -43,6 +47,7 @@ LocationConfig & LocationConfig::operator=(const LocationConfig &ref)
 		index = ref.index;
 		cgipath = ref.cgipath;
 		methods = ref.methods;
+		redirect = ref.redirect;
 	}
 	return *this;
 }
@@ -69,5 +74,10 @@ void	LocationConfig::checkSemiColonLocation()
 	{
 		if (it->find(";") != std::string::npos)
 			*it = UtilParsing::trimSemicolon(*it);
+	}
+	for (std::vector<std::string>::iterator iter = redirect.begin(); iter != redirect.end(); iter++)
+	{
+		if (iter->find(";") != std::string::npos)
+			*iter = UtilParsing::trimSemicolon(*iter);
 	}
 }

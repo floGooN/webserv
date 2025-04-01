@@ -38,9 +38,11 @@ class Response
 		void		uploadFile(const Client &) throw (ErrorHandler);
 		bool	isCGI(Client client) throw (ErrorHandler);
 		bool isRepository(Client client) throw (ErrorHandler);
+		bool	isRedirect(Client client);
 		std::string	&findMimeType(const std::string &uri);
 		std::string	extractFilename(const std::string &bodyHeader) throw (ErrorHandler);
 		std::string	setHeader(const Request &, const std::string &) throw (ErrorHandler);
+		std::string	setHeaderRedirect(const Client &client, const Request &req) throw (ErrorHandler);
 };
 
 std::ostream & operator<<(std::ostream &, const Response &);
