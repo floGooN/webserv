@@ -314,3 +314,71 @@ const t_location * UtilParsing::findLocation(const std::set<t_location> &allLoca
 	}
 	return NULL;
 }
+
+std::string UtilParsing::convertHexaToString(std::string value)
+{
+    std::string strConvert;
+    int number;
+    for(size_t i = 0; i < value.size(); i++)
+    {
+        if (value[i] == '%')
+        {
+            number = decryptHexa(value.substr(i + 1, 2));
+            char str = number;
+           if (strConvert.empty())
+                strConvert = value.substr(0, i);
+            strConvert += str;
+            i += 2; 
+        }
+    }
+    if (!strConvert.empty())
+        return strConvert + value.substr(value.find_last_of('%') + 3);
+    return value;
+}
+
+int UtilParsing::decryptHexa(std::string value)
+{
+    unsigned int x;
+    std::stringstream ss;
+    ss << std::hex << value;
+    ss >> x;
+    return x;
+}
+bool UtilParsing::fileExits(const std::string &filename)
+{
+	std::ifstream file(filename.c_str());
+	return file.good();
+}
+
+std::string UtilParsing::emethodsTypeToString(e_methods type)
+{
+	switch (type)
+	{
+		case GET:
+			return "GET";
+		case POST:
+			return "POST";
+		case DELETE:
+			return "DELETE";
+		case EMPTY:
+			return "Unknowm";
+	}
+}
+
+std::string UtilParsing::econtentTypeToString(e_contentType type)
+{
+	switch (type)
+	{
+	case APP:
+		return "application/x-www-form-urlencoded";
+	case TXT:
+		return "text/plain";
+	case MULTIPART:
+		return "multipart/form-data";
+	default:
+		return "Unknowm";
+	}
+} 
+
+
+

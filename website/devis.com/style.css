@@ -1,0 +1,162 @@
+
+body {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    background-color: #f4f4f9;
+    color: #333;
+}
+#logo {
+    max-width: 100px;
+}
+
+a {
+    text-decoration: none;
+}
+
+header {
+    background-color: #7bdcb5;
+    color: white;
+    padding: 1rem 0;
+}
+header .bar-nav {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+}
+header .menu {
+    display: flex;
+    gap: 15px;
+}
+header .menu .bar-elem a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+}
+header .menu .bar-elem a:hover {
+    text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+    padding: 0.5rem 0;
+}
+h1 {
+    font-size: 2.5rem;
+    text-align: center;
+    margin-top: 20px;
+}
+main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+.presentation {
+    text-align: center;
+    margin-bottom: 30px;
+}
+.presentation h1 {
+    color: #01600b;
+}
+.presentation p {
+    font-size: 1.1rem;
+    color: #555;
+}
+.services {
+    display: flex;
+    gap: 20px;
+    justify-content: space-between;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+.services .element {
+    flex: 1;
+    min-width: 280px;
+    background-color: white;
+    border-radius: 5px;
+    padding: 20px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+.services .element h3 {
+    color: #7bdcb5;
+    margin-bottom: 10px;
+}
+.services .element p {
+    color: #555;
+}
+
+.accro {
+    width: 60%; 
+    background-color: #7bdcb5; 
+    border-radius: 8px; 
+    padding: 30px 20px; 
+    margin: 30px auto; 
+    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1); 
+    text-align: center; 
+    color: #fff; 
+    font-family: 'Arial', sans-serif;
+}
+.accro h2 {
+    font-size: 1.8rem; 
+    margin-bottom: 20px; 
+    font-weight: bold;
+}
+
+.getscript {
+    display: inline-block; 
+    padding: 12px 20px; 
+    background-color: #4caf50; 
+    color: #fff; 
+    border-radius: 5px; 
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 1rem;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); 
+    transition: transform 0.2s ease, background-color 0.2s ease; 
+}
+.getscript:hover {
+    background-color: #388e3c; 
+    transform: scale(1.05); 
+    cursor: pointer;
+}
+
+.avis {
+    margin-top: 40px;
+    display: flex;
+    gap: 20px;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+.client {
+    flex: 1;
+    min-width: 280px;
+    background-color: white;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+.client h4 {
+    color: #7bdcb5;
+    margin-bottom: 10px;
+}
+footer {
+    /* background-color: #333; */
+    color: black;
+    text-align: center;
+    padding: 10px 0;
+    margin-top: auto;
+    min-height: 100%;
+}
+footer .contact h5 {
+    font-size: 2.2rem;
+}
+footer .contact p {
+    font-size: 1.9rem;
+}
+

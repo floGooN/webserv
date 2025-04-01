@@ -22,12 +22,12 @@ typedef struct  s_body          t_body;
 	
 	for each of them, data is in a specific format in the request
 */
-enum e_contentType
-{
-    APP,
-    TXT,
-    MULTIPART
-};
+// enum e_contentType
+// {
+//     APP,
+//     TXT,
+//     MULTIPART
+// };
 
 struct s_header
 {

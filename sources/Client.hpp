@@ -7,7 +7,7 @@
 # include "ServerStructure.hpp"
 
 # include "ErrorHandler.hpp"
-
+# include "Server.hpp"
 # include "Request.hpp"
 # include "Response.hpp"
 

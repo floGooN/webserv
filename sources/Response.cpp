@@ -9,6 +9,7 @@
 #include "Response.hpp"
 #include "UtilParsing.hpp"
 #include <sys/stat.h>
+#include "CGI.hpp"
 
 /*============================================================================*/
 				/*### CONSTRUCTORS - DESTRUCTOR - OVERLOAD OP ###*/
@@ -59,10 +60,25 @@ void	Response::getQuery(const Client &client)
 {
 	std::cout << BRIGHT_GREEN "GET QUERY" RESET << std::endl;
 
-	if (isCGI(client.request) == true) {
-
-		std::cout << "It's CGI\n"; // here play CGI
-		throw ErrorHandler(ERR_404, "CGI"); // provisoirement
+	if (isCGI(client) == true) 
+	{
+		message = processCGI(client);
+		try {
+			message.insert(0, setHeader(client.request, COD_200));
+		}
+		catch(const std::exception& e) {
+			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
+		}
+	}
+	else if (isRepository(client) == true)
+	{
+		message = processAutoIndex(client);
+		try {
+			message.insert(0, setHeader(client.request, COD_200));
+		}
+		catch(const std::exception& e) {
+			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
+		}
 	}
 	else
 	{
@@ -84,9 +100,15 @@ void	Response::postQuery(Client &client)
 
 	UtilParsing::checkAccessRessource(client.request.completeUri, W_OK);
 
-	if (isCGI(client.request) == true) {
-		std::cout << BRIGHT_YELLOW "It's CGI\n" RESET; // here play CGI
-		throw ErrorHandler(ERR_404, "CGI"); // provisoirement
+	if (isCGI(client) == true) 
+	{
+		message = processCGI(client);
+		try {
+			message.insert(0, setHeader(client.request, COD_200));
+		}
+		catch(const std::exception& e) {
+			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
+		}
 	}
 	else
 	{
@@ -199,8 +221,9 @@ std::string	&Response::findMimeType(const std::string &uri)
 	try {
 		return _mimeMap.at(UtilParsing::recoverExtension(uri));
 	}
-	catch(const std::exception& e) {
-		return _mimeMap.at(".bin");
+	catch(const std::exception& e) 
+	{
+		return _mimeMap.at(".html"); // mis car sinon les scripts se considerer comme des binaires
 	}
 }
 /*----------------------------------------------------------------------------*/
@@ -225,44 +248,35 @@ std::string	Response::setHeader(const Request &req, const std::string &code) thr
 }
 /*----------------------------------------------------------------------------*/
 
-/*	* unterminated function
-*/
-bool	Response::isCGI(const Request &req) throw (ErrorHandler)
+bool	Response::isCGI(Client client) throw (ErrorHandler)
 {
-	return false;
-	if (UtilParsing::isDirectory(req.completeUri) == true)
-		return false;
-
-	try {
-		UtilParsing::checkAccessRessource(req.completeUri, R_OK);
-	}
-	catch(const std::exception& e)
+	if (checkExtensionCGI(client.request.getHeader().uri) == true)
 	{
-		switch (errno)
-		{
-			case ENOENT:
-			case ELOOP:
-				throw ErrorHandler(ERR_404, e.what());
-			
-			case EACCES:
-			case ENAMETOOLONG:
-			case ENOTDIR:
-				throw ErrorHandler(ERR_403, e.what());
-			
-			default:
-				throw ErrorHandler(ERR_400, e.what());
-		}
+		const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
+		std::string path = current->root + client.request.getHeader().uri;
+		if (UtilParsing::isDirectory(path) == true)
+			return false;
+		if (access(path.c_str(), X_OK) != 0)
+			throw ErrorHandler(ERR_500);
+		return true;
 	}
-
-	// a partir d'ici verifier l'extension du fichier et renvoyer true si elle correspond a un cgi executable
-	// a partir de la il n'y a plus d'erreur a gerer sur cette fonction, juste renvoyer true ou false
-	size_t idx = req.completeUri.find_last_of('.');
-
-	if (idx == req.completeUri.npos)
-		return false;
-	
 	return false;
 }
+
+/*----------------------------------------------------------------------------*/
+
+
+bool Response::isRepository(Client client) throw (ErrorHandler)
+{
+	if (client.request.getHeader().uri == "/")
+		return false;
+	const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
+	if (current == NULL)
+		return false;
+	std::string path = current->root + client.request.getHeader().uri;
+	return UtilParsing::isDirectory(path);
+}
+
 /*----------------------------------------------------------------------------*/
 
 void	Response::clearResponse()
@@ -313,5 +327,6 @@ void Response::initMimeMap()
     _mimeMap.insert(std::make_pair(".3gp", "video/3gpp"));
     _mimeMap.insert(std::make_pair(".7z", "application/x-7z-compressed"));
     _mimeMap.insert(std::make_pair(".bin", "application/octet-stream"));
+	_mimeMap.insert(std::make_pair(".urlencoded", "application/x-www-form-urlencoded"));
 }
 /*----------------------------------------------------------------------------*/

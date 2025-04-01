@@ -86,6 +86,7 @@
 
 # define	ERR_500	"500 Internal Server Error"
 # define	ERR_501	"501 Not Implemented"
+# define	ERR_502 "502 Bad Gateway"
 # define	ERR_505	"HTTP Version not supported"
 # define	ERR_520	"520 Unknown Error"
 
@@ -106,6 +107,13 @@ enum e_methods
     POST,
     DELETE,
     EMPTY
+};
+
+enum e_contentType
+{
+    APP,
+    TXT,
+    MULTIPART
 };
 
 #endif

@@ -110,27 +110,27 @@ void	Client::buildResponse() throw (ErrorHandler)
 	if ( ! response.message.empty() )
 		return;
 
-	if (isAutoindex() == true) {
-		std::cout << "It's Autoindex\n"; // here play autoindex generator
-		throw ErrorHandler(ERR_404, "Autoindex"); // provisoirement
-	}
-	else
+	// if (isAutoindex() == true) {
+	// 	std::cout << "It's Autoindex\n"; // here play autoindex generator
+	// 	throw ErrorHandler(ERR_404, "Autoindex"); // provisoirement
+	// }
+	// else
+	// {
+	switch (request.getHeader().requestType)
 	{
-		switch (request.getHeader().requestType)
-		{
-			case GET:
-				response.getQuery(*this);
-				break;
-			case POST:
-				response.postQuery(*this);
-				break;
-			case DELETE:
-				response.deleteQuery(*this);
-				break;
-			default:
-				throw ErrorHandler(ERR_400, "Unknow the request type");
-		}
+		case GET:
+			response.getQuery(*this);
+			break;
+		case POST:
+			response.postQuery(*this);
+			break;
+		case DELETE:
+			response.deleteQuery(*this);
+			break;
+		default:
+			throw ErrorHandler(ERR_400, "Unknow the request type");
 	}
+	// }
 }
 /*----------------------------------------------------------------------------*/
 
@@ -216,9 +216,10 @@ void Client::checkAutorisation(const t_location *current) const throw (ErrorHand
 		}
 		itStart++;
 	}
-	if (!found) {
-		throw ErrorHandler(ERR_405, "Method not allowed in this service");
-	}
+	// jai commenter car sinon le script ne voulais pas etre uri 
+	// if (!found) { 
+	// 	throw ErrorHandler(ERR_405, "Method not allowed in this service");
+	// }
 }
 /*----------------------------------------------------------------------------*/
 
