@@ -239,9 +239,7 @@ bool	Response::isCGI(Client client) throw (ErrorHandler)
 	}
 	return false;
 }
-
 /*----------------------------------------------------------------------------*/
-
 
 bool Response::isRepository(Client client) throw (ErrorHandler)
 {
@@ -253,7 +251,6 @@ bool Response::isRepository(Client client) throw (ErrorHandler)
 	std::string path = current->root + client.request.getHeader().uri;
 	return UtilParsing::isDirectory(path);
 }
-
 /*----------------------------------------------------------------------------*/
 
 void	Response::clearResponse()

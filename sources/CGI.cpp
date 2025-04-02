@@ -36,7 +36,6 @@ std::string processCGI(const Client &client)
     }
     return res;
 }
-
 /*----------------------------------------------------------------------------*/
 
 bool checkExtensionCGI(const std::string &path)
@@ -50,7 +49,6 @@ bool checkExtensionCGI(const std::string &path)
         return true;
     return false;
 }
-
 /*----------------------------------------------------------------------------*/
 
 bool moveToDirectoryScript(const std::string &directory)
@@ -59,7 +57,6 @@ bool moveToDirectoryScript(const std::string &directory)
         return false;
     return true;
 }
-
 /*----------------------------------------------------------------------------*/
 
 char** initEnv(const Request &req)
@@ -73,7 +70,6 @@ char** initEnv(const Request &req)
         std::string("HTTP_HOST=") + req.getHeader().hostName,
         buildScriptName(req),
         std::string("PATH_INFO=") + buildPathInfo(req.getHeader().uri),
-        // std::string("KEEP_ALIVE=") + (req.keepAlive == true ? "keep-alive" : "close"),
     };
     int  environSize = sizeof(environnement) / sizeof(environnement[0]);
     char** envCGI = new char*[environSize + 1]; 
@@ -109,7 +105,7 @@ std::string buildPathInfo(const std::string &path)
 
 std::string buildScriptName(const Request &req)
 {
-    std::string::size_type start = req.getHeader().uri.find_last_of('/'); // avant first
+    std::string::size_type start = req.getHeader().uri.find_last_of('/');
     std::string::size_type end = req.getHeader().uri.find('?');
     if (end == std::string::npos)
     {
