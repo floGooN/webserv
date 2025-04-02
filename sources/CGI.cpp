@@ -18,6 +18,8 @@ std::string processCGI(const Client &client)
     try
     {
         const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
+        if (!current)
+            throw ErrorHandler(ERR_404, "Not Found");
         char cwd[PATH_MAX];
         getcwd(cwd, sizeof(cwd));
         if (moveToDirectoryScript(current->root) != true)
@@ -35,6 +37,8 @@ std::string processCGI(const Client &client)
     return res;
 }
 
+/*----------------------------------------------------------------------------*/
+
 bool checkExtensionCGI(const std::string &path)
 {
    std::string cgi_path = "support.pl";
@@ -47,6 +51,8 @@ bool checkExtensionCGI(const std::string &path)
     return false;
 }
 
+/*----------------------------------------------------------------------------*/
+
 bool moveToDirectoryScript(const std::string &directory)
 {
     if (chdir(directory.c_str()) != 0)
@@ -54,34 +60,56 @@ bool moveToDirectoryScript(const std::string &directory)
     return true;
 }
 
+/*----------------------------------------------------------------------------*/
+
 char** initEnv(const Request &req)
 {
-      std::string environnement[] = 
+    std::string environnement[] = 
       {
         std::string("REQUEST_METHOD=") + UtilParsing::emethodsTypeToString(req.getHeader().requestType),
-        std::string("QUERY_STRING=") + ((req.getHeader().requestType == GET) ? ParseUri(req.getArgs())  : " "), // si c'est pas une get je mets rien apres a voir si on met une valeur ou pas
+        std::string("QUERY_STRING=") + ((req.getHeader().requestType == GET) ? ParseUri(req.getArgs())  : " "),
         std::string("CONTENT_TYPE=") + UtilParsing::econtentTypeToString(req.getbody().contentType),
         std::string("CONTENT_LENGTH=") + ((req.getbody().contentLength == (size_t)0) ? std::string("100") : UtilParsing::intToString(req.getbody().contentLength)),
         std::string("HTTP_HOST=") + req.getHeader().hostName,
         buildScriptName(req),
-        std::string("PATH_INFO=") + req.getHeader().uri,
+        std::string("PATH_INFO=") + buildPathInfo(req.getHeader().uri),
+        // std::string("KEEP_ALIVE=") + (req.keepAlive == true ? "keep-alive" : "close"),
     };
     int  environSize = sizeof(environnement) / sizeof(environnement[0]);
     char** envCGI = new char*[environSize + 1]; 
+    if (envCGI == NULL)
+        return NULL;
     for (int i = 0; i < environSize; i++) 
     {
         envCGI[i] = new char[environnement[i].size() + 1];
         strcpy(envCGI[i], environnement[i].c_str());
     }
+    // si new crash dans la boucle
+    // liberer le ptr **envCGI + tous les ptr allouees dans la boucle
+    // return NULL et t la meme est liberee
     envCGI[environSize] = NULL;
 
     return envCGI;
 }
 
+/*----------------------------------------------------------------------------*/
+
+std::string buildPathInfo(const std::string &path)
+{
+    std::string cgi_path = "support.pl";
+    std::string cgi_path_other = "support.py";
+
+    if (UtilParsing::recoverExtension(path) == UtilParsing::recoverExtension(cgi_path))
+        return "/usr/bin/perl"; // mettre MACRO 
+    return "/usr/bin/python3"; // mettre MACRO 
+}
+
+/*----------------------------------------------------------------------------*/
+
 
 std::string buildScriptName(const Request &req)
 {
-    std::string::size_type start = req.getHeader().uri.find_first_of('/');
+    std::string::size_type start = req.getHeader().uri.find_last_of('/'); // avant first
     std::string::size_type end = req.getHeader().uri.find('?');
     if (end == std::string::npos)
     {
@@ -100,8 +128,10 @@ std::string buildScriptName(const Request &req)
     }
 }
 
+/*----------------------------------------------------------------------------*/
 
-std::string playCgi(const std::string &path, const Request &req, char **env) 
+
+std::string playCgi(const Request &req, char **env) 
 {
     int pipe_in[2];
     int pipe_out[2];
@@ -117,17 +147,14 @@ std::string playCgi(const std::string &path, const Request &req, char **env)
         return "";
     }
     if (pid == 0)
-    {
-        if (UtilParsing::recoverExtension(path) == ".pl")
-            childProcessCgi(env, pipe_in, pipe_out, req);
-        else
-            childProcessCgiPy(env, pipe_in, pipe_out, req);
-    }
+        childProcessCgi(env, pipe_in, pipe_out, req);
     else 
         return parentProcessCgi(req, pid, pipe_in, pipe_out);
 
     return "";
 }
+
+/*----------------------------------------------------------------------------*/
 
 void closePipe(int *pipe_in, int *pipe_out)
 {
@@ -137,18 +164,24 @@ void closePipe(int *pipe_in, int *pipe_out)
     close(pipe_out[1]);
 }
 
+/*----------------------------------------------------------------------------*/
+
 std::string executeCGI(const Client &client)
 {
     char **env;
-    std::string body;
+    std::string body("");
     if (controlContentBodyReq(client.request) == -1)
         return body;
     env = initEnv(client.request);
-    body = playCgi(client.request.getHeader().uri, client.request, env);
+    if (!env)
+        return body;
+    body = playCgi(client.request, env);
     if (env)
         freeEnv(env);
     return body;
 }
+
+/*----------------------------------------------------------------------------*/
 
 int controlContentBodyReq(const Request &req)
 {
@@ -157,6 +190,8 @@ int controlContentBodyReq(const Request &req)
             return -1;
     return 0;
 }
+
+/*----------------------------------------------------------------------------*/
 
 void childProcessCgi(char**env, int *pipe_in, int *pipe_out, const Request &req)
 {
@@ -167,25 +202,15 @@ void childProcessCgi(char**env, int *pipe_in, int *pipe_out, const Request &req)
     dup2(pipe_out[1], STDOUT_FILENO);
     close(pipe_out[1]);
     std::string script = buildScriptName(req);
-    const char *args[] = {"/usr/bin/perl", script.c_str(), NULL};
+    std::string road = buildPathInfo(script);
+    const char *args[] = {road.c_str(), script.c_str(), NULL};
     execve(args[0], (char *const *)args, env);
+    //free env
     _exit(1);
 }
 
+/*----------------------------------------------------------------------------*/
 
-void childProcessCgiPy(char**env, int *pipe_in, int *pipe_out, const Request &req)
-{
-    close(pipe_in[1]);
-    close(pipe_out[0]);
-    dup2(pipe_in[0], STDIN_FILENO);
-    close(pipe_in[0]);
-    dup2(pipe_out[1], STDOUT_FILENO);
-    close(pipe_out[1]);
-    std::string script = buildScriptName(req);
-    const char *args[] = {"/usr/bin/python3", script.c_str(), NULL};
-    execve(args[0], (char *const *)args, env);
-    _exit(1);
-}
 
 std::string parentProcessCgi(const Request &req, pid_t pid, int *pipe_in, int *pipe_out)
 {
@@ -204,6 +229,8 @@ std::string parentProcessCgi(const Request &req, pid_t pid, int *pipe_in, int *p
     return newBody;
 }
 
+/*----------------------------------------------------------------------------*/
+
 std::string createBody(int *pipe_out)
 {
     std::string newBody;
@@ -217,6 +244,8 @@ std::string createBody(int *pipe_out)
     return newBody;
 }
 
+/*----------------------------------------------------------------------------*/
+
 std::string ParseUri(std::string uri)
 {
     std::string::size_type start = uri.find('?');
@@ -224,6 +253,8 @@ std::string ParseUri(std::string uri)
         return "";
     return UtilParsing::convertHexaToString(uri.substr(start + 1));
 }
+
+/*----------------------------------------------------------------------------*/
 
 void freeEnv(char** tab)
 {

@@ -8,6 +8,7 @@ use CGI;
 my $cgi = CGI->new;
 
 my $query = $ENV{'QUERY_STRING'};
+my $alive = $ENV{'KEEP_ALIVE'};
 my $value1;
 my $value2;
 
@@ -61,6 +62,6 @@ body {
 </html>";
 
 
+
 print $body;
 
-# print my $body = sprintf "<html>\n <body>\n <p>Le prix de votre devis est de: <strong>%d</strong> euros.</p>\n </body> \n </html>", $finalValue;;

@@ -59,47 +59,21 @@ void	Response::getQuery(const Client &client)
 	std::cout << BRIGHT_GREEN "GET QUERY" RESET << std::endl;
 
 	if (isCGI(client) == true) 
-	{
 		message = processCGI(client);
-		try {
-			message.insert(0, setHeader(client.request, COD_200));
-		}
-		catch(const std::exception& e) {
-			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
-		}
-	}
 	else if (isRepository(client) == true)
-	{
 		message = processAutoIndex(client);
-		try {
-			message.insert(0, setHeader(client.request, COD_200));
-		}
-		catch(const std::exception& e) {
-			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
-		}
-	}
 	else if (isRedirect(client) == true)
-	{
-		std::cout << "C'est une redirection" << std::endl;
 		message = processRedirect(client);
-		try {
-			message.insert(0, setHeaderRedirect(client, client.request));
-		}
-		catch(const std::exception& e) {
-			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
-		}
-	}
 	else
-	{
 		UtilParsing::readFile(client.request.completeUri, message);
 
-		try {
-			message.insert(0, setHeader(client.request, (message.empty() ? COD_204 : COD_200 )));
-		}
-		catch(const std::exception& e) {
-			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
-		}
+	try {
+		message.insert(0, setHeader(client.request, (message.empty() ? COD_204 : COD_200 )));
 	}
+	catch(const std::exception& e) {
+		throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
+	}
+	
 }
 /*----------------------------------------------------------------------------*/
 
@@ -110,31 +84,21 @@ void	Response::postQuery(Client &client)
 	UtilParsing::checkAccessRessource(client.request.completeUri, W_OK);
 
 	if (isCGI(client) == true) 
-	{
 		message = processCGI(client);
-		try {
-			message.insert(0, setHeader(client.request, COD_200));
-		}
-		catch(const std::exception& e) {
-			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
-		}
-	}
 	else
 	{
 		if (client.request.getbody().contentType != MULTIPART)
 			throw ErrorHandler(ERR_415, "The media type is not supported by the server");
-
 		uploadFile(client);
-
 		client.request.completeUri = "./uploads/uploadSucces.html";
 		UtilParsing::readFile(client.request.completeUri, message);
-		try {
-			message.insert(0, setHeader(client.request, COD_201));
-		}
-		catch(const std::exception& e) {
-			throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
-		}		
 	}
+	try {
+		message.insert(0, setHeader(client.request, COD_201));
+	}
+	catch(const std::exception& e) {
+		throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what()));
+	}	
 }
 /*----------------------------------------------------------------------------*/
 
@@ -272,13 +236,11 @@ bool	Response::isRedirect(Client client)
 	const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
 	if (current == NULL)
 	{
-		std::cout << "rentre1" << std::endl;
 		return false;
 	}
 	std::cout << current->redirect[0] << std::endl;
 	if (current->redirect[0] == "")
 	{
-		std::cout << "rentre" << std::endl;
 		return false;
 	}
 	return true;
@@ -293,11 +255,13 @@ bool	Response::isCGI(Client client) throw (ErrorHandler)
 	if (checkExtensionCGI(client.request.getHeader().uri) == true)
 	{
 		const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
+		if (current == NULL)
+			throw ErrorHandler(ERR_404);
 		std::string path = current->root + client.request.getHeader().uri;
 		if (UtilParsing::isDirectory(path) == true)
 			return false;
 		if (access(path.c_str(), X_OK) != 0)
-			throw ErrorHandler(ERR_500);
+			throw ErrorHandler(ERR_403);
 		return true;
 	}
 	return false;

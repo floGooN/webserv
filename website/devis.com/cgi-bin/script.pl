@@ -6,7 +6,7 @@ use CGI;
 
 
 my $cgi = CGI->new;
-
+# my $alive = $ENV{'KEEP_ALIVE'};
 my $objectif = $cgi->param('objectif') || "";
 my $design = $cgi->param('design') || "";
 my $rdv = $cgi->param('rdv') || "";
@@ -22,7 +22,7 @@ $finalValue += ($delai eq "1 mois" ? 300 : 200);
 $finalValue += ($maintenance eq "oui" ? 100 : 0);
 $finalValue += ($seo eq "oui" ? 299 : 0);
 
-my $style = sprintf "<header>\n <style>         body {
+my $style =  "<header>\n <style>         body {
             display: flex;
             justify-content: center;
             align-items: center;
@@ -37,6 +37,8 @@ my $style = sprintf "<header>\n <style>         body {
             margin: 0;
         } </style> </header>";
 my $body = sprintf "<html>\n <body>\n <p>Le prix de votre devis est de: <strong>%d</strong> euros.</p>\n </body> \n </html>", $finalValue;
+
+
 
 print $style;
 print $body;

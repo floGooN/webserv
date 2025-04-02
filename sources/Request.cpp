@@ -79,7 +79,7 @@ Request & Request::operator=(const Request &ref)
 
 std::ostream & operator<<(std::ostream & o, const Request &ref)
 {
-	o	<< BOLD "Request:\n"
+	o	<< BOLD "Request:\n" BOLD "KeepAlive: " << ref.keepAlive << std::endl
 		<< BOLD "Header:\n" << ref.getHeader()
 		<< BOLD "Args:\n" << ref.getArgs() << std::endl
 		<< BOLD "Body:\n" << ref.getbody();

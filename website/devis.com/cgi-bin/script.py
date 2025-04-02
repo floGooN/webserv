@@ -2,6 +2,7 @@
 
 import cgi
 import cgitb
+import os
 cgitb.enable()
 
 form = cgi.FieldStorage()
@@ -13,6 +14,7 @@ rdv = form.getvalue('rdv', '')
 delai = form.getvalue('delai', '')
 maintenance = form.getvalue('maintenance', '')
 seo = form.getvalue('SEO', '')
+alive = os.environ.get('KEEP_ALIVE')
 
 
 finalValue = 0
@@ -36,10 +38,9 @@ if seo == "oui":
     finalValue += 299
 
 
-print("<header><style> body {display: flex;justify-content: center;flex-direction: column;align-items: center;height: 100vh;font-family: 'Poppins', sans-serif;font-weight: 300;font-size: 15px;line-height: 1.7;color: #c4c3ca;background-color: #1f2029;overflow-x: hidden;margin: 0;}</style></header>")
-print("<html>")
-print("<body>")
-print("<p>Le prix de votre devis est de: <strong>{}</strong>.</p>".format(finalValue))
-print("</body>")
-print("</html>")
+style = ("<header><style> body {display: flex;justify-content: center;flex-direction: column;align-items: center;height: 100vh;font-family: 'Poppins', sans-serif;font-weight: 300;font-size: 15px;line-height: 1.7;color: #c4c3ca;background-color: #1f2029;overflow-x: hidden;margin: 0;}</style></header>")
+body = ("<html><body><p>Le prix de votre devis est de: <strong>{}</strong>.</p></body></html>").format(finalValue)
+
+print(style)
+print(body)
 
