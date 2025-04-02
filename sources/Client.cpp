@@ -65,14 +65,23 @@ std::ostream & operator<<(std::ostream &o, const Client &ref)
 /*============================================================================*/
 void	Client::checkRequestValidity() throw (ErrorHandler)
 {
-	std::cout	<< GREEN "Client::checkRequestValidity():\n"
+	std::cout	<< GREEN "Client::checkRequestValidity():"
 				<< RESET << std::endl;
 
-	const t_location *currentLocation = buildCompleteUri();
+	const t_location *currentLocation = NULL;
 	
+	if (request.getHeader().requestType == DELETE)
+	{
+		request.completeUri = (request.getHeader().uri[0] == '/' ? "./uploads" : "./uploads/") + request.getHeader().uri;
+		checkAutorisation(UtilParsing::findLocation(clientServer->getLocationSet(), request.getHeader().uri));
+		return;
+	}
+	else
+		currentLocation = buildCompleteUri();
+
 	std::cout	<< GREEN "URI: [" << request.getHeader().uri << "]" << std::endl
-				<< "complete URI: [" << request.completeUri << "]"
-				<< RESET << std::endl;
+	<< "complete URI: [" << request.completeUri << "]"
+	<< RESET << std::endl;
 
 	checkAutorisation(currentLocation);
 	

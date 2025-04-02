@@ -133,15 +133,21 @@ void	Response::deleteQuery(const Client &client)
 {
 	std::cout << BRIGHT_CYAN "DELETE QUERY" << RESET << std::endl;
 
-	std::string basePath = "./uploads/"; // Dossier autorisé
-    std::string filePath = basePath + client.request.getHeader().uri;
 	char		path[100];
 
-	if (realpath(filePath.c_str(), path) == NULL)
+    std::cout	<< BRIGHT_YELLOW << client.request.completeUri << RESET
+				<< std::endl;
+
+	if (realpath(client.request.completeUri.c_str(), path) == NULL) {
+		if (errno == ENOENT)
+			throw ErrorHandler(ERR_404, "File to delete not found");
 		throw ErrorHandler(ERR_400, "realpath() in DELETE, invalid path");
-	else if (basePath.compare(0, basePath.size(), path) != 0)
-		throw ErrorHandler(ERR_403, "realpath() in DELETE, invalid path");
-    else if (access(path, F_OK) == -1)
+	}
+	// else if (basePath.compare(0, basePath.size(), path) != 0)
+	// 	throw ErrorHandler(ERR_403, "realpath() in DELETE, invalid path");
+    std::cout	<< BRIGHT_RED << path << RESET 
+				<< std::endl;
+	if (access(path, F_OK) == -1)
 		throw ErrorHandler(ERR_404, "Not found in delete()");
 	else if (access(path, W_OK) == -1)
 		throw ErrorHandler(ERR_403, "Acces forbidden");
