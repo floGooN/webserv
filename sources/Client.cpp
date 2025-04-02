@@ -79,10 +79,6 @@ void	Client::checkRequestValidity() throw (ErrorHandler)
 	else
 		currentLocation = buildCompleteUri();
 
-	std::cout	<< GREEN "URI: [" << request.getHeader().uri << "]" << std::endl
-	<< "complete URI: [" << request.completeUri << "]"
-	<< RESET << std::endl;
-
 	checkAutorisation(currentLocation);
 	
 	try {
@@ -115,16 +111,9 @@ void	Client::checkRequestValidity() throw (ErrorHandler)
 
 void	Client::buildResponse() throw (ErrorHandler)
 {
-	// verifier si la reponse est deja construite
 	if ( ! response.message.empty() )
 		return;
 
-	// if (isAutoindex() == true) {
-	// 	std::cout << "It's Autoindex\n"; // here play autoindex generator
-	// 	throw ErrorHandler(ERR_404, "Autoindex"); // provisoirement
-	// }
-	// else
-	// {
 	switch (request.getHeader().requestType)
 	{
 		case GET:
@@ -139,7 +128,6 @@ void	Client::buildResponse() throw (ErrorHandler)
 		default:
 			throw ErrorHandler(ERR_400, "Unknow the request type");
 	}
-	// }
 }
 /*----------------------------------------------------------------------------*/
 

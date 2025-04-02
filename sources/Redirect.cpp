@@ -1,6 +1,11 @@
-#include "CGI.hpp"
-#include "UtilParsing.hpp"
 
+
+
+
+
+
+#include "UtilParsing.hpp"
+#include "CGI.hpp"
 
 std::string processRedirect(const Client &client) throw (ErrorHandler)
 {
@@ -14,7 +19,6 @@ std::string processRedirect(const Client &client) throw (ErrorHandler)
     return res;
 }
 
-
 bool controlValuesRedirect(const std::vector<std::string> &vec)
 {
     if (vec.size() != 2)
@@ -23,7 +27,6 @@ bool controlValuesRedirect(const std::vector<std::string> &vec)
         return false;
     return true;
 }
-
 
 std::string buildBodyRedirect(const std::vector<std::string> &vec)
 {
