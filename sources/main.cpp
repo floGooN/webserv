@@ -19,7 +19,7 @@ int main(int argc, char **argv)
     sigaction(SIGINT, &act, NULL);
 
     try {
-        Cluster cluster(argc > 1 ? argv[1] : "./config/test.conf");
+        Cluster cluster(argc > 1 ? argv[1] : "./config/default.conf");
         // std::cout << cluster.getConfig();
         cluster.runCluster();
     }

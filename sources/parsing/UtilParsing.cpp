@@ -344,6 +344,7 @@ int UtilParsing::decryptHexa(std::string value)
     ss >> x;
     return x;
 }
+
 bool UtilParsing::fileExits(const std::string &filename)
 {
 	std::ifstream file(filename.c_str());
@@ -379,9 +380,3 @@ std::string UtilParsing::econtentTypeToString(e_contentType type)
 		return "Unknowm";
 	}
 } 
-
-
-
-
-
-

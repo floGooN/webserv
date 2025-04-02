@@ -108,15 +108,21 @@ void	Response::deleteQuery(const Client &client)
 {
 	std::cout << BRIGHT_CYAN "DELETE QUERY" << RESET << std::endl;
 
-	std::string basePath = "./uploads/"; // Dossier autorisé
-    std::string filePath = basePath + client.request.getHeader().uri;
 	char		path[100];
 
-	if (realpath(filePath.c_str(), path) == NULL)
+    std::cout	<< BRIGHT_YELLOW << client.request.completeUri << RESET
+				<< std::endl;
+
+	if (realpath(client.request.completeUri.c_str(), path) == NULL) {
+		if (errno == ENOENT)
+			throw ErrorHandler(ERR_404, "File to delete not found");
 		throw ErrorHandler(ERR_400, "realpath() in DELETE, invalid path");
-	else if (basePath.compare(0, basePath.size(), path) != 0)
-		throw ErrorHandler(ERR_403, "realpath() in DELETE, invalid path");
-    else if (access(path, F_OK) == -1)
+	}
+	// else if (basePath.compare(0, basePath.size(), path) != 0)
+	// 	throw ErrorHandler(ERR_403, "realpath() in DELETE, invalid path");
+    std::cout	<< BRIGHT_RED << path << RESET 
+				<< std::endl;
+	if (access(path, F_OK) == -1)
 		throw ErrorHandler(ERR_404, "Not found in delete()");
 	else if (access(path, W_OK) == -1)
 		throw ErrorHandler(ERR_403, "Acces forbidden");
@@ -222,6 +228,52 @@ std::string	Response::setHeader(const Request &req, const std::string &code) thr
 	return header;	
 }
 /*----------------------------------------------------------------------------*/
+
+std::string	Response::setHeaderRedirect(const Client &client, const Request &req) throw (ErrorHandler)
+{
+	std::ostringstream oss;
+	oss << message.length();
+
+	if (oss.fail())
+		throw ErrorHandler(ERR_500, "In Response::setHeader()\nconversion of the length message faild");
+	const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
+	
+	std::string header = \
+		PROTOCOL_VERION " " + current->redirect[0] + "\r\n" \
+		"Server: Rob&Flo V0.9" + "\r\n" \
+		"Content-Type: " + findMimeType(req.completeUri) + "; charset=UTF-8\r\n" \
+		"Content-Length: " + oss.str() + "\r\n" \
+		"Connection: " + (req.keepAlive == true ? "keep-alive" : "close") +
+		"Location" + current->redirect[1] +
+		 "\r\n" \
+		"\r\n";
+
+
+	return header;	
+}
+/*----------------------------------------------------------------------------*/
+
+// prendre les redirect pour verifier .
+bool	Response::isRedirect(Client client)
+{
+	const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
+	if (current == NULL)
+	{
+		std::cout << "rentre1" << std::endl;
+		return false;
+	}
+	std::cout << current->redirect[0] << std::endl;
+	if (current->redirect[0] == "")
+	{
+		std::cout << "rentre" << std::endl;
+		return false;
+	}
+	return true;
+}
+
+
+/*----------------------------------------------------------------------------*/
+
 
 bool	Response::isCGI(Client client) throw (ErrorHandler)
 {
