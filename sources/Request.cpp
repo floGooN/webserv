@@ -40,7 +40,7 @@ Request::Request(const std::string &content) throw (ErrorHandler)
 {
 	size_t delimiter = content.find("\r\n\r\n");
 	if (delimiter == std::string::npos)
-		throw ErrorHandler(ERR_400, "Bad request in Reqest constructor");
+		throw ErrorHandler(ERR_400, "Bad request in Request constructor");
 
 	try
 	{
@@ -134,14 +134,8 @@ const std::string &	Request::getArgs() const {
 }
 /*----------------------------------------------------------------------------*/
 
-void Request::updateRequest(const std::string &content) throw(ErrorHandler)
-{
-	try {
-		setBody(content);
-	}
-	catch(const ErrorHandler& e) {
-		throw ErrorHandler(ERR_500, e.errorLog);
-	}
+void Request::updateRequest(const std::string &content) throw(ErrorHandler) {
+	setBody(content);
 }
 /*----------------------------------------------------------------------------*/
 

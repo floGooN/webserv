@@ -49,7 +49,6 @@ void	Cluster::ErrGenerator::generateErrorPage()
 		std::cerr << e.what() << '\n';
 		_client.response.message = generateHeader() + DFLT_ERRORPAGE;
 	}
-
 }
 /*----------------------------------------------------------------------------*/
 

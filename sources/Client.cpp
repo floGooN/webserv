@@ -12,6 +12,7 @@
 #include "UtilParsing.hpp"
 
 #include <cstring>
+#include <ctime>
 
 /*============================================================================*/
 				/*### CONSTRUCTORS - DESTRUCTOR - OVERLOAD OP ###*/
@@ -20,7 +21,7 @@
 Client::Client(const int sockfd) : fdClient(sockfd) {
 	clientServer = NULL;
 	totalBytesReceived = 0;
-	time = 0;
+	time = std::time(NULL);
 }
 /*----------------------------------------------------------------------------*/
 

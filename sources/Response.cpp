@@ -8,7 +8,9 @@
 #include "Client.hpp"
 #include "Response.hpp"
 #include "UtilParsing.hpp"
+#include <sys/stat.h>
 #include "CGI.hpp"
+
 /*============================================================================*/
 				/*### CONSTRUCTORS - DESTRUCTOR - OVERLOAD OP ###*/
 /*============================================================================*/
@@ -102,9 +104,36 @@ void	Response::postQuery(Client &client)
 }
 /*----------------------------------------------------------------------------*/
 
-void	Response::deleteQuery(const Client &)
+void	Response::deleteQuery(const Client &client)
 {
 	std::cout << BRIGHT_CYAN "DELETE QUERY" << RESET << std::endl;
+
+	std::string basePath = "./uploads/"; // Dossier autorisé
+    std::string filePath = basePath + client.request.getHeader().uri;
+	char		path[100];
+
+	if (realpath(filePath.c_str(), path) == NULL)
+		throw ErrorHandler(ERR_400, "realpath() in DELETE, invalid path");
+	else if (basePath.compare(0, basePath.size(), path) != 0)
+		throw ErrorHandler(ERR_403, "realpath() in DELETE, invalid path");
+    else if (access(path, F_OK) == -1)
+		throw ErrorHandler(ERR_404, "Not found in delete()");
+	else if (access(path, W_OK) == -1)
+		throw ErrorHandler(ERR_403, "Acces forbidden");
+    else
+    {
+        struct stat path_stat;
+        stat(path, &path_stat);
+        if (S_ISREG(path_stat.st_mode))
+        {
+            if (remove(path) == 0)
+				throw ErrorHandler(COD_204, "No content in DELETE");
+            else
+				throw ErrorHandler(ERR_500, "remove() in deleteQuery()");
+        }
+        else
+			throw ErrorHandler(ERR_403, "Forbidden removing");
+    }
 }
 /*----------------------------------------------------------------------------*/
 
@@ -169,7 +198,7 @@ std::string	&Response::findMimeType(const std::string &uri)
 	}
 	catch(const std::exception& e) 
 	{
-		return _mimeMap.at(".html"); // mis car sinon les scripts se considerer comme des binaires
+		return _mimeMap.at(".html");
 	}
 }
 /*----------------------------------------------------------------------------*/
@@ -193,62 +222,6 @@ std::string	Response::setHeader(const Request &req, const std::string &code) thr
 	return header;	
 }
 /*----------------------------------------------------------------------------*/
-
-std::string	Response::setHeaderRedirect(const Client &client, const Request &req) throw (ErrorHandler)
-{
-	std::ostringstream oss;
-	oss << message.length();
-
-	if (oss.fail())
-		throw ErrorHandler(ERR_500, "In Response::setHeader()\nconversion of the length message faild");
-	const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
-	
-	std::string header = \
-		PROTOCOL_VERION " " + current->redirect[0] + "\r\n" \
-		"Server: Rob&Flo V0.9" + "\r\n" \
-		"Content-Type: " + findMimeType(req.completeUri) + "; charset=UTF-8\r\n" \
-		"Content-Length: " + oss.str() + "\r\n" \
-		"Connection: " + (req.keepAlive == true ? "keep-alive" : "close") +
-		"Location" + current->redirect[1] +
-		 "\r\n" \
-		"\r\n";
-
-
-	return header;	
-}
-
-/*----------------------------------------------------------------------------*/
-
-
-
-
-/*----------------------------------------------------------------------------*/
-
-/*----------------------------------------------------------------------------*/
-
-/*----------------------------------------------------------------------------*/
-
-/*----------------------------------------------------------------------------*/
-
-// prendre les redirect pour verifier .
-bool	Response::isRedirect(Client client)
-{
-	const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
-	if (current == NULL)
-	{
-		return false;
-	}
-	std::cout << current->redirect[0] << std::endl;
-	if (current->redirect[0] == "")
-	{
-		return false;
-	}
-	return true;
-}
-
-
-/*----------------------------------------------------------------------------*/
-
 
 bool	Response::isCGI(Client client) throw (ErrorHandler)
 {

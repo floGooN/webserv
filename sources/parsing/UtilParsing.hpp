@@ -37,7 +37,7 @@ class UtilParsing
 		static void	manageControlMapLocation(std::map<int, std::map<std::string, std::vector<std::string> > > allMapRoads);
 		static void	controlMapLocation(std::map<int, std::map<std::string, std::vector<std::string> > > allMapRoads, std::string keyValue);
 		
-		static std::string	findFile(std::string &);
+		static std::string	intToString(int value);
 		static std::string	trim(const std::string& str);
 		static std::string	trimSemicolon(const std::string& str);
 		static std::string	recoverExtension(const std::string &filename);
@@ -55,7 +55,6 @@ class UtilParsing
 		static std::string convertHexaToString(std::string value);
 		static int decryptHexa(std::string value);
 		static bool fileExits(const std::string &filename);
-		static std::string intToString(int value);
 		static std::string emethodsTypeToString(e_methods type);
 		static std::string econtentTypeToString(e_contentType type);
 	private:
