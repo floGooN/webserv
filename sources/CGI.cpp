@@ -78,11 +78,13 @@ char** initEnv(const Request &req)
     for (int i = 0; i < environSize; i++) 
     {
         envCGI[i] = new char[environnement[i].size() + 1];
+        if (!envCGI)
+        {
+            freeEnv(envCGI);
+            return NULL;
+        }
         strcpy(envCGI[i], environnement[i].c_str());
     }
-    // si new crash dans la boucle
-    // liberer le ptr **envCGI + tous les ptr allouees dans la boucle
-    // return NULL et t la meme est liberee
     envCGI[environSize] = NULL;
 
     return envCGI;
@@ -96,8 +98,8 @@ std::string buildPathInfo(const std::string &path)
     std::string cgi_path_other = "support.py";
 
     if (UtilParsing::recoverExtension(path) == UtilParsing::recoverExtension(cgi_path))
-        return "/usr/bin/perl"; // mettre MACRO 
-    return "/usr/bin/python3"; // mettre MACRO 
+        return DFLT_PATH_PERL;
+    return DFT_PATH_PY; 
 }
 
 /*----------------------------------------------------------------------------*/
@@ -201,6 +203,8 @@ void childProcessCgi(char**env, int *pipe_in, int *pipe_out, const Request &req)
     std::string road = buildPathInfo(script);
     const char *args[] = {road.c_str(), script.c_str(), NULL};
     execve(args[0], (char *const *)args, env);
+    if (env)
+        freeEnv(env);
     //free env
     _exit(1);
 }

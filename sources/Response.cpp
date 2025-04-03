@@ -62,18 +62,7 @@ void	Response::getQuery(Client &client)
 
 	if (isRedirect(client) == true)
 	{
-		const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
-	   	if (!current)
-	   		throw ErrorHandler(ERR_444);
-		std::cout << RED << "rentre bien dans la fct de redirection" << RESET << std::endl;
-		client.response.message = \
-			PROTOCOL_VERION " " + current->redirect[0]+ " Found" + "\r\n" \
-			"Server: Rob&Flo V0.9" + "\r\n" \
-			"Content-Type: " + "text/html" + "; charset=UTF-8\r\n" \
-			"Content-Length: " + "0" + "\r\n" \
-			"Connection: " +  "close" +
-			"Location: " + current->redirect[1] + "\r\n" \
-			"\r\n";
+		client.response.message = setHeaderRedirect(client);
 		return ;
 	}
 	else if (isCGI(client) == true) 
@@ -241,27 +230,21 @@ std::string	Response::setHeader(const Request &req, const std::string &code) thr
 }
 /*----------------------------------------------------------------------------*/
 
-// std::string	Response::setHeaderRedirect(const Client &client, const Request &req) throw (ErrorHandler)
-// {
-// 	std::ostringstream oss;
-// 	oss << message.length();
-
-// 	if (oss.fail())
-// 		throw ErrorHandler(ERR_500, "In Response::setHeader()\nconversion of the length message faild");
-// 	const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
-	
-// 	std::string header = \
-// 		PROTOCOL_VERION " " + current->redirect[0] + "\r\n" \
-// 		"Server: Rob&Flo V0.9" + "\r\n" \
-// 		"Content-Type: " + findMimeType(req.completeUri) + "; charset=UTF-8\r\n" \
-// 		"Content-Length: " + oss.str() + "\r\n" \
-// 		"Connection: " + (req.keepAlive == true ? "keep-alive" : "close") +
-// 		"Location: " + current->redirect[1] + "\r\n" \
-// 		"\r\n";
-
-
-// 	return header;	
-// }
+std::string	Response::setHeaderRedirect(const Client &client) throw (ErrorHandler)
+{
+	const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
+	   	if (!current)
+	   		throw ErrorHandler(ERR_444);
+	std::string res = PROTOCOL_VERION " " + current->redirect[0]+ " Found" + "\r\n" \
+	"Server: Rob&Flo V0.9" + "\r\n" \
+	"Content-Type: " + "text/html" + "; charset=UTF-8\r\n" \
+	"Content-Length: 0\r\n" \
+	"Connection: close\r\n" \
+	"Location: " + current->redirect[1] + "\r\n" \
+	"\r\n";
+	std::cout << YELLOW << current->redirect[1] << RESET << std::endl;
+	return res;
+}
 // /*----------------------------------------------------------------------------*/
 
 // prendre les redirect pour verifier .

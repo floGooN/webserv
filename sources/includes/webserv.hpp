@@ -40,6 +40,8 @@
 # define DFLT_HOSTNAME		"localhost"
 # define DFLT_MIME_TYPE		"application/octet-stream"
 # define DFLT_CONTENT_TYPE	"application/x-www-form-urlencoded"
+# define DFLT_PATH_PERL		"/usr/bin/perl"
+# define DFT_PATH_PY		"/usr/bin/python3"
 
 # define	DFLT_ERRORPAGE		"<!DOCTYPE html>" \
 								"<html lang=\"fr\">" \
