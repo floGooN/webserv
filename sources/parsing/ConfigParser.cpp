@@ -117,7 +117,10 @@ void ConfigParser::parseLocationBlock(std::ifstream& file, LocationConfig& locat
 		else if (line.find("methods_accept") != std::string::npos)
 			locationConfig.methods = UtilParsing::splitSpecialDeleteKey(line, std::string(" "));
 		else if (line.find("return") != std::string::npos)
+		{
 			locationConfig.redirect = UtilParsing::splitSpecialDeleteKey(line, std::string(" "));
+			std::cout << "ICIIII" << std::endl;
+		}
 		else if (line.find("}") != std::string::npos)
 			break;
 	}

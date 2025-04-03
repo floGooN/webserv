@@ -65,9 +65,6 @@ std::ostream & operator<<(std::ostream &o, const Client &ref)
 /*============================================================================*/
 void	Client::checkRequestValidity() throw (ErrorHandler)
 {
-	std::cout	<< GREEN "Client::checkRequestValidity():"
-				<< RESET << std::endl;
-
 	const t_location *currentLocation = NULL;
 	
 	if (request.getHeader().requestType == DELETE)
@@ -77,8 +74,14 @@ void	Client::checkRequestValidity() throw (ErrorHandler)
 		return;
 	}
 	else
+	{
 		currentLocation = buildCompleteUri();
-
+		if (currentLocation && currentLocation->redirect.size() != 0)
+			return;
+	}
+	std::cout << RED << request.getHeader().uri << RESET <<  std::endl;
+	if (currentLocation && currentLocation->redirect.size() != 0)
+		std::cout << "HERE: " << currentLocation->redirect[0] << std::endl;
 	checkAutorisation(currentLocation);
 	
 	try {
@@ -165,7 +168,9 @@ const t_location * Client::buildCompleteUri()
 	std::string			uriPart;
 	const t_location	*result = UtilParsing::findLocation(clientServer->getLocationSet(), request.getHeader().uri);
 	
-	if (result && ! result->root.empty() )
+	if (result && result->redirect.size() != 0)
+		return result;
+	else if (result && ! result->root.empty() )
 		rootPart = result->root;
 	else
 		rootPart = clientServer->getParams().rootPath;

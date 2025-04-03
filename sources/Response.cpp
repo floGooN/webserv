@@ -56,16 +56,30 @@ std::ostream & operator<<(std::ostream &o, const Response &ref)
 /*============================================================================*/
 						/*### PUBLIC METHODS ###*/
 /*============================================================================*/
-void	Response::getQuery(const Client &client)
+void	Response::getQuery(Client &client)
 {
 	std::cout << BRIGHT_GREEN "GET QUERY" RESET << std::endl;
 
-	if (isCGI(client) == true) 
+	if (isRedirect(client) == true)
+	{
+		const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
+	   	if (!current)
+	   		throw ErrorHandler(ERR_444);
+		
+		client.response.message = \
+			PROTOCOL_VERION " " + current->redirect[0]+ " Found" + "\r\n" \
+			"Server: Rob&Flo V0.9" + "\r\n" \
+			"Content-Type: " + "text/html" + "; charset=UTF-8\r\n" \
+			"Content-Length: " + "0" + "\r\n" \
+			"Connection: " +  "close" +
+			"Location: " + current->redirect[1] + "\r\n" \
+				"\r\n";
+		return ;	
+	}
+	else if (isCGI(client) == true) 
 		message = processCGI(client);
 	else if (isRepository(client) == true)
 		message = processAutoIndex(client);
-	else if (isRedirect(client) == true)
-		message = processRedirect(client);
 	else
 		UtilParsing::readFile(client.request.completeUri, message);
 
@@ -254,21 +268,13 @@ std::string	Response::setHeaderRedirect(const Client &client, const Request &req
 /*----------------------------------------------------------------------------*/
 
 // prendre les redirect pour verifier .
-bool	Response::isRedirect(Client client)
+bool	Response::isRedirect(const Client & client)
 {
 	const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
-	if (current == NULL)
-	{
-		std::cout << "rentre1" << std::endl;
-		return false;
-	}
-	std::cout << current->redirect[0] << std::endl;
-	if (current->redirect[0] == "")
-	{
-		std::cout << "rentre" << std::endl;
-		return false;
-	}
-	return true;
+
+	if (current && current->redirect.size() != 0)
+		return true;
+	return false;
 }
 
 
