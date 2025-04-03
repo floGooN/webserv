@@ -79,7 +79,7 @@ void	Client::checkRequestValidity() throw (ErrorHandler)
 		if (currentLocation && currentLocation->redirect.size() != 0)
 			return;
 	}
-	std::cout << RED << request.getHeader().uri << RESET <<  std::endl;
+	// std::cout << RED << request.getHeader().uri << RESET <<  std::endl;
 	if (currentLocation && currentLocation->redirect.size() != 0)
 		std::cout << "HERE: " << currentLocation->redirect[0] << std::endl;
 	checkAutorisation(currentLocation);

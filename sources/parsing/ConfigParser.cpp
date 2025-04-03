@@ -117,10 +117,7 @@ void ConfigParser::parseLocationBlock(std::ifstream& file, LocationConfig& locat
 		else if (line.find("methods_accept") != std::string::npos)
 			locationConfig.methods = UtilParsing::splitSpecialDeleteKey(line, std::string(" "));
 		else if (line.find("return") != std::string::npos)
-		{
 			locationConfig.redirect = UtilParsing::splitSpecialDeleteKey(line, std::string(" "));
-			std::cout << "ICIIII" << std::endl;
-		}
 		else if (line.find("}") != std::string::npos)
 			break;
 	}
@@ -138,6 +135,13 @@ void ConfigParser::controlStructFile(std::ifstream& file)
 			nb_part++;
 		if (line.find("{") != std::string::npos || line.find("}") != std::string::npos)
 			nb_bracket++;
+		if (line.find("http") != std::string::npos)
+		{
+			std::string::size_type pos = 0;
+			pos = line.find("http", pos);
+			if (pos + 4 != line.size())
+				nb_part--;
+		}
 	}
 	if (nb_bracket != (nb_part * 2))
 	{

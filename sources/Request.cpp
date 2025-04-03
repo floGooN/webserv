@@ -32,12 +32,14 @@
 				/*### CONSTRUCTORS - DESTRUCTOR - OVERLOAD OP ###*/
 /*============================================================================*/
 
-Request::Request(){
+Request::Request() {
+	keepAlive = false;
 	clearRequest();
 }
 
 Request::Request(const std::string &content) throw (ErrorHandler)
 {
+	keepAlive = false;
 	size_t delimiter = content.find("\r\n\r\n");
 	if (delimiter == std::string::npos)
 		throw ErrorHandler(ERR_400, "Bad request in Request constructor");
@@ -55,6 +57,7 @@ Request::Request(const std::string &content) throw (ErrorHandler)
 /*----------------------------------------------------------------------------*/
 
 Request::Request(const Request &ref) {
+	keepAlive = false;
 	*this = ref;
 }
 /*----------------------------------------------------------------------------*/
@@ -83,7 +86,6 @@ std::ostream & operator<<(std::ostream & o, const Request &ref)
 		<< BOLD "Header:\n" << ref.getHeader()
 		<< BOLD "Args:\n" << ref.getArgs() << std::endl
 		<< BOLD "Body:\n" << ref.getbody();
-		// << BOLD "body_content:\n" << ref.getbody().body;
 
 	return o << RESET << std::endl;
 }
@@ -309,7 +311,7 @@ void Request::setHost(const std::string &line) throw(ErrorHandler)
 /*	* set keep-alive at true if its ask in the header
 */
 void Request::setKeepAlive(const std::string &line) {
-	keepAlive = (line.find("close") == line.npos ? true : false);
+	keepAlive = (line.find("Connection: keep-alive") == line.npos ? false : true);
 }
 /*----------------------------------------------------------------------------*/
 

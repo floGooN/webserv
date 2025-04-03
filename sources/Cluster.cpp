@@ -283,8 +283,9 @@ void	Cluster::recvData(const struct epoll_event &event)
 	Client		&currentClient = findClient(event.data.fd);
 
 	bytesReceived = safeRecv(event.data.fd, message);
+	
 	checkByteReceived(event, bytesReceived);
-
+	std::cout << RED << message << RESET << std::endl;
 	if (currentClient.request.getHeader().requestType == EMPTY)
 	{
 		try {
