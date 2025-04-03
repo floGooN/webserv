@@ -233,8 +233,9 @@ std::string	Response::setHeader(const Request &req, const std::string &code) thr
 std::string	Response::setHeaderRedirect(const Client &client) throw (ErrorHandler)
 {
 	const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
-	   	if (!current)
-	   		throw ErrorHandler(ERR_444);
+	if (!current)
+		throw ErrorHandler(ERR_444);
+
 	std::string res = PROTOCOL_VERION " " + current->redirect[0]+ " Found" + "\r\n" \
 	"Server: Rob&Flo V0.9" + "\r\n" \
 	"Content-Type: " + "text/html" + "; charset=UTF-8\r\n" \
@@ -242,7 +243,7 @@ std::string	Response::setHeaderRedirect(const Client &client) throw (ErrorHandle
 	"Connection: close\r\n" \
 	"Location: " + current->redirect[1] + "\r\n" \
 	"\r\n";
-	std::cout << YELLOW << current->redirect[1] << RESET << std::endl;
+	std::cerr << YELLOW << current->redirect[1] << RESET << std::endl;
 	return res;
 }
 // /*----------------------------------------------------------------------------*/

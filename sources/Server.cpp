@@ -256,16 +256,8 @@ void	Server::setMethods(const std::vector<std::string> &conf, t_location &loc)
 }
 
 /*----------------------------------------------------------------------------*/
-void	Server::setRedir(const std::vector<std::string> &conf, t_location &loc)
-{
+void	Server::setRedir(const std::vector<std::string> &conf, t_location &loc) {
 	loc.redirect = conf;
-	std::vector<std::string>::const_iterator it = conf.begin();
-	std::cout << BRIGHT_YELLOW "IN CONFIG" << RESET << std::endl;
-	while (it != conf.end())
-	{
-		std::cout << *it << std::endl;
-		it++;
-	}
 }
 
 /*----------------------------------------------------------------------------*/

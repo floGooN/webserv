@@ -76,12 +76,12 @@ void	Client::checkRequestValidity() throw (ErrorHandler)
 	else
 	{
 		currentLocation = buildCompleteUri();
-		if (currentLocation && currentLocation->redirect.size() != 0)
+		if (currentLocation && currentLocation->redirect.size() != 0) {
+			std::cout << "HERE: " << currentLocation->redirect[1] << std::endl;
 			return;
+		}
 	}
-	// std::cout << RED << request.getHeader().uri << RESET <<  std::endl;
-	if (currentLocation && currentLocation->redirect.size() != 0)
-		std::cout << "HERE: " << currentLocation->redirect[0] << std::endl;
+
 	checkAutorisation(currentLocation);
 	
 	try {
@@ -162,6 +162,8 @@ bool	Client::isAutoindex() throw (ErrorHandler)
 
 /*	* build the complete uri and return the location associated with the path requested by client
 */
+
+// bug in this fct
 const t_location * Client::buildCompleteUri()
 {
 	std::string			rootPart;
