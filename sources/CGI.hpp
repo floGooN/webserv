@@ -29,13 +29,6 @@ std::string buildBodyAutoIndex(DIR *dir, std::string path);
 std::string processAutoIndex(const Client &client);
 
 /*============================================================================*/
-/*### REDIRCTION FONCTIONS ###*/
-/*============================================================================*/
-std::string processRedirect(const Client &client) throw (ErrorHandler);
-bool controlValuesRedirect(const std::vector<std::string> &vec);
-std::string buildBodyRedirect(const std::vector<std::string> &vec);
-
-/*============================================================================*/
 /*### UTILS FONCTIONS ###*/
 /*============================================================================*/
 std::string ParseUri(std::string uri);

@@ -1,9 +1,8 @@
 #!/usr/bin/python3
 
-import cgi
-import cgitb
-import os
-cgitb.enable()
+import cgi # type: ignore
+
+
 
 form = cgi.FieldStorage()
 
@@ -14,7 +13,7 @@ rdv = form.getvalue('rdv', '')
 delai = form.getvalue('delai', '')
 maintenance = form.getvalue('maintenance', '')
 seo = form.getvalue('SEO', '')
-alive = os.environ.get('KEEP_ALIVE')
+
 
 
 finalValue = 0

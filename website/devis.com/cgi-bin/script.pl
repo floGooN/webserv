@@ -6,7 +6,6 @@ use CGI;
 
 
 my $cgi = CGI->new;
-# my $alive = $ENV{'KEEP_ALIVE'};
 my $objectif = $cgi->param('objectif') || "";
 my $design = $cgi->param('design') || "";
 my $rdv = $cgi->param('rdv') || "";

@@ -1,0 +1,26 @@
+curl -X POST -d "rdv=oui&design=oui" http://localhost:8080/script.pl
+curl -X GET http://localhost:8080/scriptQuery.pl?email=truvelotr%40gmail.com&adresse=la
+curl -X POST -d "rdv=oui&design=oui&maintenance=oui&SEO=oui" http://localhost:8080/script.py
+curl -X UNKNOWN -d "rdv=oui&design=oui&maintenance=oui&SEO=oui" http://localhost:8080/script.py
+
+curl http://localhost:8080/
+curl http://localhost:8080/formulaires/formGet.html
+curl http://localhost:8080/formulaires/formUpload.html
+curl http://localhost:8080/formulaires/formPy.html
+curl http://localhost:8080/formulaires/formUpload.html
+curl -X DELETE http://localhost:3030//kapouet/file3 -H "Authorization: ok"
+curl http://localhost:3030/
+
+
+http://localhost:6060/pomme
+http://localhost:8080/test.html
+
+siege -b -c 100 -t 1M http://localhost:8080
+siege -b -c 100 -t 30S http://localhost:8080
+siege -b -c 100 -t 10S http://localhost:8080
+siege -b -c 10 -t 5S http://localhost:8080
+
+
+
+
+

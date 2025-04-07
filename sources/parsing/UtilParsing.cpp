@@ -207,7 +207,7 @@ void	UtilParsing::manageControlMapLocation(std::map<int, std::map<std::string, s
 	UtilParsing::controlMapLocation(allMapRoads, "methods_accept");
 }
 
-void	UtilParsing::displayVector(std::vector<std::string> vec) // unused
+void	UtilParsing::displayVector(std::vector<std::string> vec)
 {
 	for (std::vector<std::string>::iterator it = vec.begin(); it != vec.end(); it++)
 		std::cout   << "[" << *it << "]" << "\n";
@@ -249,7 +249,7 @@ void	UtilParsing::readErrorFile(const std::string &filepath, std::string &buffer
 	buffer = stream.str();
 }
 
-std::string	UtilParsing::trimSemicolon(const std::string& str)  // unused
+std::string	UtilParsing::trimSemicolon(const std::string& str)
 {
 	std::size_t first = str.find_first_not_of(';');
 	std::size_t last = str.find_last_not_of(';');
@@ -280,7 +280,7 @@ std::string	UtilParsing::recoverValue(std::string line, std::string key)
 	return "";
 }
 
-std::string UtilParsing::intToString(int value) // unused
+std::string UtilParsing::intToString(int value)
 {
 	std::ostringstream oss;
     oss << value;
