@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Cluster.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fberthou <fberthou@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rtruvelo <rtruvelo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 05:26:30 by fberthou          #+#    #+#             */
-/*   Updated: 2025/04/07 11:23:01 by fberthou         ###   ########.fr       */
+/*   Updated: 2025/04/07 11:35:40 by rtruvelo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -286,7 +286,6 @@ void	Cluster::recvData(const struct epoll_event &event) throw (ErrGenerator)
 	bytesReceived = safeRecv(event.data.fd, message);
 	checkByteReceived(event, bytesReceived);
 
-	std::cout << message << std::endl;
 	if (currentClient.request.getHeader().requestType == EMPTY)
 	{
 		try {
