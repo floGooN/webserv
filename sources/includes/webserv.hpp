@@ -80,15 +80,15 @@
 # define	ERR_405	"405 Method Not Allowed"
 # define	ERR_408	"408 Request Time-out"
 # define	ERR_413	"413 Request Entity Too Large"
-# define	ERR_414	"Request-URI Too Long"
-# define	ERR_415	"Unsupported Media Type"
+# define	ERR_414	"414 Request-URI Too Long"
+# define	ERR_415	"415 Unsupported Media Type"
 # define	ERR_444	"444 No Response"
 # define	ERR_499	"499 Client Closed Request"
 
 # define	ERR_500	"500 Internal Server Error"
 # define	ERR_501	"501 Not Implemented"
 # define	ERR_502 "502 Bad Gateway"
-# define	ERR_505	"HTTP Version not supported"
+# define	ERR_505	"505 HTTP Version not supported"
 # define	ERR_520	"520 Unknown Error"
 
 /* -------------------------------------- */

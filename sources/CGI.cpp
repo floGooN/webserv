@@ -5,10 +5,8 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include "Server.hpp"
-#include "Client.hpp"
 #include "Request.hpp"
 #include "RequestStructure.hpp"
-#include <cstring>
 #include "ErrorHandler.hpp"
 
 
@@ -26,7 +24,10 @@ std::string processCGI(const Client &client)
             throw ErrorHandler(ERR_500, "Internal server error\n");
         res = executeCGI(client);
         if (res.empty())
+        {
+            moveToDirectoryScript(std::string(cwd));
             throw ErrorHandler(ERR_502, "Bad Gateway\n");
+        }
         if (moveToDirectoryScript(std::string(cwd)) != true)
             throw ErrorHandler(ERR_500);
     }
@@ -66,7 +67,7 @@ char** initEnv(const Request &req)
         std::string("REQUEST_METHOD=") + Utils::emethodsTypeToString(req.getHeader().requestType),
         std::string("QUERY_STRING=") + ((req.getHeader().requestType == GET) ? ParseUri(req.getArgs())  : " "),
         std::string("CONTENT_TYPE=") + Utils::econtentTypeToString(req.getbody().contentType),
-        std::string("CONTENT_LENGTH=") + ((req.getbody().contentLength == (size_t)0) ? std::string("100") : Utils::intToString(req.getbody().contentLength)),
+        std::string("CONTENT_LENGTH=") + ((req.getbody().contentLength == (size_t)0) ? std::string("0") : Utils::intToString(req.getbody().contentLength)),
         std::string("HTTP_HOST=") + req.getHeader().hostName,
         buildScriptName(req),
         std::string("PATH_INFO=") + buildPathInfo(req.getHeader().uri),

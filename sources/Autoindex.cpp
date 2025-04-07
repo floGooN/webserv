@@ -31,7 +31,7 @@ std::string buildBodyAutoIndex(DIR *dir, std::string path)
     {
         if (std::string(files->d_name).compare(".") == 0 || std::string(files->d_name).compare("..") == 0)
             continue;
-        body += "\n<a href=\"" + path + "/" + std::string(files->d_name) + "\">" + std::string(files->d_name) +  "</a>"; // ici jcrois il faut mettre d'autre balise pour link
+        body += "\n<a href=\"" + path + "/" + std::string(files->d_name) + "\">" + std::string(files->d_name) +  "</a>";
     }
     body += "\n</body></html>";
     return body;
