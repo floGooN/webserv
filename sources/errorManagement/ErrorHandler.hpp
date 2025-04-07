@@ -4,10 +4,6 @@
 
 # include "webserv.hpp"
 
-/*  * PARAMS :
-    * ERR_XXX
-    * error log (std::string)
-*/
 class ErrorHandler
 {
     public:

@@ -8,17 +8,16 @@
 # include <string>
 # include <vector>
 # include <cstdio>
+# include <cstring>
 # include <set>
 # include <map>
 
 /* -------------------------------------- */
-/* --- DEFINE GENERIC ERROR MESSAGES  --- */
+/* ---    DEFINE GENERICS MESSAGES    --- */
 /* -------------------------------------- */
-# define ENOSERVICE	   RED "none of the requested services are available\n" RESET
-# define PRINTUSAGE  std::cout   << YELLOW "USAGE :" << std::endl \
-						<< "	-> a path to a file config (.conf)" << std::endl \
-						<< "	-> no argument and default server is launch" \
-						<< RESET << std::endl
+# define ENOSERVICE	RED "none of the requested services are available\n" RESET
+# define ERROR		"ERROR"
+# define INFO		"INFO"
 
 /* -------------------------------------- */
 /* ---		    DEFINE PATH   	   	  --- */

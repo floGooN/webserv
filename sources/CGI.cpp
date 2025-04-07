@@ -1,7 +1,7 @@
 #include "Client.hpp"
 #include <cstring>
 #include "CGI.hpp"
-#include "UtilParsing.hpp"
+#include "Utils.hpp"
 #include <unistd.h>
 #include <sys/wait.h>
 #include "Server.hpp"
@@ -17,16 +17,16 @@ std::string processCGI(const Client &client)
     std::string res;
     try
     {
-        const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
+        const t_location *current = Utils::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
         if (!current)
-            throw ErrorHandler(ERR_404, "Not Found");
+            throw ErrorHandler(ERR_404, "Not Found\n");
         char cwd[PATH_MAX];
         getcwd(cwd, sizeof(cwd));
         if (moveToDirectoryScript(current->root) != true)
-            throw ErrorHandler(ERR_500, "Internal server error");
+            throw ErrorHandler(ERR_500, "Internal server error\n");
         res = executeCGI(client);
         if (res.empty())
-            throw ErrorHandler(ERR_502, "Bad Gateway");
+            throw ErrorHandler(ERR_502, "Bad Gateway\n");
         if (moveToDirectoryScript(std::string(cwd)) != true)
             throw ErrorHandler(ERR_500);
     }
@@ -43,9 +43,9 @@ bool checkExtensionCGI(const std::string &path)
    std::string cgi_path = "support.pl";
    std::string cgi_path_other = "support.py";
 
-    if (UtilParsing::recoverExtension(path) == UtilParsing::recoverExtension(cgi_path))
+    if (Utils::recoverExtension(path) == Utils::recoverExtension(cgi_path))
         return true;
-    else if (UtilParsing::recoverExtension(path) == UtilParsing::recoverExtension(cgi_path_other))
+    else if (Utils::recoverExtension(path) == Utils::recoverExtension(cgi_path_other))
         return true;
     return false;
 }
@@ -63,10 +63,10 @@ char** initEnv(const Request &req)
 {
     std::string environnement[] = 
       {
-        std::string("REQUEST_METHOD=") + UtilParsing::emethodsTypeToString(req.getHeader().requestType),
+        std::string("REQUEST_METHOD=") + Utils::emethodsTypeToString(req.getHeader().requestType),
         std::string("QUERY_STRING=") + ((req.getHeader().requestType == GET) ? ParseUri(req.getArgs())  : " "),
-        std::string("CONTENT_TYPE=") + UtilParsing::econtentTypeToString(req.getbody().contentType),
-        std::string("CONTENT_LENGTH=") + ((req.getbody().contentLength == (size_t)0) ? std::string("100") : UtilParsing::intToString(req.getbody().contentLength)),
+        std::string("CONTENT_TYPE=") + Utils::econtentTypeToString(req.getbody().contentType),
+        std::string("CONTENT_LENGTH=") + ((req.getbody().contentLength == (size_t)0) ? std::string("100") : Utils::intToString(req.getbody().contentLength)),
         std::string("HTTP_HOST=") + req.getHeader().hostName,
         buildScriptName(req),
         std::string("PATH_INFO=") + buildPathInfo(req.getHeader().uri),
@@ -97,7 +97,7 @@ std::string buildPathInfo(const std::string &path)
     std::string cgi_path = "support.pl";
     std::string cgi_path_other = "support.py";
 
-    if (UtilParsing::recoverExtension(path) == UtilParsing::recoverExtension(cgi_path))
+    if (Utils::recoverExtension(path) == Utils::recoverExtension(cgi_path))
         return DFLT_PATH_PERL;
     return DFT_PATH_PY; 
 }
@@ -252,7 +252,7 @@ std::string ParseUri(std::string uri)
     std::string::size_type start = uri.find('?');
     if (start == std::string::npos)
         return "";
-    return UtilParsing::convertHexaToString(uri.substr(start + 1));
+    return Utils::convertHexaToString(uri.substr(start + 1));
 }
 
 /*----------------------------------------------------------------------------*/

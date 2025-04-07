@@ -1,7 +1,14 @@
-
-
-
-
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   Client.cpp                                         :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: fberthou <fberthou@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/04/07 05:12:52 by fberthou          #+#    #+#             */
+/*   Updated: 2025/04/07 10:06:55 by fberthou         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
 /*============================================================================*/
 						/*### HEADERS & STATIC FIELD ###*/
@@ -9,19 +16,19 @@
 
 #include "Client.hpp"
 #include "Server.hpp"
-#include "UtilParsing.hpp"
+#include "Utils.hpp"
 
-#include <cstring>
 #include <ctime>
 
 /*============================================================================*/
 				/*### CONSTRUCTORS - DESTRUCTOR - OVERLOAD OP ###*/
 /*============================================================================*/
 
-Client::Client(const int sockfd) : fdClient(sockfd) {
+Client::Client(const int sockfd) : fdClient(sockfd)
+{
 	clientServer = NULL;
-	totalBytesReceived = 0;
 	time = std::time(NULL);
+	totalBytesReceived = 0;
 }
 /*----------------------------------------------------------------------------*/
 
@@ -41,8 +48,8 @@ Client &Client::operator=(const Client &ref)
 		clientServer = ref.clientServer;
 		request = ref.request;
 		response = ref.response;
-		totalBytesReceived = ref.totalBytesReceived;
 		time = ref.time;
+		totalBytesReceived = ref.totalBytesReceived;
 	}
 	return *this;
 }
@@ -52,7 +59,7 @@ std::ostream & operator<<(std::ostream &o, const Client &ref)
 {
 	o   << "CLIENT:" << std::endl
 		<< *ref.clientServer << std::endl
-		<< ref.request << std::endl
+		<< ref.request
 		<< ref.response
 		<< "Total Bytes Received" << ref.totalBytesReceived;
 
@@ -63,6 +70,7 @@ std::ostream & operator<<(std::ostream &o, const Client &ref)
 /*============================================================================*/
 						/*### PUBLIC METHODS ###*/
 /*============================================================================*/
+
 void	Client::checkRequestValidity() throw (ErrorHandler)
 {
 	const t_location *currentLocation = NULL;
@@ -70,45 +78,39 @@ void	Client::checkRequestValidity() throw (ErrorHandler)
 	if (request.getHeader().requestType == DELETE)
 	{
 		request.completeUri = (request.getHeader().uri[0] == '/' ? "./uploads" : "./uploads/") + request.getHeader().uri;
-		checkAutorisation(UtilParsing::findLocation(clientServer->getLocationSet(), request.getHeader().uri));
+		checkAutorisation(Utils::findLocation(clientServer->getLocationSet(), request.getHeader().uri));
 		return;
 	}
 	else
 	{
 		currentLocation = buildCompleteUri();
-		if (currentLocation && currentLocation->redirect.size() != 0) {
-			std::cout << "HERE: " << currentLocation->redirect[1] << std::endl;
+		if (currentLocation && currentLocation->redirect.size() != 0)
 			return;
-		}
 	}
 
 	checkAutorisation(currentLocation);
 	
 	try {
-		UtilParsing::checkAccessRessource(request.completeUri, R_OK);
+		Utils::checkAccessRessource(request.completeUri, R_OK);
 	}
 	catch(const std::exception& e) {
 		switch (errno)
 		{
 			case ENOENT:
 			case ELOOP:
-				throw ErrorHandler(ERR_404, e.what());
+				throw ErrorHandler(ERR_404, e.what() + std::string("\n"));
 			
 			case EACCES:
 			case ENAMETOOLONG:
 			case ENOTDIR:
-				throw ErrorHandler(ERR_403, e.what());
+				throw ErrorHandler(ERR_403, e.what() + std::string("\n"));
 			
 			default:
-				throw ErrorHandler(ERR_400, e.what());
+				throw ErrorHandler(ERR_400, e.what() + std::string("\n"));
 		}
 	}
 	checkUriContent();
-
 	validTheUriPath();
-
-	std::cout	<< BRIGHT_GREEN "fullRequest:\n"
-				<< request << RESET;
 }
 /*----------------------------------------------------------------------------*/
 
@@ -129,7 +131,7 @@ void	Client::buildResponse() throw (ErrorHandler)
 			response.deleteQuery(*this);
 			break;
 		default:
-			throw ErrorHandler(ERR_400, "Unknow the request type");
+			throw ErrorHandler(ERR_400, "Unknow the request type\n");
 	}
 }
 /*----------------------------------------------------------------------------*/
@@ -144,10 +146,10 @@ void	Client::buildResponse() throw (ErrorHandler)
 bool	Client::isAutoindex() throw (ErrorHandler)
 {
 	if (request.getHeader().uri.find("upload") != std::string::npos || \
-		UtilParsing::isDirectory(request.completeUri) == false)
+		Utils::isDirectory(request.completeUri) == false)
 		return false;
 
-	const t_location *current = UtilParsing::findLocation(clientServer->getLocationSet(), request.getHeader().uri);
+	const t_location *current = Utils::findLocation(clientServer->getLocationSet(), request.getHeader().uri);
 
 	if (current != NULL && !current->index.empty()) {
 		request.completeUri.append(current->index);
@@ -156,19 +158,17 @@ bool	Client::isAutoindex() throw (ErrorHandler)
 	else if (current != NULL && current->autoindex == true )
 		return true;
 	else
-		throw ErrorHandler(ERR_403, ("[" + request.getHeader().uri + "] is forbidden"));
+		throw ErrorHandler(ERR_403, ("[" + request.getHeader().uri + "] is forbidden\n"));
 }
 /*----------------------------------------------------------------------------*/
 
 /*	* build the complete uri and return the location associated with the path requested by client
 */
-
-// bug in this fct
 const t_location * Client::buildCompleteUri()
 {
 	std::string			rootPart;
 	std::string			uriPart;
-	const t_location	*result = UtilParsing::findLocation(clientServer->getLocationSet(), request.getHeader().uri);
+	const t_location	*result = Utils::findLocation(clientServer->getLocationSet(), request.getHeader().uri);
 	
 	if (result && result->redirect.size() != 0)
 		return result;
@@ -220,10 +220,11 @@ void Client::checkAutorisation(const t_location *current) const throw (ErrorHand
 		}
 		itStart++;
 	}
-	// jai commenter car sinon le script ne voulais pas etre uri 
-	// if (!found) { 
-	// 	throw ErrorHandler(ERR_405, "Method not allowed in this service");
-	// }
+
+	if (!found) {
+		std::stringstream ss;
+		throw ErrorHandler(ERR_405, "Method not allowed in the service\n");
+	}
 }
 /*----------------------------------------------------------------------------*/
 
@@ -233,7 +234,7 @@ void Client::checkAutorisation(const t_location *current) const throw (ErrorHand
 void Client::checkUriContent() const throw (ErrorHandler)
 {
 	if (request.getHeader().uri.find_first_not_of(HTTP_ALLOW_CHARS) != request.getHeader().uri.npos)
-		throw ErrorHandler(ERR_400, "an invalid charater is detected in the uri");
+		throw ErrorHandler(ERR_400, "an invalid charater is detected in the uri\n");
 }
 /*----------------------------------------------------------------------------*/
 
@@ -252,7 +253,7 @@ void Client::validTheUriPath() const throw (ErrorHandler)
 	std::vector<std::string>::const_iterator	it;
 
 	try {
-		token = UtilParsing::split(request.getHeader().uri, "/");
+		token = Utils::split(request.getHeader().uri, "/");
 		it = token.begin(); 
 	}
 	catch(const std::exception& e) {
@@ -272,7 +273,7 @@ void Client::validTheUriPath() const throw (ErrorHandler)
 		else if (it->compare("/") != 0)
 			dirCounter++;
 		if (dirCounter <= 0)
-			throw ErrorHandler(ERR_403, request.getHeader().uri + std::string(" is an invalid uri"));
+			throw ErrorHandler(ERR_403, request.getHeader().uri + std::string(" is an invalid uri\n"));
 		it++;
 	}
 }

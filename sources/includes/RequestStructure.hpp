@@ -5,8 +5,8 @@
 
 # include "webserv.hpp"
 
-typedef struct  s_header        t_header;
-typedef struct  s_body          t_body;
+typedef struct  s_header    t_header;
+typedef struct  s_body      t_body;
 
 /*	* 3 types value possible :
 	*
@@ -22,13 +22,6 @@ typedef struct  s_body          t_body;
 	
 	for each of them, data is in a specific format in the request
 */
-// enum e_contentType
-// {
-//     APP,
-//     TXT,
-//     MULTIPART
-// };
-
 struct s_header
 {
     s_header() {

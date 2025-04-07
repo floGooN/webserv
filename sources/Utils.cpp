@@ -1,14 +1,29 @@
 
 
-#include "UtilParsing.hpp"
-#include <sys/stat.h>
+#include "Utils.hpp"
+
 #include <fcntl.h>
+#include <sys/stat.h>
 
 #include <sstream>
 #include <cstring>
 #include <limits>
 
-size_t	UtilParsing::safeMultiply(size_t value, size_t factor)
+void	Utils::printLog(const std::string& level, const std::string& message)
+{
+	time_t now = time(NULL);
+    tm* locTime = localtime(&now);
+
+    char timeBuf[20];
+    strftime(timeBuf, sizeof(timeBuf), "%Y-%m-%d %H:%M:%S", locTime);
+
+	if (level == ERROR)
+    	std::cerr << RED << "[" << timeBuf << "] " << level << " - " << message << RESET << std::endl;
+	else
+		std::cout << GREEN << "[" << timeBuf << "] " << level << " - " << message << RESET << std::endl;
+}
+
+size_t	Utils::safeMultiply(size_t value, size_t factor)
 {
 	if (value > std::numeric_limits<size_t>::max() / factor) {
 		throw std::overflow_error("Multiplication overflow");
@@ -16,7 +31,7 @@ size_t	UtilParsing::safeMultiply(size_t value, size_t factor)
 	return value * factor;
 }
 
-size_t	UtilParsing::convertBodySize(const std::string& strBodySize)
+size_t	Utils::convertBodySize(const std::string& strBodySize)
 {
 	size_t result;
 	size_t idx = strBodySize.find_first_not_of("0123456789");
@@ -51,7 +66,7 @@ size_t	UtilParsing::convertBodySize(const std::string& strBodySize)
 	return result;
 }
 
-std::vector<std::string>	UtilParsing::split(const std::string & line, const std::string & set)
+std::vector<std::string>	Utils::split(const std::string & line, const std::string & set)
  {
 	std::vector<std::string> result;
 
@@ -60,14 +75,14 @@ std::vector<std::string>	UtilParsing::split(const std::string & line, const std:
 		size_t end = line.find_first_of(set, i);
 
 		result.push_back(line.substr(i, end - i));
-		if (result.back().empty() || UtilParsing::isOnlySpace(result.back()))
+		if (result.back().empty() || Utils::isOnlySpace(result.back()))
 			result.pop_back();
 		end != std::string::npos ? i = end + 1 : i = end;
 	}
 	return result; 
 }
 
-std::vector<std::string>	UtilParsing::splitSpecialDeleteKey(const std::string & line, const std::string & set)
+std::vector<std::string>	Utils::splitSpecialDeleteKey(const std::string & line, const std::string & set)
  {
 	std::vector<std::string> result;
 
@@ -75,7 +90,7 @@ std::vector<std::string>	UtilParsing::splitSpecialDeleteKey(const std::string & 
 	{
 		size_t end = line.find_first_of(set, i);
 		result.push_back(line.substr(i, end - i));
-		if (result.back().empty() || UtilParsing::isOnlySpace(result.back()))
+		if (result.back().empty() || Utils::isOnlySpace(result.back()))
 			result.pop_back();
 		end != std::string::npos ? i = end + 1 : i = end;
 	}
@@ -84,7 +99,7 @@ std::vector<std::string>	UtilParsing::splitSpecialDeleteKey(const std::string & 
 	return result; 
 }
 
-std::vector<std::string>	UtilParsing::cleanVector(std::vector<std::string> vec) // unusefull
+std::vector<std::string>	Utils::cleanVector(std::vector<std::string> vec) // unusefull
 {
 	for (std::vector<std::string>::iterator it = vec.begin(); it != vec.end(); ) {
 		if (*it == "{" || *it == "}") { 
@@ -96,7 +111,7 @@ std::vector<std::string>	UtilParsing::cleanVector(std::vector<std::string> vec) 
 	return vec;
 }
 
-std::vector<std::string>	UtilParsing::cleanVectorClose(std::vector<std::string> vec) // unused
+std::vector<std::string>	Utils::cleanVectorClose(std::vector<std::string> vec) // unused
 {
 	for (std::vector<std::string>::iterator it = vec.begin(); it != vec.end(); ) {
 		if (*it == "}") { 
@@ -107,20 +122,20 @@ std::vector<std::string>	UtilParsing::cleanVectorClose(std::vector<std::string> 
 	return vec;
 }
 
-bool	UtilParsing::isDirectory(const std::string & path) throw (ErrorHandler)
+bool	Utils::isDirectory(const std::string & path) throw (ErrorHandler)
 {
 	struct stat info;
     if (stat(path.c_str(), &info) != 0)
 	{
 		if (errno == EACCES)
-			ErrorHandler(ERR_403, "[" + path +"] access refused");
+			ErrorHandler(ERR_403, "[" + path +"] access refused\n");
 		else
-			ErrorHandler(ERR_500, "UtilParsing::isDirectory(): " + std::string(std::strerror(errno)));
+			ErrorHandler(ERR_500, "Utils::isDirectory(): " + std::string(std::strerror(errno)) + '\n');
 	}
     return S_ISDIR(info.st_mode);
 }
 
-bool	UtilParsing::isOnlySpace(const std::string & str)
+bool	Utils::isOnlySpace(const std::string & str)
 {
 	size_t  i;
 	size_t  size = str.size();
@@ -135,7 +150,7 @@ bool	UtilParsing::isOnlySpace(const std::string & str)
 
 /*	* throws invalid_argument if acess is refused
 */
-void UtilParsing::checkAccessRessource(const std::string &ressourcePath, int type)
+void Utils::checkAccessRessource(const std::string &ressourcePath, int type)
 {
 	if (access(ressourcePath.c_str(), type))
 		throw std::invalid_argument("access() at \"" + ressourcePath + "\": " + std::string(strerror(errno)));
@@ -143,7 +158,7 @@ void UtilParsing::checkAccessRessource(const std::string &ressourcePath, int typ
 
 /*	* throws a runtime exception if closedir fail 
 */
-void UtilParsing::safeCloseDirectory(DIR *current)
+void Utils::safeCloseDirectory(DIR *current)
 {
 	if (closedir(current) == -1) {
 		perror("closedir()");
@@ -151,7 +166,7 @@ void UtilParsing::safeCloseDirectory(DIR *current)
 	}
 }
 
-void	UtilParsing::printMapVector(const std::map<int, std::map<std::string, std::vector<std::string> > >& allMapRoads) // unused
+void	Utils::printMapVector(const std::map<int, std::map<std::string, std::vector<std::string> > >& allMapRoads) // unused
 {
 	for (std::map<int, std::map<std::string, std::vector<std::string> > >::const_iterator outerIt = allMapRoads.begin(); 
 		outerIt != allMapRoads.end(); ++outerIt)
@@ -179,7 +194,7 @@ void	UtilParsing::printMapVector(const std::map<int, std::map<std::string, std::
 	}
 }
 
-void	UtilParsing::controlMapLocation(std::map<int, std::map<std::string, std::vector<std::string> > > allMapRoads, std::string keyValue) // unused
+void	Utils::controlMapLocation(std::map<int, std::map<std::string, std::vector<std::string> > > allMapRoads, std::string keyValue) // unused
 {
 	int index = 0;
 	for (std::map<int, std::map<std::string, std::vector<std::string> > >::const_iterator outerIt = allMapRoads.begin(); 
@@ -199,21 +214,21 @@ void	UtilParsing::controlMapLocation(std::map<int, std::map<std::string, std::ve
 	}
 }
 
-void	UtilParsing::manageControlMapLocation(std::map<int, std::map<std::string, std::vector<std::string> > > allMapRoads) // unused
+void	Utils::manageControlMapLocation(std::map<int, std::map<std::string, std::vector<std::string> > > allMapRoads) // unused
 {
-	UtilParsing::controlMapLocation(allMapRoads, "location");
-	UtilParsing::controlMapLocation(allMapRoads, "root");
-	UtilParsing::controlMapLocation(allMapRoads, "index");
-	UtilParsing::controlMapLocation(allMapRoads, "methods_accept");
+	Utils::controlMapLocation(allMapRoads, "location");
+	Utils::controlMapLocation(allMapRoads, "root");
+	Utils::controlMapLocation(allMapRoads, "index");
+	Utils::controlMapLocation(allMapRoads, "methods_accept");
 }
 
-void	UtilParsing::displayVector(std::vector<std::string> vec)
+void	Utils::displayVector(std::vector<std::string> vec)
 {
 	for (std::vector<std::string>::iterator it = vec.begin(); it != vec.end(); it++)
 		std::cout   << "[" << *it << "]" << "\n";
 }
 
-std::string	UtilParsing::trim(const std::string& str) 
+std::string	Utils::trim(const std::string& str) 
 {
 	std::size_t first = str.find_first_not_of(' ');
 	std::size_t last = str.find_last_not_of(' ');
@@ -227,18 +242,18 @@ std::string	UtilParsing::trim(const std::string& str)
 
 /*	* fill the buffer with the content of the file or throw ErrorHandler
 */
-void	UtilParsing::readFile(const std::string &filepath, std::string &buffer) throw (ErrorHandler)
+void	Utils::readFile(const std::string &filepath, std::string &buffer) throw (ErrorHandler)
 {
 	std::ifstream file(filepath.c_str(), std::ios::binary);
 	if ( ! file.is_open() )
-		throw ErrorHandler(ERR_404, "readFile(): Ressource unavailable");
+		throw ErrorHandler(ERR_404, "readFile(): Ressource unavailable\n");
 	
 	std::ostringstream stream;
 	stream << file.rdbuf();
 	buffer = stream.str();
 }
 
-void	UtilParsing::readErrorFile(const std::string &filepath, std::string &buffer)
+void	Utils::readErrorFile(const std::string &filepath, std::string &buffer)
 {
 	std::ifstream file(filepath.c_str(), std::ios::binary);
 	if ( ! file.is_open() )
@@ -249,7 +264,7 @@ void	UtilParsing::readErrorFile(const std::string &filepath, std::string &buffer
 	buffer = stream.str();
 }
 
-std::string	UtilParsing::trimSemicolon(const std::string& str)
+std::string	Utils::trimSemicolon(const std::string& str)
 {
 	std::size_t first = str.find_first_not_of(';');
 	std::size_t last = str.find_last_not_of(';');
@@ -261,7 +276,7 @@ std::string	UtilParsing::trimSemicolon(const std::string& str)
 	return str.substr(first, last - first + 1);
 }
 
-std::string	UtilParsing::recoverValue(std::string line, std::string key)
+std::string	Utils::recoverValue(std::string line, std::string key)
 {
 	if (line.find(key) != std::string::npos) 
 	{
@@ -273,21 +288,21 @@ std::string	UtilParsing::recoverValue(std::string line, std::string key)
 			if (startPos != std::string::npos) 
 			{
 				std::string value = line.substr(startPos, endPos - startPos);
-				return UtilParsing::trim(value);
+				return Utils::trim(value);
 			}
 		}
 	}
 	return "";
 }
 
-std::string UtilParsing::intToString(int value)
+std::string Utils::intToString(int value)
 {
 	std::ostringstream oss;
     oss << value;
     return oss.str();
 }
 
-std::string UtilParsing::recoverExtension(const std::string &filename)
+std::string Utils::recoverExtension(const std::string &filename)
 {
 	std::size_t pos = filename.find_last_of('.');
     return (pos == filename.npos) ? "" : filename.substr(pos);
@@ -295,7 +310,7 @@ std::string UtilParsing::recoverExtension(const std::string &filename)
 
 /*	* returns an open directory or throws invalid_argument if dir is not found
 */
-DIR* UtilParsing::openDirectory(const std::string &dirPath)
+DIR* Utils::openDirectory(const std::string &dirPath)
 {
 	DIR *dirp = opendir(dirPath.c_str());
 	if (!dirp)
@@ -303,7 +318,7 @@ DIR* UtilParsing::openDirectory(const std::string &dirPath)
 	return dirp;
 }
 
-const t_location * UtilParsing::findLocation(const std::set<t_location> &allLocation, const std::string &locationPath)
+const t_location * Utils::findLocation(const std::set<t_location> &allLocation, const std::string &locationPath)
 {
 	std::set<t_location>::iterator itLocation = allLocation.begin();
 	while (itLocation != allLocation.end())
@@ -315,7 +330,7 @@ const t_location * UtilParsing::findLocation(const std::set<t_location> &allLoca
 	return NULL;
 }
 
-std::string UtilParsing::convertHexaToString(std::string value)
+std::string Utils::convertHexaToString(std::string value)
 {
     std::string strConvert;
     int number;
@@ -336,7 +351,7 @@ std::string UtilParsing::convertHexaToString(std::string value)
     return value;
 }
 
-int UtilParsing::decryptHexa(std::string value)
+int Utils::decryptHexa(std::string value)
 {
     unsigned int x;
     std::stringstream ss;
@@ -345,13 +360,13 @@ int UtilParsing::decryptHexa(std::string value)
     return x;
 }
 
-bool UtilParsing::fileExits(const std::string &filename)
+bool Utils::fileExits(const std::string &filename)
 {
 	std::ifstream file(filename.c_str());
 	return file.good();
 }
 
-std::string UtilParsing::emethodsTypeToString(e_methods type)
+std::string Utils::emethodsTypeToString(e_methods type)
 {
 	switch (type)
 	{
@@ -366,7 +381,7 @@ std::string UtilParsing::emethodsTypeToString(e_methods type)
 	}
 }
 
-std::string UtilParsing::econtentTypeToString(e_contentType type)
+std::string Utils::econtentTypeToString(e_contentType type)
 {
 	switch (type)
 	{

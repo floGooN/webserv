@@ -3,7 +3,7 @@
 
 
 #include "ServerConfig.hpp"
-#include "UtilParsing.hpp"
+#include "Utils.hpp"
 
 ServerConfig::ServerConfig()
 {
@@ -80,17 +80,17 @@ void	ServerConfig::controlDefaultServerConf()
 	if (rootPath.empty())
 		throw std::invalid_argument("'root' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");
 	else
-		UtilParsing::checkAccessRessource(rootPath, R_OK);
+		Utils::checkAccessRessource(rootPath, R_OK);
 	if (uploadPath.empty())
 		throw std::invalid_argument("'upload_path' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");
 	else
-		UtilParsing::checkAccessRessource(uploadPath, R_OK);
+		Utils::checkAccessRessource(uploadPath, R_OK);
 	if (pageErrorPath.empty()) {
 		pageErrorPath = PATH_ERRPAGE;
-		UtilParsing::checkAccessRessource(pageErrorPath, R_OK);
+		Utils::checkAccessRessource(pageErrorPath, R_OK);
 	}
 	else
-		UtilParsing::checkAccessRessource(pageErrorPath, R_OK);
+		Utils::checkAccessRessource(pageErrorPath, R_OK);
 
 	if (indexFile.empty())
 		indexFile.clear();
@@ -99,7 +99,7 @@ void	ServerConfig::controlDefaultServerConf()
 	if (clientMaxBodySize.empty())
 		throw std::invalid_argument("'client_max_body_size' must not be empty. Put the keyword (in quotes) followed by its value(s) separated by a space.");	
 	if (methodAccept.empty())
-		methodAccept = UtilParsing::split(DFLT_METHOD, " ");
+		methodAccept = Utils::split(DFLT_METHOD, " ");
 	if (serverName.empty())
 		serverName.push_back(DFLT_HOSTNAME);
 }
@@ -107,17 +107,17 @@ void	ServerConfig::controlDefaultServerConf()
 void	ServerConfig::checkSemiColonServer()
 {
     if (clientMaxBodySize.find(";") != std::string::npos)
-        clientMaxBodySize = UtilParsing::trimSemicolon(clientMaxBodySize);
+        clientMaxBodySize = Utils::trimSemicolon(clientMaxBodySize);
     if (uploadPath.find(";") != std::string::npos)
-        uploadPath =  UtilParsing::trimSemicolon(uploadPath);
+        uploadPath =  Utils::trimSemicolon(uploadPath);
     for (std::vector<std::string>::iterator it = listenPort.begin(); it != listenPort.end(); it++)
     {
         if (it->find(";") != std::string::npos)
-            *it = UtilParsing::trimSemicolon(*it);
+            *it = Utils::trimSemicolon(*it);
     }
     for (std::vector<std::string>::iterator i = serverName.begin(); i != serverName.end(); i++)
     {
         if (i->find(";") != std::string::npos)
-            *i = UtilParsing::trimSemicolon(*i);
+            *i = Utils::trimSemicolon(*i);
     }
 }

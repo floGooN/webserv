@@ -1,5 +1,14 @@
-
-
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   Server.cpp                                         :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: fberthou <fberthou@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/04/07 06:49:59 by fberthou          #+#    #+#             */
+/*   Updated: 2025/04/07 07:13:46 by fberthou         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
 /*============================================================================*/
 							/*### HEADER FILES ###*/
@@ -7,7 +16,7 @@
 
 #include "Server.hpp"
 #include "ServerConfig.hpp"
-#include "UtilParsing.hpp"
+#include "Utils.hpp"
 
 /*============================================================================*/
 			/*### CONSTRUCTORS - DESTRUCTOR _ OVERLOAD OPERATORS ###*/
@@ -137,7 +146,7 @@ t_params Server::setParams(const ServerConfig &config, const std::string &servic
 /*----------------------------------------------------------------------------*/
 
 void	Server::setBodySize(const std::string &bodySize, t_params &params) {
-	params.maxBodySize = UtilParsing::convertBodySize(bodySize);
+	params.maxBodySize = Utils::convertBodySize(bodySize);
 }
 /*----------------------------------------------------------------------------*/
 
@@ -166,7 +175,7 @@ void	Server::setUploadPath(const std::string &uploadPath, t_params &params) {
 }
 /*----------------------------------------------------------------------------*/
 
-void	Server::setMethod(const std::vector<std::string> &conf, t_params &params)
+void	Server::setMethod(const std::vector<std::string> &conf, t_params &params) throw (std::invalid_argument)
 {
 	std::vector<std::string>::const_iterator it = conf.begin();
 
@@ -188,7 +197,7 @@ void	Server::setMethod(const std::vector<std::string> &conf, t_params &params)
 /*----------------------------------------------------------------------------*/
 
 void	Server::setNameList(const std::vector<std::string> &names, t_params &params) {
-	UtilParsing::convertVectorToSet(params.nameList, names);
+	Utils::convertVectorToSet(params.nameList, names);
 }
 /*----------------------------------------------------------------------------*/
 
@@ -216,7 +225,7 @@ std::set<t_location> Server::setLocations(const std::vector<LocationConfig> &con
 }
 /*----------------------------------------------------------------------------*/
 
-void	Server::setAutoindex(const std::string &conf, t_location &loc)
+void	Server::setAutoindex(const std::string &conf, t_location &loc) throw (std::invalid_argument)
 {
 	if (conf.empty() || conf.compare("off") == 0)
 		loc.autoindex = false;
@@ -237,7 +246,7 @@ void	Server::setIndex(const std::string &conf, t_location &loc) {
 }
 /*----------------------------------------------------------------------------*/
 
-void	Server::setMethods(const std::vector<std::string> &conf, t_location &loc)
+void	Server::setMethods(const std::vector<std::string> &conf, t_location &loc) throw (std::invalid_argument)
 {
 	std::vector<std::string>::const_iterator it = conf.begin();
 
@@ -254,12 +263,11 @@ void	Server::setMethods(const std::vector<std::string> &conf, t_location &loc)
 		it++;
 	}
 }
-
 /*----------------------------------------------------------------------------*/
+
 void	Server::setRedir(const std::vector<std::string> &conf, t_location &loc) {
 	loc.redirect = conf;
 }
-
 /*----------------------------------------------------------------------------*/
 
 void	Server::setPath(const std::string &conf, t_location &loc) {

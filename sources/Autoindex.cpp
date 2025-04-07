@@ -3,7 +3,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include "CGI.hpp"
-#include "UtilParsing.hpp"
+#include "Utils.hpp"
 
 
 std::string processAutoIndex(const Client &client)
@@ -12,10 +12,10 @@ std::string processAutoIndex(const Client &client)
     std::string body;
     std::string header;
 
-    const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
+    const t_location *current = Utils::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
 	std::string path = current->root + client.request.getHeader().uri;
     if ((dir = opendir(path.c_str())) == NULL)
-        throw ErrorHandler(ERR_403, ("[" + client.request.getHeader().uri + "] is forbidden"));
+        throw ErrorHandler(ERR_403, ("[" + client.request.getHeader().uri + "] is forbidden\n"));
     body = buildBodyAutoIndex(dir, path);
     closedir(dir);
     return body;
