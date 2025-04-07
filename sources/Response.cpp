@@ -1,5 +1,14 @@
-
-
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   Response.cpp                                       :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: fberthou <fberthou@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/04/07 05:11:42 by fberthou          #+#    #+#             */
+/*   Updated: 2025/04/07 07:13:46 by fberthou         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
 /*============================================================================*/
 						/*### HEADERS & STATIC FIELD ###*/
@@ -7,7 +16,7 @@
 
 #include "Client.hpp"
 #include "Response.hpp"
-#include "UtilParsing.hpp"
+#include "Utils.hpp"
 #include <sys/stat.h>
 #include "CGI.hpp"
 
@@ -56,10 +65,9 @@ std::ostream & operator<<(std::ostream &o, const Response &ref)
 /*============================================================================*/
 						/*### PUBLIC METHODS ###*/
 /*============================================================================*/
+
 void	Response::getQuery(Client &client)
 {
-	std::cout << BRIGHT_GREEN "GET QUERY" RESET << std::endl;
-
 	if (isRedirect(client) == true)
 	{
 		client.response.message = setHeaderRedirect(client);
@@ -70,7 +78,7 @@ void	Response::getQuery(Client &client)
 	else if (isRepository(client) == true)
 		message = processAutoIndex(client);
 	else
-		UtilParsing::readFile(client.request.completeUri, message);
+		Utils::readFile(client.request.completeUri, message);
 
 	try {
 		message.insert(0, setHeader(client.request, (message.empty() ? COD_204 : COD_200 )));
@@ -84,9 +92,7 @@ void	Response::getQuery(Client &client)
 
 void	Response::postQuery(Client &client)
 {
-	std::cout	<< BRIGHT_YELLOW "POST QUERY" RESET << std::endl;
-
-	UtilParsing::checkAccessRessource(client.request.completeUri, W_OK);
+	Utils::checkAccessRessource(client.request.completeUri, W_OK);
 
 	if (isCGI(client) == true) 
 		message = processCGI(client);
@@ -96,7 +102,7 @@ void	Response::postQuery(Client &client)
 			throw ErrorHandler(ERR_415, "The media type is not supported by the server");
 		uploadFile(client);
 		client.request.completeUri = "./uploads/uploadSucces.html";
-		UtilParsing::readFile(client.request.completeUri, message);
+		Utils::readFile(client.request.completeUri, message);
 	}
 	try {
 		message.insert(0, setHeader(client.request, COD_201));
@@ -109,20 +115,13 @@ void	Response::postQuery(Client &client)
 
 void	Response::deleteQuery(const Client &client)
 {
-	std::cout << BRIGHT_CYAN "DELETE QUERY" << RESET << std::endl;
-
 	char		path[100];
-
-    std::cout	<< BRIGHT_YELLOW << client.request.completeUri << RESET
-				<< std::endl;
 
 	if (realpath(client.request.completeUri.c_str(), path) == NULL) {
 		if (errno == ENOENT)
 			throw ErrorHandler(ERR_404, "File to delete not found");
 		throw ErrorHandler(ERR_400, "realpath() in DELETE, invalid path");
 	}
-    std::cout	<< BRIGHT_RED << path << RESET 
-				<< std::endl;
 	if (access(path, F_OK) == -1)
 		throw ErrorHandler(ERR_404, "Not found in delete()");
 	else if (access(path, W_OK) == -1)
@@ -154,7 +153,7 @@ std::string Response::extractFilename(const std::string &bodyHeader) throw (Erro
 	if (i == std::string::npos)
 		throw ErrorHandler(ERR_400, "The format of the request is wrong (missing filename)");
 	i += 9;
-	std::vector<std::string> res = UtilParsing::split(bodyHeader.substr(i, bodyHeader.find_first_of("\r\n") - i), "\"");
+	std::vector<std::string> res = Utils::split(bodyHeader.substr(i, bodyHeader.find_first_of("\r\n") - i), "\"");
 	for (std::vector<std::string>::iterator it = res.begin(); it != res.end(); it++)
 	{
 		if (it->compare("\""))
@@ -201,7 +200,7 @@ void Response::uploadFile(const Client &client) throw (ErrorHandler)
 std::string	&Response::findMimeType(const std::string &uri)
 {
 	try {
-		return _mimeMap.at(UtilParsing::recoverExtension(uri));
+		return _mimeMap.at(Utils::recoverExtension(uri));
 	}
 	catch(const std::exception& e) 
 	{
@@ -219,12 +218,12 @@ std::string	Response::setHeader(const Request &req, const std::string &code) thr
 		throw ErrorHandler(ERR_500, "In Response::setHeader()\nconversion of the length message faild");
 
 	std::string header = \
-		PROTOCOL_VERION " " + code + "\r\n" \
-		"Server: Rob&Flo V0.9" + "\r\n" \
+		PROTOCOL_VERION " " + code + HTTP_SEPARATOR \
+		"Server: Rob&Flo V1" + HTTP_SEPARATOR \
 		"Content-Type: " + findMimeType(req.completeUri) + "; charset=UTF-8\r\n" \
-		"Content-Length: " + oss.str() + "\r\n" \
-		"Connection: " + (req.keepAlive == true ? "keep-alive" : "close") + "\r\n" \
-		"\r\n";
+		"Content-Length: " + oss.str() + HTTP_SEPARATOR \
+		"Connection: " + (req.keepAlive == true ? "keep-alive" : "close") + HTTP_SEPARATOR \
+		HTTP_SEPARATOR;
 
 	return header;	
 }
@@ -233,52 +232,49 @@ std::string	Response::setHeader(const Request &req, const std::string &code) thr
 std::string	Response::setHeaderRedirect(const Client &client) throw (ErrorHandler)
 {
 	std::string res;
-	const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
+	const t_location *current = Utils::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
 	if (!current)
 		throw ErrorHandler(ERR_444);
 	if (current->redirect[0] == "302")
-		res = PROTOCOL_VERION " " + current->redirect[0]+ " Found" + "\r\n" \
-		"Server: Rob&Flo V0.9" + "\r\n" \
+		res = PROTOCOL_VERION " " + current->redirect[0]+ " Found" + HTTP_SEPARATOR \
+		"Server: Rob&Flo V1" + HTTP_SEPARATOR \
 		"Content-Type: " + "text/html" + "; charset=UTF-8\r\n" \
 		"Content-Length: 0\r\n" \
 		"Connection: close\r\n" \
-		"Location: " + current->redirect[1] + "\r\n" \
-		"\r\n";
+		"Location: " + current->redirect[1] + HTTP_SEPARATOR \
+		HTTP_SEPARATOR;
 	else
-		res = PROTOCOL_VERION " " + current->redirect[0]+ " Moved Permanently" + "\r\n" \
-		"Server: Rob&Flo V0.9" + "\r\n" \
+		res = PROTOCOL_VERION " " + current->redirect[0]+ " Moved Permanently" + HTTP_SEPARATOR \
+		"Server: Rob&Flo V1" + HTTP_SEPARATOR \
 		"Content-Type: " + "text/html" + "; charset=UTF-8\r\n" \
-		"Content-Length: 0\r\n" \
-		"Connection: close\r\n" \
-		"Location: " + current->redirect[1] + "\r\n" \
-		"\r\n";
+		"Content-Length: 0" + HTTP_SEPARATOR \
+		"Connection: close" + HTTP_SEPARATOR \
+		"Location: " + current->redirect[1] + HTTP_SEPARATOR \
+		HTTP_SEPARATOR;
 
 	return res;
 }
-// /*----------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
 
 bool	Response::isRedirect(const Client & client)
 {
-	const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
+	const t_location *current = Utils::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
 
 	if (current && current->redirect.size() != 0)
 		return true;
 	return false;
 }
-
-
 /*----------------------------------------------------------------------------*/
-
 
 bool	Response::isCGI(Client client) throw (ErrorHandler)
 {
 	if (checkExtensionCGI(client.request.getHeader().uri) == true)
 	{
-		const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
+		const t_location *current = Utils::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
 		if (current == NULL)
 			throw ErrorHandler(ERR_404);
 		std::string path = current->root + client.request.getHeader().uri;
-		if (UtilParsing::isDirectory(path) == true)
+		if (Utils::isDirectory(path) == true)
 			return false;
 		if (access(path.c_str(), X_OK) != 0)
 			throw ErrorHandler(ERR_403);
@@ -288,15 +284,15 @@ bool	Response::isCGI(Client client) throw (ErrorHandler)
 }
 /*----------------------------------------------------------------------------*/
 
-bool Response::isRepository(Client client) throw (ErrorHandler)
+bool Response::isRepository(Client client)
 {
 	if (client.request.getHeader().uri == "/")
 		return false;
-	const t_location *current = UtilParsing::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
+	const t_location *current = Utils::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
 	if (current == NULL)
 		return false;
 	std::string path = current->root + client.request.getHeader().uri;
-	return UtilParsing::isDirectory(path);
+	return Utils::isDirectory(path);
 }
 /*----------------------------------------------------------------------------*/
 

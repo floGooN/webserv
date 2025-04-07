@@ -6,7 +6,7 @@
 
 
 #include "LocationConfig.hpp"
-#include "UtilParsing.hpp"
+#include "Utils.hpp"
 #include <unistd.h>
 
 LocationConfig::LocationConfig()
@@ -70,19 +70,19 @@ void	LocationConfig::controlDefaultLocationConf()
 void	LocationConfig::checkSemiColonLocation()
 {
 	if (path.find(";") != std::string::npos)
-		path = UtilParsing::trimSemicolon(path);
+		path = Utils::trimSemicolon(path);
 	if (root.find(";") != std::string::npos)
-		root = UtilParsing::trimSemicolon(root);
+		root = Utils::trimSemicolon(root);
 	if (index.find(";") != std::string::npos)
-		index = UtilParsing::trimSemicolon(index);
+		index = Utils::trimSemicolon(index);
 	for (std::vector<std::string>::iterator it = methods.begin(); it != methods.end(); it++)
 	{
 		if (it->find(";") != std::string::npos)
-			*it = UtilParsing::trimSemicolon(*it);
+			*it = Utils::trimSemicolon(*it);
 	}
 	for (std::vector<std::string>::iterator iter = redirect.begin(); iter != redirect.end(); iter++)
 	{
 		if (iter->find(";") != std::string::npos)
-			*iter = UtilParsing::trimSemicolon(*iter);
+			*iter = Utils::trimSemicolon(*iter);
 	}
 }

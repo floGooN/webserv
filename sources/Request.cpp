@@ -1,32 +1,21 @@
-
-/*	* les requetes
-	*
-	* ENTETES OBLIGATOIRES
-	* ligne de requete  [GET / HTTP/1.1] -> toujours en premiere ligne
-	* Host:		[Host: localhost:8080]
-	*
-	* ENTETES CONSEILLES
-	* Connection:	-> keep-alive ou non
-	* Accept:		-> type mime
-	*
-	* ENTETES IGNORES
-	* Accept-language:	-> langue favorite client
-	* Accept-encoding:	-> compressions supportes par client
-	* Upgrade-Insecure-Requests:	-> demande redirection https
-	* 
-	* AUTRES ENTETES
-	* User-Agent:		-> info sur client (OS-navigateur-arch microprocesseur - serveur graphique) util pour cookies (a mon avis)
-	* Cache-control:	-> pour gerer cache cote client
-	* sec-ch-ua, sec-ch-ua-mobile, sec-ch-ua-platform -> infos environement client
-*/
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   Request.cpp                                        :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: fberthou <fberthou@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/04/07 06:24:44 by fberthou          #+#    #+#             */
+/*   Updated: 2025/04/07 07:13:46 by fberthou         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
 /*============================================================================*/
 						/*### HEADERS & STATIC FIELD ###*/
 /*============================================================================*/
 
 #include "Request.hpp"
-#include "UtilParsing.hpp"
-
+#include "Utils.hpp"
 
 /*============================================================================*/
 				/*### CONSTRUCTORS - DESTRUCTOR - OVERLOAD OP ###*/
@@ -71,10 +60,11 @@ Request & Request::operator=(const Request &ref)
 	if (this != &ref)
 	{
 		keepAlive = ref.keepAlive;
+		completeUri = ref.completeUri;
 
+		_body = ref._body;
 		_args = ref._args;
 		_header = ref._header;
-		_body = ref._body;
 	}
 	return *this;
 }
@@ -82,7 +72,8 @@ Request & Request::operator=(const Request &ref)
 
 std::ostream & operator<<(std::ostream & o, const Request &ref)
 {
-	o	<< BOLD "Request:\n" BOLD "KeepAlive: " << ref.keepAlive << std::endl
+	o	<< BOLD "Request:\n"
+		<< BOLD "KeepAlive: " RESET << ref.keepAlive << std::endl
 		<< BOLD "Header:\n" << ref.getHeader()
 		<< BOLD "Args:\n" << ref.getArgs() << std::endl
 		<< BOLD "Body:\n" << ref.getbody();
@@ -143,12 +134,12 @@ void Request::updateRequest(const std::string &content) throw(ErrorHandler) {
 
 void Request::clearRequest()
 {
-	completeUri.clear();
 	keepAlive = false;
+	completeUri.clear();
 
+	_body.clear();
 	_args.clear();
 	_header.clear();
-	_body.clear();
 }
 /*----------------------------------------------------------------------------*/
 
@@ -158,7 +149,7 @@ void Request::clearRequest()
 
 /*	* search for arguments in the URI
 	*
-	* if no argument -> return nothing
+	* if no argument -> do nothing
 	* else -> separate arguments and path from uri
 */
 void Request::setArgs() throw(ErrorHandler)
@@ -174,12 +165,6 @@ void Request::setArgs() throw(ErrorHandler)
 	catch(const std::exception& e) {
 		throw ErrorHandler(ERR_500, "In setArgs() : " + std::string(e.what()));
 	}
-#ifdef TEST
-	std::cout	<< ITAL BLUE "Request::setArgs()\n"
-				<< "_args: [" << _args << "]" << std::endl
-				<< "uri: [" << _header.uri << "]"
-				<< RESET << std::endl;
-#endif
 }
 /*----------------------------------------------------------------------------*/
 
@@ -198,7 +183,7 @@ void Request::setHeader(const std::string &header) throw(ErrorHandler)
 	std::vector<std::string> token;
 
 	try {
-		token = UtilParsing::split(header, "\r\n");
+		token = Utils::split(header, "\r\n");
 	}
 	catch (std::exception &e) {
 		throw ErrorHandler(ERR_500, "in Request::setHeader(); " + std::string(e.what()));
@@ -281,8 +266,6 @@ void Request::setUri(const std::string &line) throw(ErrorHandler)
 /*----------------------------------------------------------------------------*/
 
 /*	* extract the host port and host name from the header of the query
-	*
-	* throw Bad request if port or name is empty
 */
 void Request::setHost(const std::string &line) throw(ErrorHandler)
 {

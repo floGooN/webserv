@@ -1,7 +1,14 @@
-
-
-
-
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   Cluster.hpp                                        :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: fberthou <fberthou@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/04/07 06:49:45 by fberthou          #+#    #+#             */
+/*   Updated: 2025/04/07 06:49:46 by fberthou         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
 #ifndef CLUSTER_HPP
 # define CLUSTER_HPP
@@ -9,20 +16,22 @@
 # include "webserv.hpp"
 # include "HttpConfig.hpp"
 
-# include "Client.hpp"
-# include "Server.hpp"
 
 # include <dirent.h>
 
+class Client;
+class Server;
+
 class Cluster
 {
-	class   InitException : virtual public std::exception
+	class InitException : virtual public std::exception
 	{
 		public:
 			InitException(const char *file, int line, const std::string &msg, const int ret)
 				: retAddr(ret), _file(file), _line(line), _msg(msg)
 			{	}
 			virtual ~InitException() throw() {}
+			
 			virtual const char *	what() const throw() {
 				return _msg.c_str();
 			}
@@ -61,7 +70,7 @@ class Cluster
 	};	
 
 	public:
-		Cluster(const std::string &);
+		Cluster(const std::string &) throw (std::exception, InitException);
 		~Cluster();
 		Cluster & operator=(const Cluster &);
 
@@ -78,29 +87,29 @@ class Cluster
 		std::map<const int, Client>		_clientList;
 		std::map<std::string, Server >	_serversByService;
 
-		void	setEpollFd();
-		void	setServerSockets();
-		void	setKeepAlive(const std::string &);
+		void	setEpollFd() throw (InitException);
 		void	setServersByPort(const HttpConfig &);
-		void	safeGetAddr(const char *, struct addrinfo **) const;
-		void	createAndLinkSocketServer(const struct addrinfo &, const std::string &, int *);
+		void	setServerSockets() throw (InitException);
+		void	setKeepAlive(const std::string &) throw (InitException);
+		void	safeGetAddr(const char *, struct addrinfo **) const throw (InitException);
+		void	createAndLinkSocketServer(const struct addrinfo &, const std::string &, int *) throw (InitException);
 
 		void	acceptConnexion(const struct epoll_event &);
 		void	addFdInEpoll(const bool, const int)	const throw (std::runtime_error);
 
-		void	recvData(const struct epoll_event &);
-		void	sendData(const struct epoll_event &);
+		void	recvData(const struct epoll_event &) throw (ErrGenerator);
+		void	sendData(const struct epoll_event &) throw (ErrGenerator);
 
 		Client	&findClient(const int) throw (std::runtime_error);
-		ssize_t	safeRecv(const int, std::string &);
 		void	updateClient(Client &client) throw (ErrGenerator);
+		ssize_t	safeRecv(const int, std::string &) throw (std::exception);
 		void	changeEventMod(const bool, const int) throw (ErrGenerator);
 		void	checkByteReceived(const struct epoll_event &event, ssize_t bytes) throw (ErrGenerator);
 
 		Client	*updateClientsTime();
+		void	closeAllSockets() const;
 		void	updateTime(Client &client) throw (ErrGenerator);
 		void	closeConnexion(const struct epoll_event &event);
-		void	closeAllSockets() const;
 };
 
 std::ostream	& operator<<(std::ostream &, const Cluster &);

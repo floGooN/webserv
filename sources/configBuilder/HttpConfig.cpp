@@ -5,7 +5,7 @@
 /*============================================================================*/
 
 #include "HttpConfig.hpp"
-#include "UtilParsing.hpp"
+#include "Utils.hpp"
 
 
 /*============================================================================*/
@@ -77,11 +77,11 @@ void HttpConfig::controlDefaultHttpConf()
 void HttpConfig::checkSemiColonAllValues()
 {
 	if (default_type.find(";") != std::string::npos)
-		default_type = UtilParsing::trimSemicolon(default_type);
+		default_type = Utils::trimSemicolon(default_type);
 	if (keepalive_timeout.find(";") != std::string::npos)
-		keepalive_timeout = UtilParsing::trimSemicolon(keepalive_timeout);
+		keepalive_timeout = Utils::trimSemicolon(keepalive_timeout);
 	if (worker_connexion.find(";") != std::string::npos)
-		worker_connexion = UtilParsing::trimSemicolon(worker_connexion);
+		worker_connexion = Utils::trimSemicolon(worker_connexion);
 	for (size_t i = 0; i <= serversConfig.size() - 1; i++)
 	{
 		serversConfig[i].checkSemiColonServer();

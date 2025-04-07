@@ -1,5 +1,14 @@
-
-
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   Request.hpp                                        :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: fberthou <fberthou@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/04/07 06:49:21 by fberthou          #+#    #+#             */
+/*   Updated: 2025/04/07 06:49:24 by fberthou         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
 #ifndef REQUEST_HPP
 # define REQUEST_HPP
@@ -27,15 +36,14 @@ class Request
 		
 		void	clearRequest();
 		void	updateRequest(const std::string &) throw(ErrorHandler);
-		// void	updateRequest(const Request &req) throw(ErrorHandler);
 	
 		bool		keepAlive;
 		std::string	completeUri;
 
 	private:
 		t_body		_body;
-		t_header	_header;	
 		std::string	_args;
+		t_header	_header;	
 
 		void	setArgs()				 				throw(ErrorHandler);
 		void 	setUri(const std::string &)		 		throw(ErrorHandler);

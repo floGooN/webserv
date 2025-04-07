@@ -4,12 +4,10 @@
 /*============================================================================*/
 							/*### HEADER FILES ###*/
 /*============================================================================*/
-#include "Cluster.hpp"
-#include "Client.hpp"
-#include "Server.hpp"
-#include "UtilParsing.hpp"
 
-#include "ErrGenerator.hpp"
+#include "Client.hpp"
+#include "Cluster.hpp"
+#include "Utils.hpp"
 
 /*============================================================================*/
 			/*### CONSTRUCTORS - DESTRUCTOR _ OVERLOAD OPERATORS ###*/
@@ -78,7 +76,7 @@ std::string	Cluster::ErrGenerator::findErrorFile(DIR *current, const std::string
 			break ;
 	}
 
-	UtilParsing::safeCloseDirectory(current);
+	Utils::safeCloseDirectory(current);
 	if ( result.empty() && errno && errno != ENOENT && errno != ENOTDIR && errno != EISDIR)
 		perror("readdir()");
 
@@ -98,10 +96,10 @@ void Cluster::ErrGenerator::generateContent(std::string &message) const
 		else
 			dirErrorPath = PATH_ERRPAGE;
 
-		filename = findErrorFile(UtilParsing::openDirectory(dirErrorPath), _errorCode);
+		filename = findErrorFile(Utils::openDirectory(dirErrorPath), _errorCode);
 		if (filename.empty())
 		{
-			filename = findErrorFile(UtilParsing::openDirectory(PATH_ERRPAGE), _errorCode);
+			filename = findErrorFile(Utils::openDirectory(PATH_ERRPAGE), _errorCode);
 			dirErrorPath = PATH_ERRPAGE;
 			if (filename.empty())
 				message = DFLT_ERRORPAGE;
@@ -113,7 +111,7 @@ void Cluster::ErrGenerator::generateContent(std::string &message) const
 			filename.erase(0, 1);
 		}
 		filename.insert(0, dirErrorPath);
-		UtilParsing::readErrorFile(filename, message);
+		Utils::readErrorFile(filename, message);
 	}
 	catch(const std::exception& e)
 	{
@@ -131,7 +129,7 @@ std::string	Cluster::ErrGenerator::generateHeader() const
 	if (oss.fail())
 		throw ErrorHandler(ERR_500, "In ErrGenerator::generateHeader()\nconversion of the length of the message faild");
 
-	std::string final =	PROTOCOL_VERION " " + _errorCode + HTTP_SEPARATOR \
+	std::string header =	PROTOCOL_VERION " " + _errorCode + HTTP_SEPARATOR \
 						"Date: TODAY" HTTP_SEPARATOR \
 						"Server: Rob_&_Flo__WEBSERV42__/0.5" HTTP_SEPARATOR \
 						"Content-Type: text/html; charset=UTF-8" HTTP_SEPARATOR \
@@ -139,6 +137,6 @@ std::string	Cluster::ErrGenerator::generateHeader() const
 						"Connection: close" \
 						HTTP_SEPARATOR \
 						HTTP_SEPARATOR;
-	return final;
+	return header;
 }
 /*----------------------------------------------------------------------------*/

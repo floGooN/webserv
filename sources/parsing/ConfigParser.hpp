@@ -3,7 +3,7 @@
 
 #include "HttpConfig.hpp"
 #include "webserv.hpp"
-#include "UtilParsing.hpp"
+#include "Utils.hpp"
 #include <sstream>
 #include <fstream>
 #include <cstring>
@@ -22,6 +22,5 @@ private:
     void parseLocationBlock(std::ifstream& file, LocationConfig& locationConfig);  
     void checkAllBlocks(HttpConfig &httpConfig);
 };
-
 
 #endif
