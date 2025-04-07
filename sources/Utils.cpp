@@ -1,12 +1,27 @@
 
 
 #include "Utils.hpp"
-#include <sys/stat.h>
+
 #include <fcntl.h>
+#include <sys/stat.h>
 
 #include <sstream>
 #include <cstring>
 #include <limits>
+
+void	Utils::printLog(const std::string& level, const std::string& message)
+{
+	time_t now = time(NULL);
+    tm* locTime = localtime(&now);
+
+    char timeBuf[20];
+    strftime(timeBuf, sizeof(timeBuf), "%Y-%m-%d %H:%M:%S", locTime);
+
+	if (level == ERROR)
+    	std::cerr << RED << "[" << timeBuf << "] " << level << " - " << message << RESET << std::endl;
+	else
+		std::cout << GREEN << "[" << timeBuf << "] " << level << " - " << message << RESET << std::endl;
+}
 
 size_t	Utils::safeMultiply(size_t value, size_t factor)
 {
@@ -113,9 +128,9 @@ bool	Utils::isDirectory(const std::string & path) throw (ErrorHandler)
     if (stat(path.c_str(), &info) != 0)
 	{
 		if (errno == EACCES)
-			ErrorHandler(ERR_403, "[" + path +"] access refused");
+			ErrorHandler(ERR_403, "[" + path +"] access refused\n");
 		else
-			ErrorHandler(ERR_500, "Utils::isDirectory(): " + std::string(std::strerror(errno)));
+			ErrorHandler(ERR_500, "Utils::isDirectory(): " + std::string(std::strerror(errno)) + '\n');
 	}
     return S_ISDIR(info.st_mode);
 }
@@ -231,7 +246,7 @@ void	Utils::readFile(const std::string &filepath, std::string &buffer) throw (Er
 {
 	std::ifstream file(filepath.c_str(), std::ios::binary);
 	if ( ! file.is_open() )
-		throw ErrorHandler(ERR_404, "readFile(): Ressource unavailable");
+		throw ErrorHandler(ERR_404, "readFile(): Ressource unavailable\n");
 	
 	std::ostringstream stream;
 	stream << file.rdbuf();

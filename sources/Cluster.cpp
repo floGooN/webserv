@@ -6,7 +6,7 @@
 /*   By: fberthou <fberthou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 05:26:30 by fberthou          #+#    #+#             */
-/*   Updated: 2025/04/07 06:25:17 by fberthou         ###   ########.fr       */
+/*   Updated: 2025/04/07 11:23:01 by fberthou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,8 +27,8 @@ int g_runServer = 1;
 #include <sys/epoll.h>
 #include <fcntl.h>
 #include <netdb.h>
-#include <ctime>
 #include <csignal>
+#include <ctime>
 
 void hand(int, siginfo_t *, void *) {
     g_runServer = 0;
@@ -129,9 +129,9 @@ void	Cluster::runCluster()
 	struct epoll_event	events[MAXEVENT];
 	while (g_runServer)
 	{
-		int nbEvents = epoll_wait(_epollFd, events, MAXEVENT, 777);
+		int nbEvents = epoll_wait(_epollFd, events, MAXEVENT, 500);
 		if (nbEvents == -1)
-			perror("\nepoll_wait");
+			Utils::printLog(ERROR, "epoll_wait: " + std::string(strerror(errno)));
 		else if (nbEvents > 0)
 		{
 			for (int i = 0; i < nbEvents; i++)
@@ -149,7 +149,7 @@ void	Cluster::runCluster()
 						else if (events[i].events & EPOLLRDHUP)
 							closeConnexion(events[i]);
 						else
-							std::cerr << "have to print EPOLLERR" << std::endl;
+							Utils::printLog(ERROR, "EPOLLERR");
 					}
 				}
 				catch(ErrGenerator &e)
@@ -168,7 +168,7 @@ void	Cluster::runCluster()
 			Client *client = updateClientsTime();
 			if (client)
 			{
-				ErrGenerator e = ErrGenerator(*client, ERR_408, "The client exceed the limit of time without activity");
+				ErrGenerator e = ErrGenerator(*client, ERR_408, "");
 				e.generateErrorPage();
 				changeEventMod(false, e.getClient().fdClient);
 			}
@@ -207,7 +207,7 @@ Client & Cluster::findClient(const int fd) throw (std::runtime_error)
 }
 /*----------------------------------------------------------------------------*/
 
-/*	* Create a new client on the matching server
+/*	* Create a new client on the mat"sended with success to the client"ching server
 	* init the client with the parsed request
 	* assign a pointer to the server associated with the request
 */
@@ -243,7 +243,7 @@ ssize_t	Cluster::safeRecv(const int clientFd, std::string &message) throw (std::
 	if ( ! bytesReceived || bytesReceived == -1 )
 	{
 		if ( bytesReceived )
-			perror("recv()");
+			Utils::printLog(ERROR, "recv()");
 		return bytesReceived;
 	}
 	try {
@@ -251,7 +251,7 @@ ssize_t	Cluster::safeRecv(const int clientFd, std::string &message) throw (std::
 		message.assign(buffer, bytesReceived);
 	}
 	catch(const std::exception& e) {
-		std::cerr << "safeRecv(): " << e.what() << std::endl;
+		Utils::printLog(ERROR, "safeRecv(): " + std::string(e.what()));
 		return -1;
 	}
 	return bytesReceived;
@@ -284,9 +284,9 @@ void	Cluster::recvData(const struct epoll_event &event) throw (ErrGenerator)
 	Client		&currentClient = findClient(event.data.fd);
 
 	bytesReceived = safeRecv(event.data.fd, message);
-	
 	checkByteReceived(event, bytesReceived);
-	std::cout << RED << message << RESET << std::endl;
+
+	std::cout << message << std::endl;
 	if (currentClient.request.getHeader().requestType == EMPTY)
 	{
 		try {
@@ -358,10 +358,16 @@ void	Cluster::sendData(const struct epoll_event &event) throw (ErrGenerator)
 		client.clearData();
 		updateTime(client);
 		changeEventMod(true, event.data.fd);
-		std::cout << "sended with success to the client" << std::endl;
+
+		std::stringstream ss;
+		ss << "response sended with success to the client [" << client.fdClient << "]" << std::endl;
+		Utils::printLog(INFO, ss.str());
 	}
-	else {
-		std::cout << "closeConnexion in sendData()\nsended with success" << std::endl;
+	else
+	{
+		std::stringstream ss;
+		ss << "response sended with success to the client [" << client.fdClient << "]" << std::endl;
+		Utils::printLog(INFO, ss.str());	
 		closeConnexion(event);
 	}
 }
@@ -400,9 +406,9 @@ void Cluster::setServersByPort(const HttpConfig &config)
 			result = _serversByService.insert(std::make_pair(*itServiceList, Server(*itConfigServer, *itServiceList)));
 			if (!result.second)
 			{
-				std::cerr << YELLOW "Port [" << *itServiceList << "] still required by server "
-						  << *(result.first->second.getParams().nameList.begin())
-						  << RESET << std::endl;
+				std::string	msg =	"Port [" + *itServiceList + "] still required by server "
+									+ *(result.first->second.getParams().nameList.begin()) + "\n";
+				Utils::printLog(ERROR, msg);
 			}
 			itServiceList++;
 		}
@@ -532,14 +538,14 @@ void	Cluster::acceptConnexion(const struct epoll_event &event)
 				<< std::endl;
 #endif
 	if (clientSocket < 0) {
-		perror("accept() in acceptConnexion()");
+		Utils::printLog(ERROR, "accept() in acceptConnexion(): " + std::string(strerror(errno)));
 		return;
 	}
 	if (fcntl(clientSocket, F_SETFL, O_NONBLOCK | FD_CLOEXEC) == -1)
 	{
-		perror("fcntl() in acceptConnexion()");
+		Utils::printLog(ERROR, "fcntl() in acceptConnexion(): " + std::string(strerror(errno)));
 		if (close(clientSocket) == -1)
-			perror("close in acceptConnexion()");
+			Utils::printLog(ERROR, "close in acceptConnexion(): " + std::string(strerror(errno)));
 		return ;
 	}
 
@@ -550,11 +556,15 @@ void	Cluster::acceptConnexion(const struct epoll_event &event)
 	}
 	catch(const std::exception& e)
 	{
-		std::cerr << e.what() << std::endl;
+		Utils::printLog(ERROR, "insert() in acceptConnexion(): " + std::string(e.what()));
 		if (close(clientSocket) == -1)
-			perror("close in acceptConnexion()");
+			Utils::printLog(ERROR, "close in acceptConnexion(): " + std::string(strerror(errno)));
 		return ;
 	}
+
+	std::stringstream ss;
+	ss << "New client connected: fd=" << clientSocket << std::endl;
+	Utils::printLog(INFO, ss.str());
 }
 /*----------------------------------------------------------------------------*/
 
@@ -588,14 +598,18 @@ void	Cluster::closeConnexion(const struct epoll_event &event)
 		_clientList.erase(event.data.fd);
 	}
 	catch (const std::exception &e) {
-		std::cerr << "Error\ncloseConnexion(): " << e.what() << std::endl;
+		Utils::printLog(ERROR, "erase in closeConnexion(): " + std::string(e.what()));
 	}
 
 	if (event.data.fd > 0 && epoll_ctl(_epollFd, EPOLL_CTL_DEL, event.data.fd, NULL) == -1)
-		perror("Error\nepoll_ctl() in closeConnexion()");
+		Utils::printLog(ERROR, "epoll_ctl() in closeConnexion(): " + std::string(strerror(errno)));
 
 	if (event.data.fd > 0 && close(event.data.fd) == -1)
-		perror("Error\nclose() in closeConnexion()");
+		Utils::printLog(ERROR, "close() in closeConnexion(): " + std::string(strerror(errno)));
+	
+	std::stringstream ss;
+	ss	<< "Close connexion for client [" << event.data.fd << "]" << std::endl;
+	Utils::printLog(INFO, ss.str()); 
 }
 /*----------------------------------------------------------------------------*/
 
@@ -614,7 +628,13 @@ Client *Cluster::updateClientsTime()
 	while (it != _clientList.end())
 	{
 		if (std::time(NULL) - it->second.time >= _keepAlive)
+		{
+			std::stringstream ss;
+			ss	<< "Connexion timeout for client [" << it->first << "]" << std::endl;
+			Utils::printLog(INFO, ss.str());
+
 			return &it->second;
+		}
 		it++;
 	}
 
@@ -628,11 +648,11 @@ void	Cluster::closeAllSockets() const
 {
 	for (std::set<int>::iterator it = _serverSockets.begin(); it != _serverSockets.end(); it++)
 		if (*it > 0 && close(*it) != 0)
-			perror("close()");
+			Utils::printLog(ERROR, "1st close() in closeAllSockets(): " + std::string(strerror(errno)));
 
 	for (std::map<int, Client>::const_iterator it = _clientList.begin(); it != _clientList.end(); it++)
 		if (it->first > 0 && close(it->first) != 0)
-			perror("close()");
+			Utils::printLog(ERROR, "2nd close() in closeAllSockets(): " + std::string(strerror(errno)));
 }
 /*----------------------------------------------------------------------------*/
 
@@ -641,11 +661,14 @@ void	Cluster::closeAllSockets() const
 /*============================================================================*/
 void	Cluster::InitException::setSockExcept() const throw() {
 	if (errno != 0)
-		std::cerr << RED << strerror(errno) << ": ";
+		Utils::printLog(ERROR, strerror(errno));
 	if (retAddr != 0)
-		std::cerr << RED << gai_strerror(retAddr) << ": ";
+		Utils::printLog(ERROR, gai_strerror(retAddr) + std::string(": "));
+
+	std::stringstream ss;
+	ss  << YELLOW "at file [" << _file << "] line [" << _line << "]" << RESET << std::endl;
+	std::string msg(ss.str());
 	
-	std::cerr	<< YELLOW "at file [" << _file << "] line [" << _line << "]"
-				<< RESET << std::endl;
+	Utils::printLog(ERROR, msg);
 }
 /*----------------------------------------------------------------------------*/

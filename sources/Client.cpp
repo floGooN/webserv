@@ -6,7 +6,7 @@
 /*   By: fberthou <fberthou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 05:12:52 by fberthou          #+#    #+#             */
-/*   Updated: 2025/04/07 07:13:46 by fberthou         ###   ########.fr       */
+/*   Updated: 2025/04/07 10:06:55 by fberthou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -98,15 +98,15 @@ void	Client::checkRequestValidity() throw (ErrorHandler)
 		{
 			case ENOENT:
 			case ELOOP:
-				throw ErrorHandler(ERR_404, e.what());
+				throw ErrorHandler(ERR_404, e.what() + std::string("\n"));
 			
 			case EACCES:
 			case ENAMETOOLONG:
 			case ENOTDIR:
-				throw ErrorHandler(ERR_403, e.what());
+				throw ErrorHandler(ERR_403, e.what() + std::string("\n"));
 			
 			default:
-				throw ErrorHandler(ERR_400, e.what());
+				throw ErrorHandler(ERR_400, e.what() + std::string("\n"));
 		}
 	}
 	checkUriContent();
@@ -131,7 +131,7 @@ void	Client::buildResponse() throw (ErrorHandler)
 			response.deleteQuery(*this);
 			break;
 		default:
-			throw ErrorHandler(ERR_400, "Unknow the request type");
+			throw ErrorHandler(ERR_400, "Unknow the request type\n");
 	}
 }
 /*----------------------------------------------------------------------------*/
@@ -158,7 +158,7 @@ bool	Client::isAutoindex() throw (ErrorHandler)
 	else if (current != NULL && current->autoindex == true )
 		return true;
 	else
-		throw ErrorHandler(ERR_403, ("[" + request.getHeader().uri + "] is forbidden"));
+		throw ErrorHandler(ERR_403, ("[" + request.getHeader().uri + "] is forbidden\n"));
 }
 /*----------------------------------------------------------------------------*/
 
@@ -221,8 +221,9 @@ void Client::checkAutorisation(const t_location *current) const throw (ErrorHand
 		itStart++;
 	}
 
-	if (!found) { 
-		throw ErrorHandler(ERR_405, "Method not allowed in this service");
+	if (!found) {
+		std::stringstream ss;
+		throw ErrorHandler(ERR_405, "Method not allowed in the service\n");
 	}
 }
 /*----------------------------------------------------------------------------*/
@@ -233,7 +234,7 @@ void Client::checkAutorisation(const t_location *current) const throw (ErrorHand
 void Client::checkUriContent() const throw (ErrorHandler)
 {
 	if (request.getHeader().uri.find_first_not_of(HTTP_ALLOW_CHARS) != request.getHeader().uri.npos)
-		throw ErrorHandler(ERR_400, "an invalid charater is detected in the uri");
+		throw ErrorHandler(ERR_400, "an invalid charater is detected in the uri\n");
 }
 /*----------------------------------------------------------------------------*/
 
@@ -272,7 +273,7 @@ void Client::validTheUriPath() const throw (ErrorHandler)
 		else if (it->compare("/") != 0)
 			dirCounter++;
 		if (dirCounter <= 0)
-			throw ErrorHandler(ERR_403, request.getHeader().uri + std::string(" is an invalid uri"));
+			throw ErrorHandler(ERR_403, request.getHeader().uri + std::string(" is an invalid uri\n"));
 		it++;
 	}
 }

@@ -44,9 +44,11 @@ void	Cluster::ErrGenerator::generateErrorPage()
 	}
 	catch(const std::exception& e)
 	{
-		std::cerr << e.what() << '\n';
+		Utils::printLog(ERROR, e.what());
 		_client.response.message = generateHeader() + DFLT_ERRORPAGE;
 	}
+	if ( ! _errorLog.empty() )
+		Utils::printLog(ERROR, this->_errorLog);
 }
 /*----------------------------------------------------------------------------*/
 
@@ -78,7 +80,7 @@ std::string	Cluster::ErrGenerator::findErrorFile(DIR *current, const std::string
 
 	Utils::safeCloseDirectory(current);
 	if ( result.empty() && errno && errno != ENOENT && errno != ENOTDIR && errno != EISDIR)
-		perror("readdir()");
+		Utils::printLog(ERROR, "readdir(): " + std::string(strerror(errno)));
 
 	return result ;
 }
@@ -115,7 +117,7 @@ void Cluster::ErrGenerator::generateContent(std::string &message) const
 	}
 	catch(const std::exception& e)
 	{
-		std::cerr << e.what() << '\n';
+		Utils::printLog(ERROR, e.what());
 		message = DFLT_ERRORPAGE;
 	}
 }
@@ -127,16 +129,16 @@ std::string	Cluster::ErrGenerator::generateHeader() const
 	oss << _client.response.message.length();
 
 	if (oss.fail())
-		throw ErrorHandler(ERR_500, "In ErrGenerator::generateHeader()\nconversion of the length of the message faild");
+		throw ErrorHandler(ERR_500, "In ErrGenerator::generateHeader()\nconversion of the length of the message faild\n");
 
 	std::string header =	PROTOCOL_VERION " " + _errorCode + HTTP_SEPARATOR \
-						"Date: TODAY" HTTP_SEPARATOR \
-						"Server: Rob_&_Flo__WEBSERV42__/0.5" HTTP_SEPARATOR \
-						"Content-Type: text/html; charset=UTF-8" HTTP_SEPARATOR \
-						"Content-Length: " + oss.str() + HTTP_SEPARATOR \
-						"Connection: close" \
-						HTTP_SEPARATOR \
-						HTTP_SEPARATOR;
+							"Date: TODAY" HTTP_SEPARATOR \
+							"Server: Rob_&_Flo__WEBSERV42__/0.5" HTTP_SEPARATOR \
+							"Content-Type: text/html; charset=UTF-8" HTTP_SEPARATOR \
+							"Content-Length: " + oss.str() + HTTP_SEPARATOR \
+							"Connection: close" \
+							HTTP_SEPARATOR \
+							HTTP_SEPARATOR;
 	return header;
 }
 /*----------------------------------------------------------------------------*/

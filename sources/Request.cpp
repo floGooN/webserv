@@ -6,7 +6,7 @@
 /*   By: fberthou <fberthou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 06:24:44 by fberthou          #+#    #+#             */
-/*   Updated: 2025/04/07 07:13:46 by fberthou         ###   ########.fr       */
+/*   Updated: 2025/04/07 10:47:52 by fberthou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,7 @@ Request::Request(const std::string &content) throw (ErrorHandler)
 	keepAlive = false;
 	size_t delimiter = content.find("\r\n\r\n");
 	if (delimiter == std::string::npos)
-		throw ErrorHandler(ERR_400, "Bad request in Request constructor");
+		throw ErrorHandler(ERR_400, "Bad request in Request constructor\n");
 
 	try
 	{
@@ -40,7 +40,7 @@ Request::Request(const std::string &content) throw (ErrorHandler)
 		setBody(content.substr(delimiter, content.length() - delimiter));
 	}
 	catch(const std::exception& e) {
-		throw ErrorHandler(ERR_500, "In Request(): " + std::string(e.what()));
+		throw ErrorHandler(ERR_500, "In Request(): " + std::string(e.what(), '\n'));
 	}
 }
 /*----------------------------------------------------------------------------*/
@@ -163,7 +163,7 @@ void Request::setArgs() throw(ErrorHandler)
 		_header.uri = _header.uri.substr(0, idxSep);
 	}
 	catch(const std::exception& e) {
-		throw ErrorHandler(ERR_500, "In setArgs() : " + std::string(e.what()));
+		throw ErrorHandler(ERR_500, "In setArgs() : " + std::string(e.what(), '\n'));
 	}
 }
 /*----------------------------------------------------------------------------*/
@@ -186,7 +186,7 @@ void Request::setHeader(const std::string &header) throw(ErrorHandler)
 		token = Utils::split(header, "\r\n");
 	}
 	catch (std::exception &e) {
-		throw ErrorHandler(ERR_500, "in Request::setHeader(); " + std::string(e.what()));
+		throw ErrorHandler(ERR_500, "in Request::setHeader(); " + std::string(e.what(), '\n'));
 	}
 
 	std::vector<std::string>::iterator it = token.begin();
@@ -217,14 +217,14 @@ void Request::setRequestType(const std::string &line) throw(ErrorHandler)
 {
 	size_t idx = line.find_first_of(' ');
 	if (idx == line.npos)
-		throw ErrorHandler(ERR_400, "Invalid format header");
+		throw ErrorHandler(ERR_400, "Invalid format header\n");
 	
 	std::string type("");
 	try {
 		type = line.substr(0, idx);
 	}
 	catch(const std::exception& e) {
-		throw ErrorHandler(ERR_500, "in Request::setRequestType(): " + std::string(e.what()));
+		throw ErrorHandler(ERR_500, "in Request::setRequestType(): " + std::string(e.what(), '\n'));
 	}
 
 	if ( type.compare("GET") == 0 )
@@ -234,7 +234,7 @@ void Request::setRequestType(const std::string &line) throw(ErrorHandler)
 	else if ( type.compare("DELETE") == 0 )
 		_header.requestType = DELETE;
 	else
-		throw ErrorHandler(ERR_405, "Request type " + type + " doesn't handle by the server");
+		throw ErrorHandler(ERR_405, "Request type " + type + " doesn't handle by the server\n");
 }
 /*----------------------------------------------------------------------------*/
 
@@ -242,7 +242,7 @@ void Request::setRequestType(const std::string &line) throw(ErrorHandler)
 */
 void Request::checkProtocole(const std::string &line) throw(ErrorHandler) {
 	if ( line.find(PROTOCOL_VERION) == line.npos )
-		throw ErrorHandler(ERR_505, "Http version not supported");
+		throw ErrorHandler(ERR_505, "Http version not supported\n");
 }
 /*----------------------------------------------------------------------------*/
 
@@ -252,7 +252,7 @@ void Request::setUri(const std::string &line) throw(ErrorHandler)
 {
 	size_t idx = line.find_first_of(' ');
 	if (idx == line.npos)
-		throw ErrorHandler(ERR_400, "Invalid format header");
+		throw ErrorHandler(ERR_400, "Invalid format header\n");
 
 	idx++;
 	try {
@@ -260,7 +260,7 @@ void Request::setUri(const std::string &line) throw(ErrorHandler)
 		_header.uri = line.substr(idx, uriSize);
 	}
 	catch(const std::exception& e) {
-		throw ErrorHandler(ERR_500, "in Request::setRequestType(): " + std::string(e.what()));
+		throw ErrorHandler(ERR_500, "in Request::setRequestType(): " + std::string(e.what(), '\n'));
 	}
 }
 /*----------------------------------------------------------------------------*/
@@ -277,7 +277,7 @@ void Request::setHost(const std::string &line) throw(ErrorHandler)
 		_header.hostPort = line.substr(idxSemicolon + 1, line.length() - idxSemicolon);
 	}
 	catch (std::exception &e) {
-		throw ErrorHandler(ERR_500, "In setHost(): " + std::string(e.what()));
+		throw ErrorHandler(ERR_500, "In setHost(): " + std::string(e.what(), '\n'));
 	}
 	if (_header.hostName.empty() || _header.hostPort.empty())
 	{
@@ -286,7 +286,7 @@ void Request::setHost(const std::string &line) throw(ErrorHandler)
 			errlog = "No hostname\n";
 		if ( ! _header.hostPort.empty() )
 			errlog += "No hostport\n";
-		throw ErrorHandler(ERR_400, errlog + "Invalid request");
+		throw ErrorHandler(ERR_400, errlog + "Invalid request\n");
 	}
 }
 /*----------------------------------------------------------------------------*/
@@ -312,7 +312,7 @@ void Request::setContentLength(const std::string &line) throw(ErrorHandler)
 		lenAsStr = line.substr(idx, tokenSize);
 	}
 	catch(const std::exception& e) {
-		throw ErrorHandler(ERR_500, " in setContentLength(): " + std::string(e.what()));
+		throw ErrorHandler(ERR_500, " in setContentLength(): " + std::string(e.what(), '\n'));
 	}
 
     size_t				result;
@@ -320,7 +320,7 @@ void Request::setContentLength(const std::string &line) throw(ErrorHandler)
     iss >> result;
 
     if (iss.fail())
-		throw ErrorHandler(ERR_500, "In Response::setHeader()\nconversion of the length message faild");
+		throw ErrorHandler(ERR_500, "In Response::setHeader()\nconversion of the length message faild\n");
 
 	_body.contentLength = result;
 }
@@ -346,7 +346,7 @@ void Request::setContentType(const std::string &line) throw(ErrorHandler)
 	else if (line.find("text/plain"))
 		_body.contentType = TXT;
 	else
-		throw ErrorHandler(ERR_400, "Unkwown body content type");
+		throw ErrorHandler(ERR_400, "Unkwown body content type\n");
 	
 	if (_body.contentType == MULTIPART)
 		setBoundLimiter(line);
@@ -361,7 +361,7 @@ void Request::setBody(const std::string &body) throw(ErrorHandler)
 		_body.body.empty() ? _body.body = body : _body.body.append(body);
 	}
 	catch (const std::exception &e) {
-		throw ErrorHandler(ERR_500, "In setBody(): " + std::string(e.what()));
+		throw ErrorHandler(ERR_500, "In setBody(): " + std::string(e.what(), '\n'));
 	}
 }
 /*----------------------------------------------------------------------------*/
@@ -372,14 +372,14 @@ void	Request::setBoundLimiter(const std::string &line) throw(ErrorHandler)
 {
 	size_t idx = line.find("boundary=") ;
 	if (idx == line.npos)
-		throw ErrorHandler(ERR_400, "No bound found");
+		throw ErrorHandler(ERR_400, "No bound found\n");
 
 	try {
 		idx += 9;
 		_body.bound = line.substr(idx, line.find("\r\n", idx) - idx);
 	}
 	catch(const std::exception& e) {
-		throw ErrorHandler(ERR_500, "In setBoundLimiter(): " + std::string(e.what()));
+		throw ErrorHandler(ERR_500, "In setBoundLimiter(): " + std::string(e.what(), '\n'));
 	}
 }
 /*----------------------------------------------------------------------------*/

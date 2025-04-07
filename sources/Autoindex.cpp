@@ -15,7 +15,7 @@ std::string processAutoIndex(const Client &client)
     const t_location *current = Utils::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
 	std::string path = current->root + client.request.getHeader().uri;
     if ((dir = opendir(path.c_str())) == NULL)
-        throw ErrorHandler(ERR_403, ("[" + client.request.getHeader().uri + "] is forbidden"));
+        throw ErrorHandler(ERR_403, ("[" + client.request.getHeader().uri + "] is forbidden\n"));
     body = buildBodyAutoIndex(dir, path);
     closedir(dir);
     return body;

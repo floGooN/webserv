@@ -19,14 +19,14 @@ std::string processCGI(const Client &client)
     {
         const t_location *current = Utils::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
         if (!current)
-            throw ErrorHandler(ERR_404, "Not Found");
+            throw ErrorHandler(ERR_404, "Not Found\n");
         char cwd[PATH_MAX];
         getcwd(cwd, sizeof(cwd));
         if (moveToDirectoryScript(current->root) != true)
-            throw ErrorHandler(ERR_500, "Internal server error");
+            throw ErrorHandler(ERR_500, "Internal server error\n");
         res = executeCGI(client);
         if (res.empty())
-            throw ErrorHandler(ERR_502, "Bad Gateway");
+            throw ErrorHandler(ERR_502, "Bad Gateway\n");
         if (moveToDirectoryScript(std::string(cwd)) != true)
             throw ErrorHandler(ERR_500);
     }
