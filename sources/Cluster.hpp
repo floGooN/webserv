@@ -6,7 +6,7 @@
 /*   By: fberthou <fberthou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 06:49:45 by fberthou          #+#    #+#             */
-/*   Updated: 2025/04/07 08:59:29 by fberthou         ###   ########.fr       */
+/*   Updated: 2025/04/07 14:21:49 by fberthou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,9 +15,7 @@
 
 # include "webserv.hpp"
 # include "HttpConfig.hpp"
-
-
-# include <dirent.h>
+# include "ErrGenerator.hpp"
 
 class Client;
 class Server;
@@ -43,31 +41,6 @@ class Cluster
 			const int 	_line;
 			std::string	_msg;
 	};
-
-	class ErrGenerator : virtual public std::exception
-	{
-		public:
-			ErrGenerator(Client &, const std::string &, const std::string &);
-			ErrGenerator(const ErrGenerator &);
-			~ErrGenerator() throw();
-			
-			const char *	what() const throw() {
-				return NULL;
-			}
-			void			generateErrorPage();
-			const Client	&getClient() const {
-				return _client;
-			}
-
-		private:
-			void		generateContent(std::string &) const;
-			std::string	findErrorFile(DIR *, const std::string &) const;
-			std::string generateHeader() const;
-
-			Client &			_client;
-			const std::string	_errorCode;
-			const std::string	_errorLog;
-	};	
 
 	public:
 		Cluster(const std::string &) throw (std::exception, InitException);
