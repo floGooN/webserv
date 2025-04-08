@@ -144,9 +144,5 @@ void ConfigParser::controlStructFile(std::ifstream& file)
 		}
 	}
 	if (nb_bracket != (nb_part * 2))
-	{
-		std::cout << nb_bracket << std::endl;
-		std::cout << nb_part << std::endl;
 		throw std::invalid_argument("Whether it is 'http', 'server' or 'location' each part must be enclosed by brackets.");
-	}
 }

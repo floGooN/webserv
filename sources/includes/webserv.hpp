@@ -18,7 +18,10 @@
 # define ENOSERVICE	RED "none of the requested services are available\n" RESET
 # define ERROR		"ERROR"
 # define INFO		"INFO"
-
+# define PRINTUSAGE  std::cout	<< YELLOW << "USAGE :" << std::endl \
+								<< "  -> a path to a config file (.conf)" << std::endl \
+								<< "  -> no argument and the default server is launched" << std::endl \
+								<< RESET << std::endl
 /* -------------------------------------- */
 /* ---		    DEFINE PATH   	   	  --- */
 /* -------------------------------------- */

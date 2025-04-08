@@ -41,4 +41,3 @@
         # ERROR_PAGES           chemin vers les pages d'erreur personnalisees
         # METHODS_ACCEPT        pour ne donner que certains acces
         # KEEP-ALIVE-TIMEOUT    redefinit le temps de connexion max pour une location
-        # CGI-PATH              chemmin vers un cgi player specifique
