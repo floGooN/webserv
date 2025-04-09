@@ -13,17 +13,17 @@
 			/*### CONSTRUCTORS - DESTRUCTOR _ OVERLOAD OPERATORS ###*/
 /*============================================================================*/
 
-Cluster::ErrGenerator::ErrGenerator(Client& client, const std::string &errCode = ERR_520, const std::string & errlog = "")
+ErrGenerator::ErrGenerator(Client& client, const std::string &errCode = ERR_520, const std::string & errlog = "")
 :	_client(client), _errorCode(errCode), _errorLog(errlog)
 {	}
 /*----------------------------------------------------------------------------*/
 
-Cluster::ErrGenerator::ErrGenerator(const ErrGenerator &ref)
+ErrGenerator::ErrGenerator(const ErrGenerator &ref)
 :	_client(ref._client), _errorCode(ref._errorCode), _errorLog(ref._errorLog)
 {	}
 /*----------------------------------------------------------------------------*/
 
-Cluster::ErrGenerator::~ErrGenerator() throw()
+ErrGenerator::~ErrGenerator() throw()
 {	}
 /*----------------------------------------------------------------------------*/
 
@@ -31,7 +31,7 @@ Cluster::ErrGenerator::~ErrGenerator() throw()
 						/*### PUBLIC METHODS ###*/
 /*============================================================================*/
 
-void	Cluster::ErrGenerator::generateErrorPage()
+void	ErrGenerator::generateErrorPage()
 {
 	try
 	{
@@ -58,7 +58,7 @@ void	Cluster::ErrGenerator::generateErrorPage()
 
 /*	* return the complete and correct file name or an empty str if nothing is found
 */
-std::string	Cluster::ErrGenerator::findErrorFile(DIR *current, const std::string &errorKey) const
+std::string	ErrGenerator::findErrorFile(DIR *current, const std::string &errorKey) const
 {
 	std::string result("");
 	std::string codeNumber = errorKey.substr(0, errorKey.find_first_of(" "));
@@ -86,7 +86,7 @@ std::string	Cluster::ErrGenerator::findErrorFile(DIR *current, const std::string
 }
 /*----------------------------------------------------------------------------*/
 
-void Cluster::ErrGenerator::generateContent(std::string &message) const
+void ErrGenerator::generateContent(std::string &message) const
 {
 	try
 	{
@@ -123,7 +123,7 @@ void Cluster::ErrGenerator::generateContent(std::string &message) const
 }
 /*----------------------------------------------------------------------------*/
 
-std::string	Cluster::ErrGenerator::generateHeader() const
+std::string	ErrGenerator::generateHeader() const
 {
 	std::ostringstream oss;
 	oss << _client.response.message.length();

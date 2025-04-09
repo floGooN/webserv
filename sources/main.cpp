@@ -11,6 +11,11 @@ void hand(int, siginfo_t *, void *);
 
 int main(int argc, char **argv)
 {
+    if (argc > 2) {
+        PRINTUSAGE; 
+        return 1;
+    }
+
     struct sigaction act;
     memset(&act, 0, sizeof(act));
     act.sa_handler = NULL;

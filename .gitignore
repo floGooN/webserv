@@ -5,3 +5,5 @@ a.out
 .vscode/*
 idee
 err.log
+test.txt
+./config/fileconfigDescription

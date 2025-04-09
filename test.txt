@@ -19,8 +19,3 @@ siege -b -c 100 -t 1M http://localhost:8080
 siege -b -c 100 -t 30S http://localhost:8080
 siege -b -c 100 -t 10S http://localhost:8080
 siege -b -c 10 -t 5S http://localhost:8080
-
-
-
-
-

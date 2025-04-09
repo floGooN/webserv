@@ -6,7 +6,7 @@
 /*   By: rtruvelo <rtruvelo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 05:26:30 by fberthou          #+#    #+#             */
-/*   Updated: 2025/04/09 11:19:06 by rtruvelo         ###   ########.fr       */
+/*   Updated: 2025/04/09 12:04:52 by rtruvelo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,7 +67,7 @@ Cluster::Cluster(const std::string &filepath) throw (std::exception, InitExcepti
 		throw;
 	}
 #ifdef TEST
-	std::cout	<< *this
+	std::cout	<< *thisSOCK_NONBLOCK
 				<< BOLD BRIGHT_YELLOW "INIT TERMINATED\n" RESET
 				<< std::endl;
 #endif
@@ -129,7 +129,7 @@ void	Cluster::runCluster()
 	struct epoll_event	events[MAXEVENT];
 	while (g_runServer)
 	{
-		int nbEvents = epoll_wait(_epollFd, events, MAXEVENT, 500);
+		int nbEvents = epoll_wait(_epollFd, events, MAXEVENT, 777);
 		if (nbEvents == -1)
 			Utils::printLog(ERROR, "epoll_wait: " + std::string(strerror(errno)));
 		else if (nbEvents > 0)
@@ -207,7 +207,7 @@ Client & Cluster::findClient(const int fd) throw (std::runtime_error)
 }
 /*----------------------------------------------------------------------------*/
 
-/*	* Create a new client on the mat"sended with success to the client"ching server
+/*	* Create a new client on the matching sended with success to the client server
 	* init the client with the parsed request
 	* assign a pointer to the server associated with the request
 */
@@ -405,9 +405,9 @@ void Cluster::setServersByPort(const HttpConfig &config)
 			result = _serversByService.insert(std::make_pair(*itServiceList, Server(*itConfigServer, *itServiceList)));
 			if (!result.second)
 			{
-				std::string	msg =	"Port [" + *itServiceList + "] still required by server "
-									+ *(result.first->second.getParams().nameList.begin()) + "\n";
-				Utils::printLog(ERROR, msg);
+				std::cerr << YELLOW "Port [" << *itServiceList << "] still required by server "
+						  << *(result.first->second.getParams().nameList.begin())
+						  << RESET << std::endl;
 			}
 			itServiceList++;
 		}
@@ -426,14 +426,16 @@ void	Cluster::setServerSockets() throw (InitException)
 	{
 		int				sockFd = 0;
 		struct addrinfo	*res = NULL;
-		try {
+		try
+		{
 			safeGetAddr(itServer->first.c_str(), &res);
 			createAndLinkSocketServer(*res, itServer->first, &sockFd);
 			freeaddrinfo(res);
 			itServer++;
 		}
-		catch(const InitException &e) {
-			if (sockFd == -1){
+		catch(const InitException &e)
+		{
+			if (sockFd < 0){
 				e.setSockExcept();
 				throw;
 			}
