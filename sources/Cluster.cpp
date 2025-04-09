@@ -6,7 +6,7 @@
 /*   By: fberthou <fberthou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 05:26:30 by fberthou          #+#    #+#             */
-/*   Updated: 2025/04/09 07:42:35 by fberthou         ###   ########.fr       */
+/*   Updated: 2025/04/09 09:35:04 by fberthou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -66,11 +66,8 @@ Cluster::Cluster(const std::string &filepath) throw (std::exception, InitExcepti
 		closeAllSockets();
 		throw;
 	}
-#ifdef TEST
-	std::cout	<< *thisSOCK_NONBLOCK
-				<< BOLD BRIGHT_YELLOW "INIT TERMINATED\n" RESET
+	std::cout	<< BOLD BRIGHT_YELLOW "INIT TERMINATED" RESET
 				<< std::endl;
-#endif
 }
 /*----------------------------------------------------------------------------*/
 

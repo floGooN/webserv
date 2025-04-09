@@ -6,7 +6,7 @@
 /*   By: fberthou <fberthou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 05:11:42 by fberthou          #+#    #+#             */
-/*   Updated: 2025/04/09 06:57:09 by fberthou         ###   ########.fr       */
+/*   Updated: 2025/04/09 13:50:13 by fberthou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -85,7 +85,7 @@ void	Response::getQuery(Client &client)
 		Utils::readFile(client.request.completeUri, message);
 
 	try {
-		message.insert(0, setHeader(client.request, (message.empty() ? COD_204 : COD_200 )));
+		message.insert(0, setHeader(client, (message.empty() ? COD_204 : COD_200 )));
 	}
 	catch(const std::exception& e) {
 		throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what(), '\n'));
@@ -111,7 +111,7 @@ void	Response::postQuery(Client &client)
 		Utils::readFile(client.request.completeUri, message);
 	}
 	try {
-		message.insert(0, setHeader(client.request, COD_201));
+		message.insert(0, setHeader(client, COD_201));
 	}
 	catch(const std::exception& e) {
 		throw ErrorHandler(ERR_500, "in getQuery(): " + std::string(e.what(), '\n'));
@@ -128,7 +128,7 @@ void	Response::deleteQuery(const Client &client)
 	char		path[100];
 	if (realpath(client.request.completeUri.c_str(), path) == NULL) {
 		if (errno == ENOENT)
-			throw ErrorHandler(ERR_404, "File to delete not found");
+			throw ErrorHandler(ERR_404, "File to delete not found\n");
 		throw ErrorHandler(ERR_400, "realpath() in DELETE, invalid path\n");
 	}
 	if (access(path, F_OK) == -1)
@@ -220,7 +220,7 @@ std::string	&Response::findMimeType(const std::string &uri)
 }
 /*----------------------------------------------------------------------------*/
 
-std::string	Response::setHeader(const Request &req, const std::string &code) throw (ErrorHandler)
+std::string	Response::setHeader(const Client &client, const std::string &code) throw (ErrorHandler)
 {
 	std::ostringstream oss;
 	oss << message.length();
@@ -231,11 +231,10 @@ std::string	Response::setHeader(const Request &req, const std::string &code) thr
 	std::string header = \
 		PROTOCOL_VERION " " + code + HTTP_SEPARATOR \
 		"Server: Rob&Flo V1" + HTTP_SEPARATOR \
-		"Content-Type: " + findMimeType(req.completeUri) + "; charset=UTF-8\r\n" \
+		"Content-Type: " + findMimeType(client.request.completeUri) + "; charset=UTF-8\r\n" \
 		"Content-Length: " + oss.str() + HTTP_SEPARATOR \
-		"Connection: " + (req.keepAlive == true ? "keep-alive" : "close") + HTTP_SEPARATOR \
-		HTTP_SEPARATOR;
-
+		"Connection: " + (client.request.keepAlive == true ? "keep-alive" : "close") + HTTP_SEPARATOR;
+	setCookies(header, client);
 	return header;	
 }
 /*----------------------------------------------------------------------------*/
@@ -245,25 +244,38 @@ std::string	Response::setHeaderRedirect(const Client &client) throw (ErrorHandle
 	std::string res;
 	const t_location *current = Utils::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
 	if (!current)
-		throw ErrorHandler(ERR_444);
+		throw ErrorHandler(ERR_444, "\n");
 	if (current->redirect[0] == "302")
+	{
 		res = PROTOCOL_VERION " " + current->redirect[0]+ " Found" + HTTP_SEPARATOR \
 		"Server: Rob&Flo V1" + HTTP_SEPARATOR \
-		"Content-Type: " + "text/html" + "; charset=UTF-8\r\n" \
-		"Content-Length: 0\r\n" \
-		"Connection: close\r\n" \
-		"Location: " + current->redirect[1] + HTTP_SEPARATOR \
-		HTTP_SEPARATOR;
+		"Content-Type: " + "text/html" + "; charset=UTF-8" HTTP_SEPARATOR \
+		"Content-Length: 0" HTTP_SEPARATOR \
+		"Connection: close" HTTP_SEPARATOR \
+		"Location: " + current->redirect[1] + HTTP_SEPARATOR;
+	}
 	else
+	{
 		res = PROTOCOL_VERION " " + current->redirect[0]+ " Moved Permanently" + HTTP_SEPARATOR \
 		"Server: Rob&Flo V1" + HTTP_SEPARATOR \
-		"Content-Type: " + "text/html" + "; charset=UTF-8\r\n" \
+		"Content-Type: " + "text/html" + "; charset=UTF-8" HTTP_SEPARATOR \
 		"Content-Length: 0" + HTTP_SEPARATOR \
 		"Connection: close" + HTTP_SEPARATOR \
-		"Location: " + current->redirect[1] + HTTP_SEPARATOR \
-		HTTP_SEPARATOR;
-
+		"Location: " + current->redirect[1] + HTTP_SEPARATOR;
+	}
+	setCookies(res, client);
 	return res;
+}
+/*----------------------------------------------------------------------------*/
+
+void	Response::setCookies(std::string &header, const Client &client)
+{
+	std::stringstream ss;
+	ss	<< "Set-Cookie: user_id=" << client.fdClient
+		<< "; Path=" << client.request.getHeader().uri
+		<< "; HttpOnly" HTTP_SEPARATOR
+		<< HTTP_SEPARATOR;
+	header += ss.str();
 }
 /*----------------------------------------------------------------------------*/
 
@@ -283,12 +295,12 @@ bool	Response::isCGI(Client client) throw (ErrorHandler)
 	{
 		const t_location *current = Utils::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
 		if (current == NULL)
-			throw ErrorHandler(ERR_404);
+			throw ErrorHandler(ERR_404, "\n");
 		std::string path = current->root + client.request.getHeader().uri;
 		if (Utils::isDirectory(path) == true)
 			return false;
 		if (access(path.c_str(), X_OK) != 0)
-			throw ErrorHandler(ERR_403);
+			throw ErrorHandler(ERR_403, "\n");
 		return true;
 	}
 	return false;

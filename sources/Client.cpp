@@ -6,7 +6,7 @@
 /*   By: fberthou <fberthou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 05:12:52 by fberthou          #+#    #+#             */
-/*   Updated: 2025/04/09 06:43:12 by fberthou         ###   ########.fr       */
+/*   Updated: 2025/04/09 13:25:06 by fberthou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -257,7 +257,7 @@ void Client::validTheUriPath() const throw (ErrorHandler)
 		it = token.begin(); 
 	}
 	catch(const std::exception& e) {
-		throw ErrorHandler(ERR_500, e.what());
+		throw ErrorHandler(ERR_500, std::string(e.what(), '\n'));
 	}
 
 	while (it != token.end() && it->compare("/") == 0)
