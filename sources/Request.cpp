@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fberthou <fberthou@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rtruvelo <rtruvelo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 06:24:44 by fberthou          #+#    #+#             */
-/*   Updated: 2025/04/07 10:47:52 by fberthou         ###   ########.fr       */
+/*   Updated: 2025/04/09 09:48:20 by rtruvelo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -203,9 +203,9 @@ void Request::setHeader(const std::string &header) throw(ErrorHandler)
 			setHost(*it);
 		else if (it->find("Connection: ") != it->npos)
 			setKeepAlive(*it);
-		else if (_header.requestType == POST && it->find("Content-Length: ") != it->npos)
+		else if (it->find("Content-Length: ") != it->npos)
 			setContentLength(*it);
-		else if (_header.requestType == POST && it->find("Content-Type") != it->npos)
+		else if (it->find("Content-Type") != it->npos)
 			setContentType(*it);
 		else
 			addHeaderField(*it);

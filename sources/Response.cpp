@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Response.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fberthou <fberthou@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rtruvelo <rtruvelo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 05:11:42 by fberthou          #+#    #+#             */
-/*   Updated: 2025/04/07 10:46:48 by fberthou         ###   ########.fr       */
+/*   Updated: 2025/04/09 11:59:37 by rtruvelo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -100,7 +100,7 @@ void	Response::postQuery(Client &client)
 	Utils::printLog(INFO, ss.str());
 	
 	Utils::checkAccessRessource(client.request.completeUri, W_OK);
-	if (isCGI(client) == true) 
+	if (isCGI(client) == true)
 		message = processCGI(client);
 	else
 	{

@@ -10,30 +10,30 @@
 #include "ErrorHandler.hpp"
 
 
-std::string processCGI(const Client &client)
+std::string processCGI(const Client &client) throw (ErrorHandler)
 {
     std::string res;
     try
     {
         const t_location *current = Utils::findLocation(client.clientServer->getLocationSet(), client.request.getHeader().uri);
         if (!current)
-            throw ErrorHandler(ERR_404, "Not Found\n");
+            throw ErrorHandler(ERR_404, "Not found in delete()\n");
         char cwd[PATH_MAX];
         getcwd(cwd, sizeof(cwd));
         if (moveToDirectoryScript(current->root) != true)
-            throw ErrorHandler(ERR_500, "Internal server error\n");
+            throw ErrorHandler(ERR_500, "500 Internal Server Error");
         res = executeCGI(client);
         if (res.empty())
         {
             moveToDirectoryScript(std::string(cwd));
-            throw ErrorHandler(ERR_502, "Bad Gateway\n");
+            throw ErrorHandler(ERR_502, "502 Bad Gateway");
         }
         if (moveToDirectoryScript(std::string(cwd)) != true)
-            throw ErrorHandler(ERR_500);
+            throw ErrorHandler(ERR_500, "500 Internal Server Error");
     }
     catch (const ErrorHandler& e)
     {
-        std::cerr << e.errorNumber << ":" << e.errorNumber << std::endl;
+        throw ;
     }
     return res;
 }

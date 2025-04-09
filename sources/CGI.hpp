@@ -16,7 +16,7 @@ std::string playCgi(const Request &req, char **env);
 void childProcessCgi(char**env, int *pipe_in, int *pipe_out, const Request &req);
 void closePipe(int *pipe_in, int *pipe_out);
 std::string parentProcessCgi(const Request &req, pid_t pid, int *pipe_in, int *pipe_out);
-std::string processCGI(const Client &client);
+std::string processCGI(const Client &client) throw (ErrorHandler);
 std::string executeCGI(const Client &client);
 std::string parentProcessCgi(const Request &req, pid_t pid, int *pipe_in, int *pipe_out);
 std::string createBody(int *pipe_out);
