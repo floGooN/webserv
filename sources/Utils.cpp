@@ -18,9 +18,9 @@ void	Utils::printLog(const std::string& level, const std::string& message)
     strftime(timeBuf, sizeof(timeBuf), "%Y-%m-%d %H:%M:%S", locTime);
 
 	if (level == ERROR)
-    	std::cerr << RED << "[" << timeBuf << "] " << level << " - " << message << RESET << std::endl;
+    	std::cerr << std::endl << RED << "[" << timeBuf << "] " << level << " - " << message << RESET;
 	else
-		std::cout << GREEN << "[" << timeBuf << "] " << level << " - " << message << RESET << std::endl;
+		std::cout << std::endl << GREEN << "[" << timeBuf << "] " << level << " - " << message << RESET;
 }
 
 size_t	Utils::safeMultiply(size_t value, size_t factor)

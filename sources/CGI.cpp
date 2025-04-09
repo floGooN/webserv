@@ -29,7 +29,7 @@ std::string processCGI(const Client &client) throw (ErrorHandler)
             throw ErrorHandler(ERR_502, "502 Bad Gateway");
         }
         if (moveToDirectoryScript(std::string(cwd)) != true)
-            throw ErrorHandler(ERR_500, "500 Internal Server Error");
+            throw ErrorHandler(ERR_500, "\n");
     }
     catch (const ErrorHandler& e)
     {

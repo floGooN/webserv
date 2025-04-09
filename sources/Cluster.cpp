@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Cluster.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rtruvelo <rtruvelo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: fberthou <fberthou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 05:26:30 by fberthou          #+#    #+#             */
-/*   Updated: 2025/04/09 12:04:52 by rtruvelo         ###   ########.fr       */
+/*   Updated: 2025/04/09 13:56:06 by fberthou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -66,11 +66,8 @@ Cluster::Cluster(const std::string &filepath) throw (std::exception, InitExcepti
 		closeAllSockets();
 		throw;
 	}
-#ifdef TEST
-	std::cout	<< *thisSOCK_NONBLOCK
-				<< BOLD BRIGHT_YELLOW "INIT TERMINATED\n" RESET
+	std::cout	<< BOLD BRIGHT_YELLOW "INIT TERMINATED" RESET
 				<< std::endl;
-#endif
 }
 /*----------------------------------------------------------------------------*/
 
@@ -219,15 +216,15 @@ void Cluster::updateClient(Client &client) throw (ErrGenerator)
 			client.clientServer = &getServersByPort().at(client.request.getHeader().hostPort);
 		}
 		catch(const std::exception& e) {
-			throw ErrGenerator(client, ERR_500, "We didn't recovered the service");
+			throw ErrGenerator(client, ERR_500, "We didn't recovered the service\n");
 		}
 	}
 
 	if (client.request.getHeader().uri.size() > DFLT_URISIZE)
-		throw ErrGenerator(client, ERR_414, "URI exceed the limit of the server");
+		throw ErrGenerator(client, ERR_414, "URI exceed the limit of the server\n");
 
 	if (client.request.getbody().contentLength > client.clientServer->getParams().maxBodySize)
-		throw ErrGenerator(client, ERR_413, "The content length of the request exceed the limit allowed by the server");
+		throw ErrGenerator(client, ERR_413, "The content length of the request exceed the limit allowed by the server\n");
 }
 /*----------------------------------------------------------------------------*/
 
@@ -243,7 +240,7 @@ ssize_t	Cluster::safeRecv(const int clientFd, std::string &message) throw (std::
 	if ( ! bytesReceived || bytesReceived == -1 )
 	{
 		if ( bytesReceived )
-			Utils::printLog(ERROR, "recv()");
+			Utils::printLog(ERROR, "recv()\n");
 		return bytesReceived;
 	}
 	try {
@@ -251,7 +248,7 @@ ssize_t	Cluster::safeRecv(const int clientFd, std::string &message) throw (std::
 		message.assign(buffer, bytesReceived);
 	}
 	catch(const std::exception& e) {
-		Utils::printLog(ERROR, "safeRecv(): " + std::string(e.what()));
+		Utils::printLog(ERROR, "safeRecv(): " + std::string(e.what(), '\n'));
 		return -1;
 	}
 	return bytesReceived;
@@ -261,7 +258,7 @@ ssize_t	Cluster::safeRecv(const int clientFd, std::string &message) throw (std::
 void	Cluster::checkByteReceived(const struct epoll_event &event, ssize_t bytes) throw (ErrGenerator)
 {
 	if ( ! bytes ) {
-		throw ErrGenerator(findClient(event.data.fd), ERR_499, "Client closed connexion");
+		throw ErrGenerator(findClient(event.data.fd), ERR_499, "Client closed connexion\n");
 	}
 	if ( bytes == -1 ) {
 		throw ErrGenerator(findClient(event.data.fd), ERR_500, "");
@@ -386,7 +383,7 @@ void	Cluster::addFdInEpoll(const bool isServerSocket, const int fd) const throw 
 		ev.events |= EPOLLET;
 
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, fd, &ev) == -1)
-		throw std::runtime_error("addFdInEpoll : error epoll_ctl()");
+		throw std::runtime_error("addFdInEpoll : error epoll_ctl()\n");
 }
 /*----------------------------------------------------------------------------*/
 
@@ -405,9 +402,11 @@ void Cluster::setServersByPort(const HttpConfig &config)
 			result = _serversByService.insert(std::make_pair(*itServiceList, Server(*itConfigServer, *itServiceList)));
 			if (!result.second)
 			{
-				std::cerr << YELLOW "Port [" << *itServiceList << "] still required by server "
-						  << *(result.first->second.getParams().nameList.begin())
-						  << RESET << std::endl;
+				std::stringstream ss;
+				ss	<< YELLOW "Port [" << *itServiceList << "] still required by server "
+					<< *(result.first->second.getParams().nameList.begin())
+					<< RESET << std::endl;
+				throw InitException(__FILE__, __LINE__ - 2, ss.str(), 0);
 			}
 			itServiceList++;
 		}

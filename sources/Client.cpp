@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rtruvelo <rtruvelo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: fberthou <fberthou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 05:12:52 by fberthou          #+#    #+#             */
-/*   Updated: 2025/04/07 11:43:14 by rtruvelo         ###   ########.fr       */
+/*   Updated: 2025/04/09 13:25:06 by fberthou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -78,7 +78,7 @@ void	Client::checkRequestValidity() throw (ErrorHandler)
 	if (request.getHeader().requestType == DELETE)
 	{
 		request.completeUri = (request.getHeader().uri[0] == '/' ? "./uploads" : "./uploads/") + request.getHeader().uri;
-		checkAutorisation(Utils::findLocation(clientServer->getLocationSet(), request.getHeader().uri));
+		checkAutorisation(Utils::findLocation(clientServer->getLocationSet(), "/uploads"));
 		return;
 	}
 	else
@@ -257,7 +257,7 @@ void Client::validTheUriPath() const throw (ErrorHandler)
 		it = token.begin(); 
 	}
 	catch(const std::exception& e) {
-		throw ErrorHandler(ERR_500, e.what());
+		throw ErrorHandler(ERR_500, std::string(e.what(), '\n'));
 	}
 
 	while (it != token.end() && it->compare("/") == 0)

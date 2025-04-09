@@ -6,7 +6,7 @@
 /*   By: fberthou <fberthou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 06:49:28 by fberthou          #+#    #+#             */
-/*   Updated: 2025/04/07 06:57:19 by fberthou         ###   ########.fr       */
+/*   Updated: 2025/04/09 13:18:39 by fberthou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,10 +45,11 @@ class Response
 		bool		isRedirect(const Client & client);
 		bool		isCGI(Client client) throw (ErrorHandler);
 		void		uploadFile(const Client &) throw (ErrorHandler);
+		void		setCookies(std::string &header, const Client &client);
 
 		std::string	&findMimeType(const std::string &uri);
 		std::string	setHeaderRedirect(const Client &client) throw (ErrorHandler);
-		std::string	setHeader(const Request &, const std::string &) throw (ErrorHandler);
+		std::string	setHeader(const Client &, const std::string &) throw (ErrorHandler);
 		std::string	extractFilename(const std::string &bodyHeader) throw (ErrorHandler);
 };
 
