@@ -219,8 +219,11 @@ std::string parentProcessCgi(const Request &req, pid_t pid, int *pipe_in, int *p
     close(pipe_in[0]);
     close(pipe_out[1]);
     ssize_t result = write(pipe_in[1], req.getbody().body.c_str(), req.getbody().contentLength);
-    if (result < 0)
-        return newBody;
+    if (result <= 0)
+    {
+        if (result < 0)
+            return newBody;
+    }
     close(pipe_in[1]);
     newBody = createBody(pipe_out);
     close(pipe_out[0]);
