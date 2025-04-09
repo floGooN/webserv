@@ -6,7 +6,7 @@
 /*   By: fberthou <fberthou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 05:11:42 by fberthou          #+#    #+#             */
-/*   Updated: 2025/04/07 10:46:48 by fberthou         ###   ########.fr       */
+/*   Updated: 2025/04/09 06:57:09 by fberthou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -141,9 +141,7 @@ void	Response::deleteQuery(const Client &client)
         stat(path, &path_stat);
         if (S_ISREG(path_stat.st_mode))
         {
-            if (remove(path) == 0)
-				throw ErrorHandler(COD_204, "No content in DELETE\n");
-            else
+            if (remove(path) != 0)
 				throw ErrorHandler(ERR_500, "remove() in deleteQuery()\n");
         }
         else
